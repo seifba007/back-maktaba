@@ -124,47 +124,6 @@ const categorieController = {
         error: err,
       });
    }
-},
- addCategory : async (req, res) => {
-  const { categoryTitle, categoryDescription, subcategories } = req.body;
-
-  const transaction = await db.sequelize.transaction();
-
-  try {
-  
-    const existingCategory = await Category.findOne({
-      where: { title: categoryTitle },
-      transaction,
-    });
-
-    if (existingCategory) {
-   
-      res.status(400).json({ error: 'Category with the same title already exists.' });
-      return;
-    }
-
-   
-    const category = await Category.create(
-      { title: categoryTitle, description: categoryDescription },
-      { transaction }
-    );
-
-    const subcategoryPromises = subcategories.map((subcategory) => {
-      return Subcategory.create({ title: subcategory.title, categoryId: category.id }, { transaction });
-    });
-
-    const createdSubcategories = await Promise.all(subcategoryPromises);
-
-  
-    await transaction.commit();
-
-  
-    res.status(200).json({ category: { category, subcategories: createdSubcategories } });
-  } catch (error) {
-  
-    await transaction.rollback();
-    res.status(500).json({ error: error.message });
-  }
 }
 };
 module.exports = categorieController;
