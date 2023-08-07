@@ -45,5 +45,72 @@ const adminController = {
         });
     }
   },
+
+  findAllusersrole : async(req,res)=>{
+    try{
+      Model.user.findAll().then((response)=>{
+        try{
+            if(response!==null){
+              return res.status(200).json({
+                success : true , 
+                users: response,
+              })
+            }else{
+              return res.status(200).json({
+                success : true , 
+                users: [],
+              })
+            }
+        }catch(err){
+          return res.status(400).json({
+            success: false,
+            error:err,
+          });
+        }
+      })
+    }catch(err){
+      return res.status(400).json({
+        success: false,
+        error:err,
+      });
+    }
+  },
+
+  findAllcategories: async (req, res) => {
+    try {
+      Model.categorie
+        .findAll({
+          attributes: {
+            include: ["id","name"],
+          },
+          include: [
+            {
+              model: Model.Souscategorie,
+              attributes: ["id", "name"],
+            },
+          ],
+        
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              produit: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: " zero produit",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
 };
+
 module.exports = adminController;
