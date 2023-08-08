@@ -4,4 +4,8 @@ const router = express.Router();
 router.post("/add",adminController.add)
 router.get("/allusersrole",adminController.findAllusersrole)
 router.get("/allcategories",adminController.findAllcategories)
+router.get("/allproduits",adminController.findAllproduits)
+router.get("/allproduits",adminController.findAllproduits)
+router.delete("/deletecategory",adminController.deletecategory)
+router.post("/addcategory",adminController.addcategory)
 module.exports = router;
