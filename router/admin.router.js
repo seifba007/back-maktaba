@@ -2,4 +2,10 @@ const express  = require ("express") ;
 const adminController = require ("../Controllers/adminController") ; 
 const router = express.Router();
 router.post("/add",adminController.add)
-module.exports = router
+router.get("/allusersrole",adminController.findAllusersrole)
+router.get("/allcategories",adminController.findAllcategories)
+router.get("/allproduits",adminController.findAllproduits)
+router.get("/allproduits",adminController.findAllproduits)
+router.delete("/deletecategory",adminController.deletecategory)
+router.post("/addcategory",adminController.addcategory)
+module.exports = router;

@@ -1,5 +1,7 @@
+const categorie = require("../Models/categorie");
 const Model = require("../Models/index");
 const bcrypt = require("bcrypt");
+const sousCategorie = require("../Models/sousCategorie");
 const adminController = {
   add:async(req, res) => {
     try {
@@ -45,5 +47,155 @@ const adminController = {
         });
     }
   },
+
+  findAllusersrole : async(req,res)=>{
+    try{
+      Model.user.findAll().then((response)=>{
+        try{
+            if(response!==null){
+              return res.status(200).json({
+                success : true , 
+                users: response,
+              })
+            }else{
+              return res.status(200).json({
+                success : true , 
+                users: [],
+              })
+            }
+        }catch(err){
+          return res.status(400).json({
+            success: false,
+            error:err,
+          });
+        }
+      })
+    }catch(err){
+      return res.status(400).json({
+        success: false,
+        error:err,
+      });
+    }
+  },
+
+  findAllcategories: async (req, res) => {
+    try {
+      Model.categorie
+        .findAll({
+          attributes: {
+            include: ["id","name"],
+          },
+          include: [
+            {
+              model: Model.Souscategorie,
+              attributes: ["id", "name"],
+            },
+          ],
+        
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              produit: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: " zero produit",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findAllproduits : async(req,res)=>{
+    try{
+      Model.produitlabrairie.findAll().then((response)=>{
+        try{
+            if(response!==null){
+              return res.status(200).json({
+                success : true , 
+                produits: response,
+              })
+            }
+        }catch(err){
+          return res.status(400).json({
+            success: false,
+            error:err,
+          });
+        }
+      })
+    }catch(err){
+      return res.status(400).json({
+        success: false,
+        error:err,
+      });
+    }
+  },
+
+  deletecategory: async (req, res) => {
+    const { ids } = req.body;
+    console.log(ids);
+    try {
+      Model.categorie
+        .destroy({
+          where: {
+            id: ids,
+          },
+        })
+        .then((reponse) => {
+          if (reponse !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: " produit deleted",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  addcategory: async (req, res) => {
+    try {
+      const {name,Description, subcategories} = req.body
+
+      const data = {
+        name: req.body.name,
+        Description:req.body.Description
+      };
+
+      const category = await Model.categorie.create(data);
+        const souscategories = [];
+        for(const subcateName of subcategories){
+          const subcategory = await await Model.Souscategorie.create({
+            name: subcateName,
+            categorieId: category.id
+          });
+          souscategories.push(subcategory)
+        }
+        res.status(200).json({
+          success: true,
+          message: "category and subcategories added",
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+
 };
+
 module.exports = adminController;
