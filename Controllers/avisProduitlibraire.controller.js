@@ -100,7 +100,7 @@ const avisProduitlibraireController = {
           include: [
             {
               model: Model.produitlabrairie,
-              attributes: ["id", "titre"],
+              attributes: ["id", "titre","prix"],
               include: [
                 {
                   model: Model.imageProduitLibrairie,
