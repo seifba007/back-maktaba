@@ -8,4 +8,5 @@ router.get("/allproduits",adminController.findAllproduits)
 router.get("/allproduits",adminController.findAllproduits)
 router.delete("/deletecategory",adminController.deletecategory)
 router.post("/addcategory",adminController.addcategory)
+router.delete("/deletesuggestion",adminController.deletesuggestion)
 module.exports = router;
