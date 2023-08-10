@@ -7,4 +7,5 @@ const labriarieController = require ("../Controllers/labriarie.controller");
 router.post("/add",labriarieController.addlabrairie);
 router.get("/findProfile/:id",labriarieController.findProfile)
 router.put("/updateProfile/:id",upload.array("image",1),labriarieController.updateProfile)
+router.get("/findalllibrarie",labriarieController.findAlllibrarie)
 module.exports = router
