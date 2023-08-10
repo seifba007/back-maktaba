@@ -46,8 +46,16 @@ const clientController = {
   filterproduit: async (req, res) => {
   const filters = req.body; 
   const whereClause = {};
+
+
+  if (filters.categoryIds) {
+    whereClause.categorieId = filters.categoryIds;
+  }
+
+  if (filters.subcategoryIds) {
+    whereClause.SouscategorieId = filters.subcategoryIds;
+  }
   
-  if (filters.categoryId) whereClause.categorieId = filters.categoryId;
   
   if (filters.priceMin && filters.priceMax) {
     whereClause.prix = { 
@@ -57,6 +65,19 @@ const clientController = {
     whereClause.prix = { [Sequelize.Op.gte]: filters.priceMin };
   } else if (filters.priceMax) {
     whereClause.prix = { [Sequelize.Op.lte]: filters.priceMax };
+  }
+  if (filters.quantityMin && filters.quantityMax) {
+    whereClause.qte = { 
+      [Sequelize.Op.between]: [filters.quantityMin, filters.quantityMax]
+    };
+  } else if (filters.quantityMin) {
+    whereClause.qte = { [Sequelize.Op.gte]: filters.quantityMin };
+  } else if (filters.quantityMax) {
+    whereClause.qte = { [Sequelize.Op.lte]: filters.quantityMax };
+  }
+
+  if (filters.etat) {
+    whereClause.etat = filters.etat;
   }
   
     try{

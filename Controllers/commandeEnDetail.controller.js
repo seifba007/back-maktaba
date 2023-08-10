@@ -607,6 +607,42 @@ const commandeDetailController = {
       });
     }
   },
+
+  findAllcommande : async(req,res)=>{
+    try{
+      Model.commandeEnDetail.findAll({
+        
+        include: [{
+          model: Model.user,
+          attributes: ['fullname']
+        },
+        {
+          model: Model.labrairie,
+          attributes: ['nameLibrairie']
+        }
+      ]
+      }).then((response)=>{
+        try{
+            if(response!==null){
+              return res.status(200).json({
+                success : true , 
+                produits: response,
+              })
+            }
+        }catch(err){
+          return res.status(400).json({
+            success: false,
+            error:err,
+          });
+        }
+      })
+    }catch(err){
+      return res.status(400).json({
+        success: false,
+        error:err,
+      });
+    }
+  },
 };
 function roleIsPartenaire(role) {
   
