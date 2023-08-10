@@ -165,6 +165,8 @@ const adminController = {
     }
   },
 
+
+
   addcategory: async (req, res) => {
     try {
       const {name,Description, subcategories} = req.body
@@ -186,6 +188,32 @@ const adminController = {
         res.status(200).json({
           success: true,
           message: "category and subcategories added",
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  deletesuggestion: async (req, res) => {
+    const { ids } = req.body;
+    console.log(ids);
+    try {
+      Model.suggestionProduit
+        .destroy({
+          where: {
+            id: ids,
+          },
+        })
+        .then((reponse) => {
+          if (reponse !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: " suggestion deleted",
+            });
+          }
         });
     } catch (err) {
       return res.status(400).json({
