@@ -49,7 +49,7 @@ const partenaireController = {
     },
     findPartnaire : async (req, res)=>{
       try{
-          Model.partenaire.findAll({attributes: ["id","nameetablissement"],include : [{model:Model.user , attributes:["fullname"]}]}).then((response)=>{
+          Model.partenaire.findAll({include : [{model:Model.user}]}).then((response)=>{
               if(response!==null){
                 return res.status(200).json({
                   success:true , 
