@@ -173,6 +173,7 @@ const commandeDetailController = {
       });
     }
   },
+
   findCommandeBylibrairie: async (req, res) => {
     try {
       Model.commandeEnDetail
@@ -602,6 +603,7 @@ const commandeDetailController = {
       });
     }
   },
+
   findAllcommande : async(req,res)=>{
     try{
       Model.commandeEnDetail.findAll({
@@ -640,7 +642,7 @@ const commandeDetailController = {
 
   
 
-  findcommande30days : async(req,res)=>{
+  findcommande30day : async(req,res)=>{
     
     const { daysAgo } =30; 
     try{
