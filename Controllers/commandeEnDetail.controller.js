@@ -644,14 +644,17 @@ const commandeDetailController = {
 
   findcommande30day : async(req,res)=>{
     
-    const { daysAgo } =30; 
     try{
+      const daysAgo = new Date();
+      daysAgo.setDate(daysAgo.getDate() - 30);
+
       Model.commandeEnDetail.findAll({
-       
+      
+
         where: {
           createdAt: {
-            [Op.gte]: Sequelize.literal(`CURRENT_DATE() - INTERVAL ${daysAgo} DAY`)
-          }
+            [Op.gte]: daysAgo
+          },
         },
         include: [{
           model: Model.user,
