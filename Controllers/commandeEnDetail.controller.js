@@ -177,7 +177,6 @@ const commandeDetailController = {
       });
     }
   },
-
   findCommandeBylibrairie: async (req, res) => {
     try {
       Model.commandeEnDetail
@@ -607,7 +606,6 @@ const commandeDetailController = {
       });
     }
   },
-
   findAllcommande : async(req,res)=>{
     try{
       Model.commandeEnDetail.findAll({
@@ -643,7 +641,6 @@ const commandeDetailController = {
       });
     }
   },
-
   findcommandebydate : async(req,res)=>{
     
     const { daysAgo } = req.body;

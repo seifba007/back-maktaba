@@ -177,7 +177,7 @@ const adminController = {
         const souscategories = [];
         for(const subcateName of subcategories){
           const subcategory = await await Model.Souscategorie.create({
-            name: subcateName,
+            name: subcateName.name,
             categorieId: category.id
           });
           souscategories.push(subcategory)
@@ -254,7 +254,6 @@ const adminController = {
   }
   },
 
-
   findavgavis : async(req,res)=>{
     const clientId = req.params.id;
 
@@ -288,7 +287,6 @@ const adminController = {
     });
   }
   },
-
 
   
 
