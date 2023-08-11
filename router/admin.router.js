@@ -10,4 +10,5 @@ router.post("/addcategory",adminController.addcategory)
 router.delete("/deletesuggestion",adminController.deletesuggestion)
 router.get("/getallavisuser/:id/nombre_total_etoiles",adminController.findAllavis)
 router.get("/getavgavisuser/:id/moyenne_avis",adminController.findavgavis)
+
 module.exports = router;

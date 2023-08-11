@@ -164,11 +164,7 @@ const commandeDetailController = {
                 err: "zero commande trouve",
               });
             }
-
  });
-
-
-
         });
     } catch (err) {
       return res.status(400).json({
@@ -612,11 +608,11 @@ const commandeDetailController = {
         
         include: [{
           model: Model.user,
-          attributes: ['fullname']
+          attributes: ['fullname','avatar']
         },
         {
           model: Model.labrairie,
-          attributes: ['nameLibrairie']
+          attributes: ['nameLibrairie','imageStore']
         }
       ]
       }).then((response)=>{
@@ -641,6 +637,7 @@ const commandeDetailController = {
       });
     }
   },
+
   findcommandebydate : async(req,res)=>{
     
     const { daysAgo } = req.body;
@@ -654,11 +651,11 @@ const commandeDetailController = {
         },
         include: [{
           model: Model.user,
-          attributes: ['fullname']
+          attributes: ['fullname','avatar']
         },
         {
           model: Model.labrairie,
-          attributes: ['nameLibrairie']
+          attributes: ['nameLibrairie','imageStore']
         }
       ]
       }).then((response)=>{
@@ -683,6 +680,90 @@ const commandeDetailController = {
       });
     }
   },
+
+  findCommandefiltre: async (req, res) => {
+    const commandeId = req.params.id;
+  const { categorie, sousCategorie, prixMin, prixMax, quantiteMin, quantiteMax } = req.query;
+
+  const whereClause = {};
+
+  if (categorie) whereClause.categorie = categorie;
+  if (sousCategorie) whereClause.sousCategorie = sousCategorie;
+  if (prixMin !== undefined && prixMax !== undefined) {
+    whereClause.prixMin = { [Sequelize.Op.between]: [prixMin, prixMax] };
+    whereClause.prixMax = { [Sequelize.Op.between]: [prixMin, prixMax] };
+  }
+  if (quantiteMin !== undefined && quantiteMax !== undefined) {
+    whereClause.quantiteMin = { [Sequelize.Op.between]: [quantiteMin, quantiteMax] };
+    whereClause.quantiteMax = { [Sequelize.Op.between]: [quantiteMin, quantiteMax] };
+  }
+    try {
+      Model.commandeEnDetail
+        .findAll({
+          where: { id: req.params.id },
+          attributes: {
+            exclude: ["updatedAt", "userId", "labrairieId"],
+          },
+          include: [
+            {
+              model: Model.user,
+              attributes: ["fullname", "avatar", "telephone", "email", "role"],
+            }
+          ],
+          
+          order: [["createdAt", "ASC"]],
+        })
+        .then((response) => {
+     
+
+          Model.commandeEnDetail
+          .findAll({
+            where: { id: req.params.id },
+            attributes: {
+              exclude: ["updatedAt", "userId", "labrairieId"],
+            },
+             include: [
+              {
+                model: Model.produitlabrairie,
+                attributes: ["titre", "description", "prix","prix_en_Solde"],
+                include: [
+                  {
+                    model: Model.imageProduitLibrairie,
+                  },
+                ],
+              },
+              {
+                model: Model.user,
+                attributes: ["fullname", "avatar", "telephone", "email", "role"],
+                include:roleIsPartenaire(response[0].user.role)
+              }
+            ]
+         ,
+           
+            order: [["createdAt", "ASC"]],
+          })
+          .then((response) => {
+            if (response !== null) {
+              return res.status(200).json({
+                success: true,
+                commandes: response,
+              });
+            } else {
+              return res.status(400).json({
+                success: false,
+                err: "zero commande trouve",
+              });
+            }
+ });
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        err: err,
+      });
+    }
+  },
+
 };
 function roleIsPartenaire(role) {
   
