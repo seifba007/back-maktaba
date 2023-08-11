@@ -642,7 +642,7 @@ const commandeDetailController = {
 
   
 
-  findcommande30days : async(req,res)=>{
+  findcommande30day : async(req,res)=>{
     
     const { daysAgo } =30; 
     try{
