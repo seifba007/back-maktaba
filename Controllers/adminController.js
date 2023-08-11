@@ -1,6 +1,7 @@
 const categorie = require("../Models/categorie");
 const Model = require("../Models/index");
 const bcrypt = require("bcrypt");
+const sequelize = require('sequelize');
 const sousCategorie = require("../Models/sousCategorie");
 const adminController = {
   add:async(req, res) => {
@@ -176,7 +177,7 @@ const adminController = {
         const souscategories = [];
         for(const subcateName of subcategories){
           const subcategory = await await Model.Souscategorie.create({
-            name: subcateName.name,
+            name: subcateName,
             categorieId: category.id
           });
           souscategories.push(subcategory)
@@ -219,6 +220,77 @@ const adminController = {
     }
   },
 
+  findAllavis : async(req,res)=>{
+    const clientId = req.params.id;
+
+  try{
+    Model.avisProduitlibraire.findOne(
+      {
+        attributes: ['clientId', [sequelize.fn('SUM', sequelize.col('nbStart')), 'nombre_total_etoiles']],
+        where: {
+          clientId: clientId
+        }
+      }
+    ).then((response)=>{
+      try{
+          if(response!==null){
+            return res.status(200).json({
+              success : true , 
+              produits: response,
+            })
+          }
+      }catch(err){
+        return res.status(400).json({
+          success: false,
+          error:err,
+        });
+      }
+    })
+  }catch(err){
+    return res.status(400).json({
+      success: false,
+      error:err,
+    });
+  }
+  },
+
+
+  findavgavis : async(req,res)=>{
+    const clientId = req.params.id;
+
+  try{
+    Model.avisProduitlibraire.findOne(
+      {
+        attributes: ['clientId', [sequelize.fn('AVG', sequelize.col('nbStart')), 'moyenne_avis']],
+        where: {
+          clientId: clientId
+        }
+      }
+    ).then((response)=>{
+      try{
+          if(response!==null){
+            return res.status(200).json({
+              success : true , 
+              produits: response,
+            })
+          }
+      }catch(err){
+        return res.status(400).json({
+          success: false,
+          error:err,
+        });
+      }
+    })
+  }catch(err){
+    return res.status(400).json({
+      success: false,
+      error:err,
+    });
+  }
+  },
+
+
+  
 
 };
 
