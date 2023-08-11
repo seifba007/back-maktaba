@@ -98,12 +98,12 @@ const adminController = {
           if (response !== null) {
             return res.status(200).json({
               success: true,
-              produit: response,
+              categories: response,
             });
           } else {
             return res.status(400).json({
               success: false,
-              err: " zero produit",
+              err: " zero category",
             });
           }
         });
@@ -142,7 +142,6 @@ const adminController = {
 
   deletecategory: async (req, res) => {
     const { ids } = req.body;
-    console.log(ids);
     try {
       Model.categorie
         .destroy({
@@ -240,7 +239,7 @@ const adminController = {
           if(response!==null){
             return res.status(200).json({
               success : true , 
-              produits: response,
+              avis: response,
             })
           }
       }catch(err){
@@ -275,7 +274,7 @@ const adminController = {
           if(response!==null){
             return res.status(200).json({
               success : true , 
-              produits: response,
+              avismoy: response,
             })
           }
       }catch(err){
@@ -292,10 +291,7 @@ const adminController = {
     });
   }
   },
-
-
   
-
 };
 
 module.exports = adminController;

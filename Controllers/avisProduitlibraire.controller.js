@@ -195,5 +195,34 @@ const avisProduitlibraireController = {
       });
     }
   },
+
+  findtop10product : async(req,res)=>{
+    try{
+      Model.commandeEnDetail.findAll({
+
+        limit: 10,
+        order: [['nbStart', 'DESC']],
+      }).then((response)=>{
+        try{
+            if(response!==null){
+              return res.status(200).json({
+                success : true , 
+                produits: response,
+              })
+            }
+        }catch(err){
+          return res.status(400).json({
+            success: false,
+            error:err,
+          });
+        }
+      })
+    }catch(err){
+      return res.status(400).json({
+        success: false,
+        error:err,
+      });
+    }
+  },
 };
 module.exports = avisProduitlibraireController;
