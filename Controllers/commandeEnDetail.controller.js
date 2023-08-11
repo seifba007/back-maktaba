@@ -638,9 +638,11 @@ const commandeDetailController = {
     }
   },
 
-  findcommandebydate : async(req,res)=>{
+  
+
+  findcommande30days : async(req,res)=>{
     
-    const { daysAgo } = req.body;
+    const { daysAgo } =30; 
     try{
       Model.commandeEnDetail.findAll({
        
