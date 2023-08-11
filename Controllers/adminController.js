@@ -141,7 +141,7 @@ const adminController = {
 
   deletecategory: async (req, res) => {
     const { ids } = req.body;
-    console.log(ids);
+  
     try {
       Model.categorie
         .destroy({
@@ -165,22 +165,18 @@ const adminController = {
     }
   },
 
-
-
   addcategory: async (req, res) => {
     try {
       const {name,Description, subcategories} = req.body
-
       const data = {
         name: req.body.name,
         Description:req.body.Description
       };
-
       const category = await Model.categorie.create(data);
         const souscategories = [];
         for(const subcateName of subcategories){
           const subcategory = await await Model.Souscategorie.create({
-            name: subcateName,
+            name: subcateName.name,
             categorieId: category.id
           });
           souscategories.push(subcategory)
