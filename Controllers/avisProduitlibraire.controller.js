@@ -198,7 +198,7 @@ const avisProduitlibraireController = {
 
   findtop10product : async(req,res)=>{
     try{
-      Model.commandeEnDetail.findAll({
+      Model.avisProduitlibraire.findAll({
 
         limit: 10,
         order: [['nbStart', 'DESC']],
