@@ -256,7 +256,6 @@ const adminController = {
 
   findavgavis : async(req,res)=>{
     const clientId = req.params.id;
-
   try{
     Model.avisProduitlibraire.findOne(
       {

@@ -1,4 +1,4 @@
-const { response } = require("express");
+ const { response } = require("express");
 const Model = require("../Models/index");
 const { Sequelize, where, Op } = require("sequelize");
 const commandeDetailController = {
