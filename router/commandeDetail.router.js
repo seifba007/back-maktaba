@@ -15,4 +15,5 @@ router.get("/produit_plus_vendus/:id",commandeDetailController.produit_plus_vend
 router.get("/nb_commande/:id",commandeDetailController.nb_commande)
 router.get("/allcommande",commandeDetailController.findAllcommande)
 router.get("/commande30days",commandeDetailController.findcommande30day)
+router.get("/nb_article/:idcmd",commandeDetailController.findNumberArtInCmd)
 module.exports = router;

@@ -60,6 +60,7 @@ const commandeDetailController = {
       });
     }
   },
+
   findCommandeByuser: async (req, res) => {
     try {
       Model.commandeEnDetail
@@ -605,39 +606,51 @@ const commandeDetailController = {
   },
 
   findAllcommande : async(req,res)=>{
-    try{
-      Model.commandeEnDetail.findAll({
-        
-        include: [{
-          model: Model.user,
-          attributes: ['fullname','avatar']
-        },
-        {
-          model: Model.labrairie,
-          attributes: ['nameLibrairie','imageStore']
-        }
-      ]
-      }).then((response)=>{
-        try{
-            if(response!==null){
-              return res.status(200).json({
-                success : true , 
-                produits: response,
-              })
+    const { ids } = req.body;
+      try{
+        Model.commandeEnDetail.findAll({
+          where: {
+            id: ids,
+          },
+          attributes: ["id", "total_ttc", "etatVender", "createdAt"],
+          include: [
+            { model: Model.user, attributes: ["fullname", "avatar"] },
+            {
+              model: Model.labrairie,
+              attributes: ["nameLibrairie"],
+            },
+            {
+              model: Model.produitlabrairie,
+              attributes: [
+                 [Sequelize.fn("COUNT", Sequelize.col("titre")), "nb_Article"],
+                 
+              ],
             }
-        }catch(err){
-          return res.status(400).json({
-            success: false,
-            error:err,
-          });
-        }
-      })
-    }catch(err){
-      return res.status(400).json({
-        success: false,
-        error:err,
-      });
-    }
+            
+          ],
+        }).then((response)=>{
+          try{
+              if(response!==null){
+                return res.status(200).json({
+                  success : true , 
+                  commandes: response,
+                })
+              }
+          }catch(err){
+            return res.status(400).json({
+              success: false,
+              error:err,
+            });
+          }
+        })
+      }catch(err){
+        return res.status(400).json({
+          success: false,
+          error:err,
+        });
+      }
+    
+   
   },
 
   
@@ -767,6 +780,45 @@ const commandeDetailController = {
       return res.status(400).json({
         success: false,
         err: err,
+      });
+    }
+  },
+
+  findNumberArtInCmd: async (req, res) => {
+    
+    try {
+      Model.commandeEnDetail
+        .findAll({
+          where: { id: req.params.idcmd },
+          attributes: ["id", "total_ttc", "etatVender", "createdAt"],
+          include: [
+            { model: Model.user, attributes: ["fullname", "avatar"] },
+            {
+              model: Model.produitlabrairie,
+              attributes: [
+                 [Sequelize.fn("COUNT", Sequelize.col("titre")), "nb_Article"],
+                 
+              ],
+            },
+          ],
+        })
+        .then((response) => {
+          if (response.length != 0) {
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "  zero commande trouve ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
       });
     }
   },
