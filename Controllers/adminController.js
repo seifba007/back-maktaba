@@ -142,6 +142,7 @@ const adminController = {
 
   deletecategory: async (req, res) => {
     const { ids } = req.body;
+    console.log(ids);
     try {
       Model.categorie
         .destroy({
@@ -165,22 +166,18 @@ const adminController = {
     }
   },
 
-
-
   addcategory: async (req, res) => {
     try {
       const {name,Description, subcategories} = req.body
-
       const data = {
         name: req.body.name,
         Description:req.body.Description
       };
-
       const category = await Model.categorie.create(data);
         const souscategories = [];
         for(const subcateName of subcategories){
-          const subcategory = await  Model.Souscategorie.create({
-            name: subcateName,
+          const subcategory = await await Model.Souscategorie.create({
+            name: subcateName.name,
             categorieId: category.id
           });
           souscategories.push(subcategory)
@@ -257,7 +254,6 @@ const adminController = {
   }
   },
 
-
   findavgavis : async(req,res)=>{
     const clientId = req.params.id;
 
@@ -291,7 +287,10 @@ const adminController = {
     });
   }
   },
+
+
   
+
 };
 
 module.exports = adminController;
