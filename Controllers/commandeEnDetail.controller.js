@@ -650,6 +650,7 @@ const commandeDetailController = {
         });
       }
     
+      
    
   },
 
