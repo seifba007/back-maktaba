@@ -106,9 +106,16 @@ const avisProduitlibraireController = {
                   model: Model.imageProduitLibrairie,
                   attributes: ["name_Image"],
                 },
+                {
+                  model: Model.labrairie,
+                  attributes: ["nameLibrairie"],
+                },
               ],
+           
             },
+      
           ],
+          
         })
         .then((response) => {
           if (response !== null) {
@@ -196,33 +203,6 @@ const avisProduitlibraireController = {
     }
   },
 
-  findtop10product : async(req,res)=>{
-    try{
-      Model.avisProduitlibraire.findAll({
 
-        limit: 10,
-        order: [['nbStart', 'DESC']],
-      }).then((response)=>{
-        try{
-            if(response!==null){
-              return res.status(200).json({
-                success : true , 
-                produits: response,
-              })
-            }
-        }catch(err){
-          return res.status(400).json({
-            success: false,
-            error:err,
-          });
-        }
-      })
-    }catch(err){
-      return res.status(400).json({
-        success: false,
-        error:err,
-      });
-    }
-  },
 };
 module.exports = avisProduitlibraireController;
