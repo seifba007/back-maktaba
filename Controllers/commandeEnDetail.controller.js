@@ -659,6 +659,7 @@ const commandeDetailController = {
   findcommande30day : async(req,res)=>{
     
     try{
+    
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - 30);
 
