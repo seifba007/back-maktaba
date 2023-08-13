@@ -604,7 +604,6 @@ const commandeDetailController = {
       });
     }
   },
-
   findAllcommande : async(req,res)=>{
     const { ids } = req.body;
       try{
