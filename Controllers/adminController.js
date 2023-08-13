@@ -286,6 +286,87 @@ const adminController = {
     });
   }
   },
+  gettop10prod : async(req,res)=>{
+ 
+    try{
+      Model.avisProduitlibraire.findAll(
+        {
+          order: [['nbStart', 'DESC']],
+          limit: 10,
+          include: [
+            {
+              model: Model.produitlabrairie,
+              include:[
+                {
+                 
+                  model: Model.labrairie
+                }
+              ]
+            },
+            
+          ],
+        }
+      ).then((response)=>{
+        try{
+            if(response!==null){
+              return res.status(200).json({
+                success : true , 
+                produit: response,
+              })
+            }
+        }catch(err){
+          return res.status(400).json({
+            success: false,
+            error:err,
+          });
+        }
+      })
+    }catch(err){
+      return res.status(400).json({
+        success: false,
+        error:err,
+      });
+    }
+    },
+  
+    findusernameetabllis : async(req,res)=>{
+      try{
+        Model.user.findAll({
+          where: {
+            role: ['partenaire']
+          },
+          include:[{
+            model: Model.partenaire,
+            attributes: [ 'nameetablissement']
+          }
+          ]
+        }).then((response)=>{
+          try{
+              if(response!==null){
+                return res.status(200).json({
+                  success : true , 
+                  users: response,
+                })
+              }else{
+                return res.status(200).json({
+                  success : true , 
+                  users: [],
+                })
+              }
+          }catch(err){
+            return res.status(400).json({
+              success: false,
+              error:err,
+            });
+          }
+        })
+      }catch(err){
+        return res.status(400).json({
+          success: false,
+          error:err,
+        });
+      }
+    },
 
 
   
