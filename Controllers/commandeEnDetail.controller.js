@@ -650,9 +650,6 @@ const commandeDetailController = {
       
    
   },
-
-  
-
   findcommande30day : async(req,res)=>{
     
     try{
@@ -661,22 +658,27 @@ const commandeDetailController = {
       daysAgo.setDate(daysAgo.getDate() - 30);
 
       Model.commandeEnDetail.findAll({
-      
-
         where: {
           createdAt: {
             [Op.gte]: daysAgo
           },
         },
-        include: [{
-          model: Model.user,
-          attributes: ['fullname','avatar']
-        },
-        {
-          model: Model.labrairie,
-          attributes: ['nameLibrairie','imageStore']
-        }
-      ]
+        attributes: ["id", "total_ttc", "etatVender", "createdAt"],
+        include: [
+          { model: Model.user, attributes: ["fullname", "avatar"] },
+          {
+            model: Model.produitlabrairie,
+            attributes: [
+              [Sequelize.fn("COUNT", Sequelize.col("titre")), "nb_Article"],
+            ],
+          },
+          { model: Model.labrairie},
+
+        ],
+        group: ["commandeEnDetail.id"],
+        order: [["createdAt", "ASC"]],
+     
+      
       }).then((response)=>{
         try{
             if(response!==null){
@@ -858,6 +860,117 @@ const commandeDetailController = {
       });
     }
   },
+  findCommandeByall: async (req, res) => {
+    try {
+      Model.commandeEnDetail
+        .findAll({
+          attributes: ["id", "total_ttc", "etatVender", "createdAt"],
+          include: [
+            { model: Model.user, attributes: ["fullname", "avatar"] },
+            {
+              model: Model.produitlabrairie,
+              attributes: [
+                [Sequelize.fn("COUNT", Sequelize.col("titre")), "nb_Article"],
+              ],
+            },
+            { model: Model.labrairie},
+
+          ],
+          group: ["commandeEnDetail.id"],
+          order: [["createdAt", "ASC"]],
+        })
+        .then((response) => {
+          if (response.length != 0) {
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "  zero commande trouve ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  findCommandeByadmindetail: async (req, res) => {
+    try {
+      Model.commandeEnDetail
+        .findAll({
+          where: { id: req.params.id },
+          attributes: {
+            exclude: ["updatedAt", "userId", "labrairieId"],
+          },
+          include: [
+            {
+              model: Model.user,
+              attributes: ["fullname", "avatar", "telephone", "email", "role"],
+            }
+          ], 
+     
+          order: [["createdAt", "ASC"]],
+        })
+        .then((response) => {
+     
+          Model.commandeEnDetail
+          .findAll({
+            where: { id: req.params.id },
+            attributes: {
+              exclude: ["updatedAt", "userId", "labrairieId"],
+            },
+             include: [
+              {
+                model: Model.produitlabrairie,
+                attributes: ["titre", "description", "prix","prix_en_Solde"],
+                include: [
+                  {
+                    model: Model.imageProduitLibrairie,
+                  },
+                ],
+            
+                
+              },
+                {
+                  model: Model.labrairie,
+                }
+             ,
+              {
+                model: Model.user,
+                attributes: ["fullname", "avatar", "telephone", "email", "role"],
+                include:roleIsPartenaire(response[0].user.role)
+              }
+            ]
+         ,
+           
+            order: [["createdAt", "ASC"]],
+          })
+          .then((response) => {
+            if (response !== null) {
+              return res.status(200).json({
+                success: true,
+                commandes: response,
+              });
+            } else {
+              return res.status(400).json({
+                success: false,
+                err: "zero commande trouve",
+              });
+            }
+ });
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        err: err,
+      });
+    }
+  },
 };
 function roleIsPartenaire(role) {
   
@@ -879,4 +992,5 @@ function roleIsPartenaire(role) {
     ];
   }
 }
+
 module.exports = commandeDetailController;
