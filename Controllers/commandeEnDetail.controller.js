@@ -822,44 +822,7 @@ const commandeDetailController = {
       });
     }
   },
-  findcmdinday: async (req, res) => {
-
-    const timestamp = req.params.timestamp;
-
-  const startOfDay = new Date(timestamp);
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(timestamp);
-  endOfDay.setHours(23, 59, 59, 999);
-    
-    try {
-      Model.commandeEnDetail
-        .findAll({
-          where: { createdAt: {
-            [Op.between]: [startOfDay, endOfDay]
-          } },
-          
-        })
-        .then((response) => {
-          if (response.length != 0) {
-            return res.status(200).json({
-              success: true,
-              commandes: response,
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              err: "  zero commande trouve ",
-            });
-          }
-        });
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err,
-      });
-    }
-  },
+  
   findCommandeByall: async (req, res) => {
     try {
       Model.commandeEnDetail
@@ -968,6 +931,88 @@ const commandeDetailController = {
       return res.status(400).json({
         success: false,
         err: err,
+      });
+    }
+  },
+
+  findcmdinday: async (req, res) => {
+
+    const timestamp = req.params.timestamp;
+
+  const startOfDay = new Date(timestamp);
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const endOfDay = new Date(timestamp);
+  endOfDay.setHours(23, 59, 59, 999);
+    
+    try {
+      Model.commandeEnDetail
+        .findAll({
+          where: { createdAt: {
+            [Op.between]: [startOfDay, endOfDay]
+          } },
+          
+        })
+        .then((response) => {
+          if (response.length != 0) {
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "  zero commande trouve ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findnbrcmdindate: async (req, res) => {
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    try {
+      Model.commandeEnDetail
+        .findAll({
+          attributes: [
+            [Sequelize.fn('date', Sequelize.col('createdAt')), 'date'],
+            [Sequelize.fn('count', Sequelize.col('id')), 'nbr']
+          ],
+          where: {
+            createdAt: {
+              [Op.gte]: thirtyDaysAgo
+            }
+          },
+
+          group: [Sequelize.fn('date', Sequelize.col('createdAt'))],
+          order: [[Sequelize.fn('date', Sequelize.col('createdAt')), 'ASC']]
+          
+        })
+        .then((response) => {
+          if (response.length != 0) {
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "  zero commande trouve ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
       });
     }
   },
