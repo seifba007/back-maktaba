@@ -784,7 +784,6 @@ const commandeDetailController = {
   },
 
   findNumberArtInCmd: async (req, res) => {
-    
     try {
       Model.commandeEnDetail
         .findAll({
@@ -821,7 +820,6 @@ const commandeDetailController = {
       });
     }
   },
-  
   findcmdinday: async (req, res) => {
 
     const timestamp = req.params.timestamp;
@@ -860,7 +858,6 @@ const commandeDetailController = {
       });
     }
   },
-
 };
 function roleIsPartenaire(role) {
   
