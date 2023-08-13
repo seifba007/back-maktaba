@@ -35,10 +35,8 @@ const adressesController = {
         }
     },
     addbypartnier : async( req , res) =>{
-   
         try{
             const {Nom_de_adresse,Adresse,Gouvernorat,Ville,Code_postal,partenaireId} = req.body
-
             const data = {
                 Nom_de_adresse : Nom_de_adresse , 
                 Adresse : Adresse , 
