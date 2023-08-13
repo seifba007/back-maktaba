@@ -606,12 +606,10 @@ const commandeDetailController = {
   },
 
   findAllcommande : async(req,res)=>{
-    const { ids } = req.body;
+    
       try{
         Model.commandeEnDetail.findAll({
-          where: {
-            id: ids,
-          },
+          
           attributes: ["id", "total_ttc", "etatVender", "createdAt"],
           include: [
             { model: Model.user, attributes: ["fullname", "avatar"] },
@@ -801,6 +799,45 @@ const commandeDetailController = {
               ],
             },
           ],
+        })
+        .then((response) => {
+          if (response.length != 0) {
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "  zero commande trouve ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  
+  findcmdinday: async (req, res) => {
+
+    const timestamp = req.params.timestamp;
+
+  const startOfDay = new Date(timestamp);
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const endOfDay = new Date(timestamp);
+  endOfDay.setHours(23, 59, 59, 999);
+    
+    try {
+      Model.commandeEnDetail
+        .findAll({
+          where: { createdAt: {
+            [Op.between]: [startOfDay, endOfDay]
+          } },
+          
         })
         .then((response) => {
           if (response.length != 0) {
