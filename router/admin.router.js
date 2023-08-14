@@ -12,4 +12,5 @@ router.get("/getallavisuser/nombre_total_etoiles/:id",adminController.findAllavi
 router.get("/getavgavisuser/moyenne_avis/:id",adminController.findavgavis)
 router.get("/top10product",adminController.gettop10prod)
 router.get("/nometablissement",adminController.findusernameetabllis)
+router.get("/filtercategory",adminController.findCommandefiltre)
 module.exports = router;

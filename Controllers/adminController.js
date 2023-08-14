@@ -371,7 +371,64 @@ const adminController = {
         });
       }
     },
+    findCommandefiltre: async (req, res) => {
+     
+    const { categorie, sousCategorie, prixMin, prixMax, quantiteMin, quantiteMax ,titre} = req.query;
+  
+    const whereClause = {};
+    if (categorie) {
+      whereClause.categorie = {
+        [sequelize.Op.in]: categorie
+      };
+    }
+    if (sousCategorie) {
+      whereClause.sousCategorie = {
+        [sequelize.Op.in]:sousCategorie
+      };
+    }
+    if (prixMin) {
+      whereClause.prix = { [sequelize.Op.gte]: prixMin };
+    }
+    
+    if (prixMax) {
+      if (!whereClause.prix) whereClause.prix = {};
+      whereClause.price[sequelize.Op.lte] = prixMax;
+    }
+   
+    if (quantiteMin && quantiteMax ) {
+      whereClause.qte = { [sequelize.Op.between]: [quantiteMin, quantiteMax] };
+    }
+    if(titre){
+      whereClause.titre = titre
+    }
 
+      try {
+        Model.produitlabrairie
+          .findAll({
+            where:  { [sequelize.Op.gte]: prixMin } ,
+            attributes: {
+              exclude: ["updatedAt", "userId", "labrairieId"],
+            },
+          }).then((response) => {
+              if (response !== null) {
+                return res.status(200).json({
+                  success: true,
+                  commandes: response,
+                });
+              } else {
+                return res.status(400).json({
+                  success: false,
+                  err: "zero commande trouve",
+                });
+              }
+   });
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          err: err,
+        });
+      }
+    },
 
   
 
