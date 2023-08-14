@@ -333,8 +333,6 @@ const adminController = {
       });
     }
   },
-  
-
     findusernameetabllis : async(req,res)=>{
       try{
         Model.user.findAll({
