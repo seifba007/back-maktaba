@@ -1,6 +1,7 @@
 const categorie = require("../Models/categorie");
 const Model = require("../Models/index");
 const bcrypt = require("bcrypt");
+const { Op } = require('sequelize');
 const sequelize = require('sequelize');
 const sousCategorie = require("../Models/sousCategorie");
 const adminController = {
@@ -286,49 +287,54 @@ const adminController = {
     });
   }
   },
-  gettop10prod : async(req,res)=>{
- 
-    try{
-      Model.avisProduitlibraire.findAll(
-        {
-          order: [['nbStart', 'DESC']],
-          limit: 10,
-          include: [
-            {
-              model: Model.produitlabrairie,
-              include:[
-                {
-                 
-                  model: Model.labrairie
-                }
-              ]
-            },
-            
-          ],
-        }
-      ).then((response)=>{
-        try{
-            if(response!==null){
-              return res.status(200).json({
-                success : true , 
-                produit: response,
-              })
-            }
-        }catch(err){
-          return res.status(400).json({
-            success: false,
-            error:err,
-          });
-        }
-      })
-    }catch(err){
+
+  gettop10prod: async (req, res) => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const topProducts = await Model.avisProduitlibraire.findAll({
+        attributes: [
+          [sequelize.fn('SUM', sequelize.col('nbStart')), 'totalAvis'],
+          'produitlabrairieId', 
+        ],
+        where: {
+          createdAt: {
+            [Op.gte]: thirtyDaysAgo,
+          },
+        },
+        group: ['produitlabrairieId'],
+        order: [[sequelize.literal('totalAvis'), 'DESC']],
+        limit: 10,
+        include: [
+          {
+            model: Model.produitlabrairie,
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+                attributes: ['name_Image'],
+              },
+            ],
+          },
+        ],
+      });
+  
+      return res.status(200).json({
+        success: true,
+        produit: topProducts.map(item => ({
+          totalAvis: item.dataValues.totalAvis,
+          produitlabrairie: item.produitlabrairie,
+        })),
+      });
+    } catch (err) {
+      console.error(err);
       return res.status(400).json({
         success: false,
-        error:err,
+        error: err.message,
       });
     }
-    },
+  },
   
+
     findusernameetabllis : async(req,res)=>{
       try{
         Model.user.findAll({
