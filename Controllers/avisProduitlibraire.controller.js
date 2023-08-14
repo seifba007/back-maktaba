@@ -204,37 +204,51 @@ const avisProduitlibraireController = {
   },
   getAllavisBylibriarie: async (req, res) => {
     try {
-      Model.avisProduitlibraire.findAll({
+      const labrairieId = req.params.id;
+  
+      const avisOptions = {
         include: [
           {
             model: Model.produitlabrairie,
-            attributes:["titre"],
-            include:[{model:Model.imageProduitLibrairie ,attributes:["name_Image"]}],
-            where: { labrairieId:req.params.id} 
+            attributes: ["titre"],
+            include: [
+              { model: Model.imageProduitLibrairie, attributes: ["name_Image"] },
+              { model: Model.labrairie, attributes: [], where: { id: labrairieId } }
+            ],
           },
           {
-            model:Model.client,
-            attributes:["id"],
-            include:[{model:Model.user, attributes:["fullname","avatar"]}]
-          }
+            model: Model.client,
+            attributes: ["id"],
+            include: [{ model: Model.user, attributes: ["fullname", "avatar"] }],
+          },
+          {
+            model: Model.partenaire, // Include partenaire information directly
+            attributes: ["id", "nameetablissement", "image"],
+            include: [{ model: Model.user, attributes: ["fullname", "avatar"] }],
+          },
         ],
-      
-        attributes:["nbStart","commenter","createdAt"],
-        where: { '$produitlabrairie.id$': Sequelize.col('avisProduitlibraire.produitlabrairieId') }
-      }).then((resp)=>{
+      };
+  
+      const response = await Model.avisProduitlibraire.findAll(avisOptions);
+  
+      if (response.length !== 0) {
         return res.status(200).json({
           success: true,
-          avis: resp,
+          avis: response,
         });
-      })
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: "No Avis for this labrairie",
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message || "An error occurred",
       });
     }
   },
-
 
 };
 module.exports = avisProduitlibraireController;
