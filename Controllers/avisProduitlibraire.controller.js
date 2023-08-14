@@ -20,7 +20,7 @@ const avisProduitlibraireController = {
         partenaireId: partenaireId,
         produitlabrairieId: produitlabrairieId,
       };
-      if(clientId){
+      if(clientId != null){
         Model.avisProduitlibraire.create(dataclient).then((response) => {
           if (response !== null) {
             return res.status(200).json({
@@ -34,7 +34,7 @@ const avisProduitlibraireController = {
             });
           }
         });
-      }else if(partenaireId){
+      }else if(partenaireId != null){
         Model.avisProduitlibraire.create(datapartenaire).then((response) => {
           if (response !== null) {
             return res.status(200).json({
