@@ -157,6 +157,49 @@ const avisProduitlibraireController = {
       });
     }
   },
+  getAllAvisByPartnier: async (req, res) => {
+    try {
+      const response = await Model.avisProduitlibraire.findAll({
+        where: { partenaireId: req.params.partenaireId },
+        attributes: {
+          exclude: ["updatedAt", "produitlabrairieId"],
+        },
+        include: [
+          {
+            model: Model.produitlabrairie,
+            attributes: ["id", "titre", "prix"],
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+                attributes: ["name_Image"],
+              },
+              {
+                model: Model.labrairie,
+                attributes: ["nameLibrairie"],
+              },
+            ],
+          },
+        ],
+      });
+  
+      if (response.length !== 0) {
+        return res.status(200).json({
+          success: true,
+          avis: response,
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: "No Avis for this partenaire",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message || "An error occurred",
+      });
+    }
+  },
   getAllAvisByproduit: async (req, res) => {
     try {
       const avisOptions = {
@@ -222,7 +265,7 @@ const avisProduitlibraireController = {
             include: [{ model: Model.user, attributes: ["fullname", "avatar"] }],
           },
           {
-            model: Model.partenaire, // Include partenaire information directly
+            model: Model.partenaire, 
             attributes: ["id", "nameetablissement", "image"],
             include: [{ model: Model.user, attributes: ["fullname", "avatar"] }],
           },
