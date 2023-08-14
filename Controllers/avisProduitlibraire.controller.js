@@ -173,6 +173,13 @@ const avisProduitlibraireController = {
                 { model: Model.user, attributes: ["fullname", "avatar"] },
               ],
             },
+            {
+              model: Model.partenaire,
+              attributes: ["id"],
+              include: [
+                { model: Model.partenaire, attributes: ["nameetablissement", "image"] },
+              ],
+            },
           ],
         })
         .then((response) => {
