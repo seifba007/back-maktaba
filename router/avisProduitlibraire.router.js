@@ -7,4 +7,6 @@ router.delete("/delete/:id",avisProduitlibraireController.delete)
 router.get("/findAllbyclient/:clientId",avisProduitlibraireController.getAllAvisByClient)
 router.get("/getAllAvisByproduit/:produitlabrairieId",avisProduitlibraireController.getAllAvisByproduit)
 router.get("/avislib/:id",avisProduitlibraireController.getAllavisBylibriarie)
+
 module.exports = router;
+
