@@ -20,9 +20,9 @@ const avisProduitlibraireController = {
         partenaireId: partenaireId,
         produitlabrairieId: produitlabrairieId,
       };
-      if(clientId != null){
+      if(clientId){
         Model.avisProduitlibraire.create(dataclient).then((response) => {
-          if (response !== null) {
+          if (response) {
             return res.status(200).json({
               success: true,
               message: "avis created",
@@ -34,9 +34,9 @@ const avisProduitlibraireController = {
             });
           }
         });
-      }else if(partenaireId != null){
+      }else if(partenaireId){
         Model.avisProduitlibraire.create(datapartenaire).then((response) => {
-          if (response !== null) {
+          if (response) {
             return res.status(200).json({
               success: true,
               message: "avis created",
@@ -159,46 +159,46 @@ const avisProduitlibraireController = {
   },
   getAllAvisByproduit: async (req, res) => {
     try {
-      Model.avisProduitlibraire
-        .findAll({
-          where: { produitlabrairieId: req.params.produitlabrairieId },
-          attributes: {
-            exclude: ["updatedAt", "clientId", "produitlabrairieId"],
+      const avisOptions = {
+        where: { produitlabrairieId: req.params.produitlabrairieId },
+        attributes: {
+          exclude: ["updatedAt", "clientId", "produitlabrairieId"],
+        },
+        include: [
+          {
+            model: Model.client,
+            attributes: ["id"],
+            include: [
+              { model: Model.user, attributes: ["fullname", "avatar"] },
+            ],
           },
-          include: [
-            {
-              model: Model.client,
-              attributes: ["id"],
-              include: [
-                { model: Model.user, attributes: ["fullname", "avatar"] },
-              ],
-            },
-            {
-              model: Model.partenaire,
-              attributes: ["id"],
-              include: [
-                { model: Model.partenaire, attributes: ["nameetablissement", "image"] },
-              ],
-            },
-          ],
-        })
-        .then((response) => {
-          if (response.length !== 0) {
-            return res.status(200).json({
-              success: true,
-              avis: response,
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              error: "No Avis for this produitlabrairie",
-            });
-          }
+          {
+            model: Model.partenaire, // Include partenaire information directly
+            attributes: ["id", "nameetablissement", "image"],
+            include: [
+              { model: Model.user, attributes: ["fullname", "avatar"] },
+            ],
+          },
+        ],
+      };
+  
+      const response = await Model.avisProduitlibraire.findAll(avisOptions);
+  
+      if (response.length !== 0) {
+        return res.status(200).json({
+          success: true,
+          avis: response,
         });
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: "No Avis for this produitlabrairie",
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message || "An error occurred",
       });
     }
   },
