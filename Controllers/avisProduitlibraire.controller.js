@@ -20,6 +20,7 @@ const avisProduitlibraireController = {
         partenaireId: partenaireId,
         produitlabrairieId: produitlabrairieId,
       };
+      console.log(datapartenaire)
       if(clientId != null){
         Model.avisProduitlibraire.create(dataclient).then((response) => {
           if (response !== null) {
@@ -168,6 +169,15 @@ const avisProduitlibraireController = {
           include: [
             {
               model: Model.client,
+              attributes: ["id"],
+              include: [
+                { model: Model.user, attributes: ["fullname", "avatar"] },
+              ],
+            },
+          ],
+          include: [
+            {
+              model: Model.partenaire,
               attributes: ["id"],
               include: [
                 { model: Model.user, attributes: ["fullname", "avatar"] },
