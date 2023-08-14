@@ -427,6 +427,7 @@ const produitController = {
       });
     }
   },
+  
   produit_mieux_notes: async (req, res) => {
     try {
       Model.produitlabrairie

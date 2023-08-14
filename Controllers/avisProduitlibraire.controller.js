@@ -5,31 +5,56 @@ const { Sequelize } = require("sequelize");
 const avisProduitlibraireController = {
   add: async (req, res) => {
     try {
-      const { nbStart, commenter, clientId, produitlabrairieId } = req.body;
-      const data = {
+      const { nbStart, commenter, clientId, produitlabrairieId, partenaireId } = req.body;
+      const dataclient = {
         nbStart: nbStart,
         commenter: commenter,
         clientId: clientId,
+        partenaireId: partenaireId,
         produitlabrairieId: produitlabrairieId,
       };
-      Model.avisProduitlibraire.create(data).then((response) => {
-        if (response !== null) {
-          return res.status(200).json({
-            success: true,
-            message: "avis created",
-          });
-        } else {
-          return res.status(200).json({
-            success: false,
-            message: "err create avis",
-          });
-        }
-      });
+      const datapartenaire = {
+        nbStart: nbStart,
+        commenter: commenter,
+        clientId: clientId,
+        partenaireId: partenaireId,
+        produitlabrairieId: produitlabrairieId,
+      };
+      if(clientId){
+        Model.avisProduitlibraire.create(dataclient).then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              message: "avis created",
+            });
+          } else {
+            return res.status(200).json({
+              success: false,
+              message: "err create avis",
+            });
+          }
+        });
+      }else if(partenaireId){
+        Model.avisProduitlibraire.create(datapartenaire).then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              message: "avis created",
+            });
+          } else {
+            return res.status(200).json({
+              success: false,
+              message: "err create avis",
+            });
+          }
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
         error: err,
       });
+      
     }
   },
   update: async (req, res) => {
