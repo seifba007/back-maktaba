@@ -93,7 +93,6 @@ const LabriarieController = {
       Model.labrairie.findAll({
         include: [{
           model: Model.user,
-          attributes: ['fullname']
         }]
       }).then((response)=>{
         try{

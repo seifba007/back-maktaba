@@ -286,49 +286,37 @@ const adminController = {
     });
   }
   },
-  gettop10prod : async(req,res)=>{
- 
-    try{
-      Model.avisProduitlibraire.findAll(
+gettop10prod: async (req, res) => {
+  try {
+    const topProducts = await Model.produitlabrairie.findAll({
+      attributes: ["id", "titre", [sequelize.fn("SUM", sequelize.col("avisProduitlibraires.nbStart")), "totalAvis"]],
+      include: [
         {
-          order: [['nbStart', 'DESC']],
-          limit: 10,
-          include: [
-            {
-              model: Model.produitlabrairie,
-              include:[
-                {
-                 
-                  model: Model.labrairie
-                }
-              ]
-            },
-            
-          ],
-        }
-      ).then((response)=>{
-        try{
-            if(response!==null){
-              return res.status(200).json({
-                success : true , 
-                produit: response,
-              })
-            }
-        }catch(err){
-          return res.status(400).json({
-            success: false,
-            error:err,
-          });
-        }
-      })
-    }catch(err){
-      return res.status(400).json({
-        success: false,
-        error:err,
-      });
-    }
-    },
-  
+          model: Model.avisProduitlibraire,
+          attributes: [],
+        },
+        {
+          model: Model.imageProduitLibrairie,
+          attributes: ["name_Image"],
+        },
+      ],
+      group: ["produitlabrairie.id"],
+      order: [[sequelize.literal("totalAvis"), "DESC"]],
+      limit: 10,
+    });
+
+    return res.status(200).json({
+      success: true,
+      produit: topProducts,
+    });
+  } catch (err) {
+    console.error(err); // Log the error for debugging
+    return res.status(400).json({
+      success: false,
+      error: err.message, // Send error message in the response
+    });
+  }
+},
     findusernameetabllis : async(req,res)=>{
       try{
         Model.user.findAll({
