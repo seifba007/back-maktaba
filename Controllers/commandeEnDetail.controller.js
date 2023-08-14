@@ -735,8 +735,7 @@ const commandeDetailController = {
           order: [["createdAt", "ASC"]],
         })
         .then((response) => {
-     
-
+    
           Model.commandeEnDetail
           .findAll({
             where: { id: req.params.id },
@@ -851,7 +850,7 @@ const commandeDetailController = {
           } else {
             return res.status(400).json({
               success: false,
-              err: "  zero commande trouve ",
+              err: "zero commande trouve ",
             });
           }
         });

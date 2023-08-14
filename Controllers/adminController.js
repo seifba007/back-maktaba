@@ -286,20 +286,23 @@ const adminController = {
     });
   }
   },
+
   gettop10prod : async(req,res)=>{
- 
     try{
       Model.avisProduitlibraire.findAll(
         {
-          order: [['nbStart', 'DESC']],
+          attributes: [ [sequelize.fn('SUM', sequelize.col('nbStart')), 'total_stars']],
+          group: ['nbStart'],
+          //order: [[sequelize.fn('SUM', sequelize.col('stars')), 'DESC']],
           limit: 10,
           include: [
             {
               model: Model.produitlabrairie,
               include:[
                 {
-                 
-                  model: Model.labrairie
+                  model:Model.imageProduitLibrairie,
+                  attributes: ['name_Image']
+                  
                 }
               ]
             },
