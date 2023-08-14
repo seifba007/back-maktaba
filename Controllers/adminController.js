@@ -372,63 +372,80 @@ const adminController = {
       }
     },
     findCommandefiltre: async (req, res) => {
-     
-    const { categorie, sousCategorie, prixMin, prixMax, quantiteMin, quantiteMax ,titre} = req.query;
+      const filters = req.body; 
+  const whereClause = {}; 
+  if (filters.categorieId) {
+    whereClause.categorieId = filters.categorieId;
+  }
+  if (filters.SouscategorieId) {
+    whereClause.SouscategorieId = filters.SouscategorieId;
+  }
+  if (filters.prixMin && filters.prixMax) {
+    whereClause.prix = { 
+      [sequelize.Op.between]: [filters.prixMin, filters.prixMax]
+    };
+  } else if (filters.prixMin) {
+    whereClause.prix = { [sequelize.Op.gte]: filters.prixMin };
+  } else if (filters.prixMax) {
+    whereClause.prix = { [sequelize.Op.lte]: filters.prixMax };
+  }
   
-    const whereClause = {};
-    if (categorie) {
-      whereClause.categorie = {
-        [sequelize.Op.in]: categorie
-      };
-    }
-    if (sousCategorie) {
-      whereClause.sousCategorie = {
-        [sequelize.Op.in]:sousCategorie
-      };
-    }
-    if (prixMin) {
-      whereClause.prix = { [sequelize.Op.gte]: prixMin };
-    }
-    
-    if (prixMax) {
-      if (!whereClause.prix) whereClause.prix = {};
-      whereClause.price[sequelize.Op.lte] = prixMax;
-    }
-   
-    if (quantiteMin && quantiteMax ) {
-      whereClause.qte = { [sequelize.Op.between]: [quantiteMin, quantiteMax] };
-    }
-    if(titre){
-      whereClause.titre = titre
-    }
-
-      try {
-        Model.produitlabrairie
-          .findAll({
-            where:  { [sequelize.Op.gte]: prixMin } ,
-            attributes: {
-              exclude: ["updatedAt", "userId", "labrairieId"],
-            },
-          }).then((response) => {
-              if (response !== null) {
-                return res.status(200).json({
-                  success: true,
-                  commandes: response,
-                });
-              } else {
-                return res.status(400).json({
-                  success: false,
-                  err: "zero commande trouve",
-                });
-              }
-   });
-      } catch (err) {
+  if (filters.qteMin && filters.qteMax) {
+    whereClause.qte = { 
+      [sequelize.Op.between]: [filters.qteMin, filters.qteMax]
+    };
+  } else if (filters.qteMin) {
+    whereClause.qte = { [sequelize.Op.gte]: filters.qteMin };
+  } else if (filters.qteMax) {
+    whereClause.qte = { [sequelize.Op.lte]: filters.qteMax };
+  }
+  
+  if (filters.etat) {
+    whereClause.etat = filters.etat;
+  }
+  if (filters.titre) {
+    whereClause.titre = filters.titre;
+  }
+  try{
+    Model.produitlabrairie.findAll({
+      where: whereClause,
+      include:[{
+        model: Model.categorie,
+        attributes: [ 'name']
+      },
+      {
+        model: Model.Souscategorie,
+        attributes: [ 'name']
+      }
+      ]
+    }).then((response)=>{
+      try{
+          if(response!==null){
+            return res.status(200).json({
+              success : true , 
+              produits: response,
+            })
+          }else{
+            return res.status(200).json({
+              success : true , 
+              message: "il n'y a pas des produits",
+            })
+          }
+      }catch(err){
         return res.status(400).json({
           success: false,
-          err: err,
+          error: err,
         });
       }
+    })
+  }catch(err){
+    return res.status(400).json({
+      success: false,
+      error:err,
+    });
+  }
     },
+
 
   
 
