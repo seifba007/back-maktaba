@@ -49,37 +49,50 @@ const adminController = {
         });
     }
   },
-
-  findAllusersrole : async(req,res)=>{
-    try{
-      Model.user.findAll().then((response)=>{
-        try{
-            if(response!==null){
-              return res.status(200).json({
-                success : true , 
-                users: response,
-              })
-            }else{
-              return res.status(200).json({
-                success : true , 
-                users: [],
-              })
-            }
-        }catch(err){
-          return res.status(400).json({
-            success: false,
-            error:err,
-          });
-        }
-      })
-    }catch(err){
+  findAllusersrole: async (req, res) => {
+    try {
+      const response = await Model.user.findAll({
+        where: {
+          role: ['partenaire', 'labrairie']
+        },
+        include: [
+          {
+            model: Model.partenaire,
+            attributes: {
+              include: ["nameetablissement"],
+            }, 
+            required: false,
+    
+          },
+          {
+            model: Model.labrairie, 
+            attributes: {
+              include: ["nameLibrairie"],
+            }, 
+            required: false,
+     
+          }
+        ]
+      });
+  
+      if (response.length > 0) {
+        return res.status(200).json({
+          success: true,
+          users: response,
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "Zero users",
+        });
+      }
+    } catch (err) {
       return res.status(400).json({
         success: false,
-        error:err,
+        error: err.message,
       });
     }
   },
-
   findAllcategories: async (req, res) => {
     try {
       Model.categorie
