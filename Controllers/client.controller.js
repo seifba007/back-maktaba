@@ -48,36 +48,40 @@ const clientController = {
   const whereClause = {};
 
 
-  if (filters.categoryIds) {
-    whereClause.categorieId = filters.categoryIds;
+  if (filters.categorieId) {
+    whereClause.categorieId = filters.categorieId;
   }
 
-  if (filters.subcategoryIds) {
-    whereClause.SouscategorieId = filters.subcategoryIds;
+  if (filters.SouscategorieId) {
+    whereClause.SouscategorieId = filters.SouscategorieId;
   }
   
   
-  if (filters.priceMin && filters.priceMax) {
+  if (filters.prixMin && filters.prixMax) {
     whereClause.prix = { 
-      [Sequelize.Op.between]: [filters.priceMin, filters.priceMax]
+      [Sequelize.Op.between]: [filters.prixMin, filters.prixMax]
     };
-  } else if (filters.priceMin) {
-    whereClause.prix = { [Sequelize.Op.gte]: filters.priceMin };
-  } else if (filters.priceMax) {
-    whereClause.prix = { [Sequelize.Op.lte]: filters.priceMax };
+  } else if (filters.prixMin) {
+    whereClause.prix = { [Sequelize.Op.gte]: filters.prixMin };
+  } else if (filters.prixMax) {
+    whereClause.prix = { [Sequelize.Op.lte]: filters.prixMax };
   }
-  if (filters.quantityMin && filters.quantityMax) {
+  if (filters.qteMin && filters.qteMax) {
     whereClause.qte = { 
-      [Sequelize.Op.between]: [filters.quantityMin, filters.quantityMax]
+      [Sequelize.Op.between]: [filters.qteMin, filters.qteMax]
     };
-  } else if (filters.quantityMin) {
-    whereClause.qte = { [Sequelize.Op.gte]: filters.quantityMin };
-  } else if (filters.quantityMax) {
-    whereClause.qte = { [Sequelize.Op.lte]: filters.quantityMax };
+  } else if (filters.qteMin) {
+    whereClause.qte = { [Sequelize.Op.gte]: filters.qteMin };
+  } else if (filters.qteMax) {
+    whereClause.qte = { [Sequelize.Op.lte]: filters.qteMax };
   }
 
   if (filters.etat) {
     whereClause.etat = filters.etat;
+  }
+
+  if (filters.titre) {
+    whereClause.titre = filters.titre;
   }
   
     try{
