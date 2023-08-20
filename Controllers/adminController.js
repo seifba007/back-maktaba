@@ -128,7 +128,6 @@ const adminController = {
       });
     }
   },
-
   findAllproduits : async(req,res)=>{
     try{
       Model.produitlabrairie.findAll().then((response)=>{
@@ -153,10 +152,8 @@ const adminController = {
       });
     }
   },
-
   deletecategory: async (req, res) => {
     const { ids } = req.body;
-    console.log(ids);
     try {
       Model.categorie
         .destroy({
@@ -179,7 +176,6 @@ const adminController = {
       });
     }
   },
-
   addcategory: async (req, res) => {
     try {
       const {name,Description, subcategories} = req.body
@@ -210,7 +206,6 @@ const adminController = {
 
   deletesuggestion: async (req, res) => {
     const { ids } = req.body;
-    console.log(ids);
     try {
       Model.suggestionProduit
         .destroy({
