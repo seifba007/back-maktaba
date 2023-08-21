@@ -183,9 +183,11 @@ const adminController = {
   addcategory: async (req, res) => {
     try {
       const {name,Description, subcategories} = req.body
+      const imageUrl = req.file.filename;
       const data = {
-        name: req.body.name,
-        Description:req.body.Description
+        name: name,
+        Description: Description,
+        image: imageUrl
       };
       const category = await Model.categorie.create(data);
         const souscategories = [];
@@ -193,13 +195,18 @@ const adminController = {
           const subcategory = await await Model.Souscategorie.create({
             name: subcateName.name,
             categorieId: category.id
+          }).then((reponse) => {
+            if(reponse !==0 ){
+              souscategories.push(subcategory)
+              res.status(200).json({
+                success: true,
+                message: "category and subcategories added",
+              });
+            }
           });
-          souscategories.push(subcategory)
+          
         }
-        res.status(200).json({
-          success: true,
-          message: "category and subcategories added",
-        });
+        
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -385,89 +392,162 @@ const adminController = {
       }
     },
   
-    findAllcommandefiltrer : async(req,res)=>{
 
-      const filters = req.body; 
-  const whereClause = {}; 
-  if (filters.categorieId) {
-    whereClause.categorieId = filters.categorieId;
-  }
-  if (filters.SouscategorieId) {
-    whereClause.SouscategorieId = filters.SouscategorieId;
-  }
-  if (filters.prixMin && filters.prixMax) {
-    whereClause.prix = { 
-      [sequelize.Op.between]: [filters.prixMin, filters.prixMax]
-    };
-  } else if (filters.prixMin) {
-    whereClause.prix = { [sequelize.Op.gte]: filters.prixMin };
-  } else if (filters.prixMax) {
-    whereClause.prix = { [sequelize.Op.lte]: filters.prixMax };
-  }
-  
-  if (filters.qteMin && filters.qteMax) {
-    whereClause.qte = { 
-      [sequelize.Op.between]: [filters.qteMin, filters.qteMax]
-    };
-  } else if (filters.qteMin) {
-    whereClause.qte = { [sequelize.Op.gte]: filters.qteMin };
-  } else if (filters.qteMax) {
-    whereClause.qte = { [sequelize.Op.lte]: filters.qteMax };
-  }
-  
-  if (filters.etat) {
-    whereClause.etat = filters.etat;
-  }
-  if (filters.titre) {
-    whereClause.titre = filters.titre;
-  }
+  findAllcommandefiltrer: async (req, res) => {
     
-      try{
-        Model.commandeEnDetail.findAll({
+    const filters = req.body; 
+    const whereClause = {}; 
+    if (filters.categorieId) {
+      whereClause.categorieId = filters.categorieId;
+    }
+    if (filters.SouscategorieId) {
+      whereClause.SouscategorieId = filters.SouscategorieId;
+    }
+    if (filters.prixMin && filters.prixMax) {
+      whereClause.prix = { 
+        [sequelize.Op.between]: [filters.prixMin, filters.prixMax]
+      };
+    } else if (filters.prixMin) {
+      whereClause.prix = { [sequelize.Op.gte]: filters.prixMin };
+    } else if (filters.prixMax) {
+      whereClause.prix = { [sequelize.Op.lte]: filters.prixMax };
+    }
+    
+    if (filters.qteMin && filters.qteMax) {
+      whereClause.qte = { 
+        [sequelize.Op.between]: [filters.qteMin, filters.qteMax]
+      };
+    } else if (filters.qteMin) {
+      whereClause.qte = { [sequelize.Op.gte]: filters.qteMin };
+    } else if (filters.qteMax) {
+      whereClause.qte = { [sequelize.Op.lte]: filters.qteMax };
+    }
+    
+    if (filters.etat) {
+      whereClause.etat = filters.etat;
+    }
+    if (filters.titre) {
+      whereClause.titre = filters.titre;
+    }
+    try {
+      Model.commandeEnDetail.findAll({
+        attributes: ["id", "total_ttc", "etatVender", "createdAt"],
+        include: [
+          { model: Model.user, attributes: ["fullname", "avatar"] },
+          { model: Model.labrairie, attributes: ["nameLibrairie"] },
+          {
+            model: Model.produitlabrairie,
+            where: whereClause
+           
+          },
           
-          attributes: ["id", "total_ttc", "etatVender", "createdAt"],
-          include: [
-            { model: Model.user, attributes: ["fullname", "avatar"] },
-            {
-              model: Model.labrairie,
-              attributes: ["nameLibrairie"],
-            },
-            {
-              model: Model.produitlabrairie,
-              attributes: [
-                 [sequelize.fn("COUNT", sequelize.col("titre")), "nb_Article"],
-                 
-              ],
-              where: whereClause
-            }
-            
-          ],
-        }).then((response)=>{
-          try{
-              if(response!==null){
-                return res.status(200).json({
-                  success : true , 
-                  commandes: response,
-                })
-              }
-          }catch(err){
-            return res.status(400).json({
-              success: false,
-              error:err,
+        ],
+      }).then((response) => {
+        try {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              commandes: response,
             });
           }
-        })
-      }catch(err){
-        return res.status(400).json({
-          success: false,
-          error:err,
-        });
-      }
-    
-      
-   
+        } catch (err) {
+          return res.status(400).json({
+            success: false,
+            error: err,
+          });
+        }
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
   },
   
+  findAlllivraisonfiltrer : async(req,res)=>{
+
+    const filters = req.body; 
+    const whereClause = {}; 
+    if (filters.categorieId) {
+      whereClause.categorieId = filters.categorieId;
+    }
+    if (filters.SouscategorieId) {
+      whereClause.SouscategorieId = filters.SouscategorieId;
+    }
+    if (filters.prixMin && filters.prixMax) {
+      whereClause.prix = { 
+        [sequelize.Op.between]: [filters.prixMin, filters.prixMax]
+      };
+    } else if (filters.prixMin) {
+      whereClause.prix = { [sequelize.Op.gte]: filters.prixMin };
+    } else if (filters.prixMax) {
+      whereClause.prix = { [sequelize.Op.lte]: filters.prixMax };
+    }
+    
+    if (filters.qteMin && filters.qteMax) {
+      whereClause.qte = { 
+        [sequelize.Op.between]: [filters.qteMin, filters.qteMax]
+      };
+    } else if (filters.qteMin) {
+      whereClause.qte = { [sequelize.Op.gte]: filters.qteMin };
+    } else if (filters.qteMax) {
+      whereClause.qte = { [sequelize.Op.lte]: filters.qteMax };
+    }
+    
+    if (filters.etat) {
+      whereClause.etat = filters.etat;
+    }
+    if (filters.titre) {
+      whereClause.titre = filters.titre;
+    }
+  
+    try{
+      Model.commandeEnDetail.findAll({
+        
+        attributes: ["id", "total_ttc", "etatVender", "createdAt"],
+        where : {
+          etatVender : ['Compléter']
+        } ,
+        include: [
+          { model: Model.user, attributes: ["fullname", "avatar"] },
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie"],
+          },
+          {
+            model: Model.produitlabrairie,
+            
+            where: whereClause
+          }
+          
+        ],
+      }).then((response)=>{
+        try{
+            if(response!==null){
+              return res.status(200).json({
+                success : true , 
+                livraison: response,
+              })
+            }
+        }catch(err){
+          return res.status(400).json({
+            success: false,
+            error:err,
+          });
+        }
+      })
+    }catch(err){
+      return res.status(400).json({
+        success: false,
+        error:err,
+      });
+    }
+  
+    
+ 
+},
+
 
 };
 
