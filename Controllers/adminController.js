@@ -179,9 +179,11 @@ const adminController = {
   addcategory: async (req, res) => {
     try {
       const {name,Description, subcategories} = req.body
+      const imageUrl = req.file.filename;
       const data = {
-        name: req.body.name,
-        Description:req.body.Description
+        name: name,
+        Description: Description,
+        image: imageUrl
       };
       const category = await Model.categorie.create(data);
         const souscategories = [];
@@ -189,13 +191,18 @@ const adminController = {
           const subcategory = await await Model.Souscategorie.create({
             name: subcateName.name,
             categorieId: category.id
+          }).then((reponse) => {
+            if(reponse !==0 ){
+              souscategories.push(subcategory)
+              res.status(200).json({
+                success: true,
+                message: "category and subcategories added",
+              });
+            }
           });
-          souscategories.push(subcategory)
+          
         }
-        res.status(200).json({
-          success: true,
-          message: "category and subcategories added",
-        });
+        
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -379,7 +386,9 @@ const adminController = {
         });
       }
     },
-    findCommandefiltre: async (req, res) => {
+  
+    findAllcommandefiltrer : async(req,res)=>{
+
       const filters = req.body; 
   const whereClause = {}; 
   if (filters.categorieId) {
@@ -414,47 +423,52 @@ const adminController = {
   if (filters.titre) {
     whereClause.titre = filters.titre;
   }
-  try{
-    Model.produitlabrairie.findAll({
-      where: whereClause,
-      include:[{
-        model: Model.categorie,
-        attributes: [ 'name']
-      },
-      {
-        model: Model.Souscategorie,
-        attributes: [ 'name']
-      }
-      ]
-    }).then((response)=>{
+    
       try{
-          if(response!==null){
-            return res.status(200).json({
-              success : true , 
-              produits: response,
-            })
-          }else{
-            return res.status(200).json({
-              success : true , 
-              message: "il n'y a pas des produits",
-            })
+        Model.commandeEnDetail.findAll({
+          
+          attributes: ["id", "total_ttc", "etatVender", "createdAt"],
+          include: [
+            { model: Model.user, attributes: ["fullname", "avatar"] },
+            {
+              model: Model.labrairie,
+              attributes: ["nameLibrairie"],
+            },
+            {
+              model: Model.produitlabrairie,
+              attributes: [
+                 [sequelize.fn("COUNT", sequelize.col("titre")), "nb_Article"],
+                 
+              ],
+              where: whereClause
+            }
+            
+          ],
+        }).then((response)=>{
+          try{
+              if(response!==null){
+                return res.status(200).json({
+                  success : true , 
+                  commandes: response,
+                })
+              }
+          }catch(err){
+            return res.status(400).json({
+              success: false,
+              error:err,
+            });
           }
+        })
       }catch(err){
         return res.status(400).json({
           success: false,
-          error: err,
+          error:err,
         });
       }
-    })
-  }catch(err){
-    return res.status(400).json({
-      success: false,
-      error:err,
-    });
-  }
-    },
-
-
+    
+      
+   
+  },
   
 
 };
