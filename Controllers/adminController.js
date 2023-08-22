@@ -178,37 +178,34 @@ const adminController = {
   },
   addcategory: async (req, res) => {
     try {
-      if(req.files.length!==0){
-        req.body["image"] = req.files[0].filename;
-      }else{
-        req.body["image"]==null
-      }
-      const {image,subcategories} = req.body
+      const {name,Description, subcategories} = req.body
+      const imageUrl = req.file.filename;
       const data = {
-        name: req.body.name,
-        Description:req.body.Description,
-        image: image,
+        name: name,
+        Description: Description,
+        image: imageUrl
       };
       const category = await Model.categorie.create(data);
-      const cat= eval(subcategories)
         const souscategories = [];
-        for(const subcateName of cat){
+        for(const subcateName of subcategories){
           const subcategory = await await Model.Souscategorie.create({
             name: subcateName.name,
             categorieId: category.id
+          }).then((reponse) => {
+            if(reponse !==0 ){
+              souscategories.push(subcategory)
+              res.status(200).json({
+                success: true,
+                message: "category and subcategories added",
+              });
+            }
           });
-          souscategories.push(subcategory)
+          
         }
-        res.status(200).json({
-          success: true,
-          message: "category and subcategories added",
-        });
         
     } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err,
-      });
+      console.error('Erreur lors de l\'ajout de la catégorie:', err);
+      res.status(500).send('Erreur lors de l\'ajout de la catégorie');
     }
   },
   deletesuggestion: async (req, res) => {
