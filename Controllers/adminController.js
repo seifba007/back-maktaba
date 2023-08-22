@@ -182,36 +182,34 @@ const adminController = {
 
   addcategory: async (req, res) => {
     try {
-      const {name,Description, subcategories} = req.body
-      const imageUrl = req.file.filename;
       const data = {
-        name: name,
-        Description: Description,
-        image: imageUrl
+        name: req.body.name,
+        Description: req.body.Description,
+        image: req.file.filename
       };
-      const category = await Model.categorie.create(data);
-        const souscategories = [];
-        for(const subcateName of subcategories){
-          const subcategory = await await Model.Souscategorie.create({
-            name: subcateName.name,
-            categorieId: category.id
-          }).then((reponse) => {
-            if(reponse !==0 ){
-              souscategories.push(subcategory)
-              res.status(200).json({
-                success: true,
-                message: "category and subcategories added",
-              });
-            }
+  
+      
+      const categorie = await Model.categorie.create(data);
+  
+      
+      const sousCategories = req.body.sousCategories; 
+      if (sousCategories && sousCategories.length > 0) {
+        const sousCategoriesCréées = await Promise.all(sousCategories.map(async nomSousCat => {
+          return await Model.Souscategorie.create({
+            name: nomSousCat,
+            Description: nomSousCat,
+            categorieId: categorie.id
           });
-          
-        }
-        
+        }));
+  
+        console.log('Sous-catégories ajoutées avec succès:', sousCategoriesCréées);
+      }
+  
+      console.log('Catégorie ajoutée avec succès:', categorie);
+      res.send('Catégorie ajoutée avec succès');
     } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err,
-      });
+      console.error('Erreur lors de l\'ajout de la catégorie:', err);
+      res.status(500).send('Erreur lors de l\'ajout de la catégorie');
     }
   },
 
