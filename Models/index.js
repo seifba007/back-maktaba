@@ -96,9 +96,15 @@ categorie.hasMany(produit)
 produit.belongsTo(categorie)
 fournisseur.hasMany(produit)
 produit.belongsTo(fournisseur)
-categorie.hasMany(produitlabrairie)
+categorie.hasMany(produitlabrairie,{
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+})
 produitlabrairie.belongsTo(categorie)
-labrairie.hasMany(produitlabrairie)
+labrairie.hasMany(produitlabrairie,{
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+})
 produitlabrairie.belongsTo(labrairie)
 labrairie.hasMany(commandeEnGros)
 commandeEnGros.belongsTo(labrairie)
@@ -116,7 +122,10 @@ client.hasMany(avisProduitlibraire)
 avisProduitlibraire.belongsTo(client)
 partenaire.hasMany(avisProduitlibraire)
 avisProduitlibraire.belongsTo(partenaire)
-produitlabrairie.hasMany(avisProduitlibraire)
+produitlabrairie.hasMany(avisProduitlibraire,{
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+})
 avisProduitlibraire.belongsTo(produitlabrairie)
 produitlabrairie.hasMany(signalerProduitlibraire)
 signalerProduitlibraire.belongsTo(produitlabrairie)
@@ -140,7 +149,10 @@ user.hasMany(produitFavorie)
 partenaire.hasMany(produitFavorie)
 produitFavorie.belongsTo(partenaire)
 produitFavorie.belongsTo(user)
-produitlabrairie.hasMany(produitFavorie)
+produitlabrairie.hasMany(produitFavorie,{
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+})
 produitFavorie.belongsTo(produitlabrairie)
 admin.hasMany(BecomePartner)
 BecomePartner.belongsTo(admin)
@@ -152,7 +164,10 @@ Souscategorie.hasMany(suggestionProduit)
 suggestionProduit.belongsTo(Souscategorie)
 categorie.hasMany(suggestionProduit)
 suggestionProduit.belongsTo(categorie)
-Souscategorie.hasMany(produitlabrairie)
+Souscategorie.hasMany(produitlabrairie,{
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+})
 produitlabrairie.belongsTo(Souscategorie)
 Souscategorie.hasMany(cataloge)
 cataloge.belongsTo(Souscategorie)
