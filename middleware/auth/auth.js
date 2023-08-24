@@ -1,6 +1,4 @@
-/*roniceyemeli
-@build by https://www.linkedin.com/in/roniceyemeli/
-*/
+
 const jwt = require("jsonwebtoken");
 const Model = require("../../Models/index");
 
@@ -9,7 +7,6 @@ const AuthorizationUser = (req, res, next) => {
   if (typeof bearerHeader !== "undefined") {
     const bearer = bearerHeader.split(" ")[1];
 
-    //we decode the user passwword and verify if it fit with the one stored in th database
     jwt.verify(bearer, process.env.GOOGLE_CLIENT_SECRET, async (err, user) => {
       if (err) return res.status(404).json({ msg: "Not Authorized" });
       req.user = user;
@@ -27,7 +24,6 @@ const AuthorizationUser = (req, res, next) => {
 
 const AuthorizationAdmin = async (req, res, next) => {
   try {
-    // get user info by id
     const user = await Model.user.findOne({ where: { id: req.user.id } });
     console.log(user);
     if (user.role !== "Admin")

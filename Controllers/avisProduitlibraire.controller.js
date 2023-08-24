@@ -2,10 +2,13 @@ const { response } = require("express");
 const Model = require("../Models/index");
 const avisProduitlibraire = require("../Models/avisProduitlibraire");
 const { Sequelize } = require("sequelize");
+const { addAvisProdValidation } = require("../middleware/auth/validationSchema");
 const avisProduitlibraireController = {
   add: async (req, res) => {
+    const { nbStart, commenter, clientId, produitlabrairieId, partenaireId } = req.body;
     try {
-      const { nbStart, commenter, clientId, produitlabrairieId, partenaireId } = req.body;
+      const { error } = addAvisProdValidation(req.body);
+      if (error) return res.status(400).json(error.details[0].message);
       const dataclient = {
         nbStart: nbStart,
         commenter: commenter,
@@ -58,8 +61,11 @@ const avisProduitlibraireController = {
     }
   },
   update: async (req, res) => {
+    const { nbStart, commenter } = req.body;
+
     try {
-      const { nbStart, commenter } = req.body;
+      const { error } = addAvisProdValidation(req.body);
+      if (error) return res.status(400).json(error.details[0].message);
       const data = {
         nbStart: nbStart,
         commenter: commenter,
