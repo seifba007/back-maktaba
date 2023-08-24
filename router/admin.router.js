@@ -77,4 +77,10 @@ router.get(
   AuthorizationAdmin,
   adminController.findCommandefiltre
 );
+
+router.get(
+  "/allavis",
+  AuthorizationUser,
+  adminController.getAllAvis
+);
 module.exports = router;

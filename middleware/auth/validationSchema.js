@@ -93,18 +93,18 @@ const becomePartnerValidation = (data) => {
 
 const bonAchatValidation = (data) => {
   const schema = Joi.object({
-    solde : Joi.number(),
+    solde: Joi.number(),
     etat: Joi.string(),
-    code : Joi.string()
+    code: Joi.string(),
   });
   return schema.validate(data);
 };
 
 const catalogeValidation = (data) => {
   const schema = Joi.object({
-    titre : Joi.string(),
+    titre: Joi.string(),
     description: Joi.string(),
-    prix : Joi.number(),
+    prix: Joi.number(),
     etat: Joi.string(),
   });
   return schema.validate(data);
@@ -112,32 +112,74 @@ const catalogeValidation = (data) => {
 
 const codepromoValidation = (data) => {
   const schema = Joi.object({
-    code : Joi.string(),
-    pourcentage : Joi.number().integer(),
+    code: Joi.string(),
+    pourcentage: Joi.number().integer(),
   });
   return schema.validate(data);
 };
 const librairieValidation = (data) => {
   const schema = Joi.object({
-    adresse : Joi.string(),
-    telephone : Joi.number().integer(),
+    adresse: Joi.string(),
+    telephone: Joi.number().integer(),
     nameLibrairie: Joi.string(),
-    facebook : Joi.string(),
-    instagram : Joi.string(),
-    imageStore : Joi.string(),
-    emailLib : Joi.string(),
+    facebook: Joi.string(),
+    instagram: Joi.string(),
+    imageStore: Joi.string(),
+    emailLib: Joi.string(),
   });
-  return schema.validate(data);0
+  return schema.validate(data);
+  0;
 };
 const produitValidation = (data) => {
   const schema = Joi.object({
-    titre : Joi.string(),
-    description : Joi.string(),
+    titre: Joi.string(),
+    description: Joi.string(),
     image: Joi.string(),
-    prix : { type : DataTypes.FLOAT}, 
-    prix_en_gros : Joi.number(), 
+    prix: { type: DataTypes.FLOAT },
+    prix_en_gros: Joi.number(),
     Qte: Joi.number().integer(),
-    etat : Joi.string(),  
+    etat: Joi.string(),
+  });
+  return schema.validate(data);
+};
+const produitlibrairieValidation = (data) => {
+  const schema = Joi.object({
+    titre: Joi.string(),
+    description: Joi.string(),
+    image: Joi.string(),
+    prix: { type: DataTypes.FLOAT },
+    prix_en_gros: Joi.number(),
+    qte: Joi.number().integer(),
+    etat: Joi.string(),
+    prix_en_Solde: Joi.number(),
+    remise: Joi.number(),
+    refCataloge: Joi.string(),
+  });
+  return schema.validate(data);
+};
+
+const subcategoryValidation = (data) => {
+  const schema = Joi.object({
+    name: Joi.string().min(2).required(),
+    Description: Joi.string().min(6).required(),
+    categorieId: Joi.number().integer(),
+  });
+  return schema.validate(data);
+};
+
+const subcategoryupdateValidation = (data) => {
+  const schema = Joi.object({
+    name: Joi.string().min(2).required(),
+  });
+  return schema.validate(data);
+};
+
+const suggestionProduitValidation = (data) => {
+  const schema = Joi.object({
+    Titre: Joi.string(),
+    Description: Joi.string(),
+    image: Joi.string(),
+    etat: Joi.string(),
   });
   return schema.validate(data);
 };
@@ -155,5 +197,9 @@ module.exports = {
   catalogeValidation,
   codepromoValidation,
   librairieValidation,
-  produitValidation
+  produitValidation,
+  produitlibrairieValidation,
+  subcategoryValidation,
+  subcategoryupdateValidation,
+  suggestionProduitValidation,
 };

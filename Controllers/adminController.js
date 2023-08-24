@@ -222,7 +222,6 @@ const adminController = {
   },
 
   deletesuggestion: async (req, res) => {
-    
     const { ids } = req.body;
 
     try {
@@ -412,7 +411,6 @@ const adminController = {
     }
   },
 
-
   findCommandefiltre: async (req, res) => {
     const filters = req.body;
     const whereClause = {};
@@ -482,6 +480,56 @@ const adminController = {
             return res.status(400).json({
               success: false,
               error: err,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  getAllAvis: async (req, res) => {
+    try {
+      Model.avisProduitlibraire
+        .findAll({
+          attributes: {
+            exclude: ["updatedAt", "clientId", "produitlabrairieId"],
+          },
+          include: [
+            {
+              model: Model.client,
+              attributes: ["id","userId"],
+              include: [
+                {
+                  model: Model.user,
+                  attributes: ["fullname"],
+                },
+              ]
+            },
+            {
+              model: Model.produitlabrairie,
+              attributes: ["id", "titre", "prix"],
+              include: [
+                {
+                  model: Model.imageProduitLibrairie,
+                  attributes: ["name_Image"],
+                },
+                {
+                  model: Model.labrairie,
+                  attributes: ["nameLibrairie"],
+                },
+              ],
+            },
+          ],
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              avis: response,
             });
           }
         });

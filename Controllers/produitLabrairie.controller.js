@@ -1,11 +1,17 @@
 const Model = require("../Models/index");
 const { Sequelize } = require("sequelize");
+const { produitlibrairieValidation } = require("../middleware/auth/validationSchema");
 const produitController = {
+  
   add_produit_with_import_image: async (req, res) => {
+    const { titre, description, image, qte, prix, labrairieId, categorieId,SouscategorieId } =
+    req.body;
+
     try {
+      const { error } = produitlibrairieValidation(req.body);
+      if (error) return res.status(400).json(error.details[0].message);
       req.body["image"] = req.files;
-      const { titre, description, image, qte, prix, labrairieId, categorieId,SouscategorieId } =
-        req.body;
+
       const produitData = {
         titre: titre,
         description: description,
@@ -52,9 +58,10 @@ const produitController = {
     }
   },
   add: async (req, res) => {
+    const { titre, description, image, prix, labrairieId, categorieId,SouscategorieId,qte } = req.body;
     try {
-      const { titre, description, image, prix, labrairieId, categorieId,SouscategorieId,qte } =
-        req.body;
+      const { error } = produitlibrairieValidation(req.body);
+      if (error) return res.status(400).json(error.details[0].message);
       const produitData = {
         titre: titre,
         description: description,

@@ -2,6 +2,7 @@ const { response } = require("express");
 const Model = require("../Models/index");
 const { catalogeValidation } = require("../middleware/auth/validationSchema");
 const CatalogeController = {
+  
   add: async (req, res) => {
     const { titre, description, prix, image,etat, AdminId, categorieId,SouscategorieId} = req.body;
     const data = {

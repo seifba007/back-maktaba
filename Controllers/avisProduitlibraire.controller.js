@@ -120,6 +120,7 @@ const avisProduitlibraireController = {
       });
     }
   },
+  
   getAllAvisByClient: async (req, res) => {
     try {
       Model.avisProduitlibraire
