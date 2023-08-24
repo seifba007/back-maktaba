@@ -65,9 +65,9 @@ const filtercommandeValidation = (data) => {
 };
 const addAdresseValidation = (data) => {
   const schema = Joi.object({
-    Nom_de_adresse : Joi.string(),
-    Adresse : Joi.string(),
-    Gouvernorat : Joi.string(),
+    Nom_de_adresse: Joi.string(),
+    Adresse: Joi.string(),
+    Gouvernorat: Joi.string(),
     Ville: Joi.string(),
     Code_postal: Joi.number().integer(),
   });
@@ -76,12 +76,71 @@ const addAdresseValidation = (data) => {
 
 const addAvisProdValidation = (data) => {
   const schema = Joi.object({
-    nbStart : Joi.number().integer(),
+    nbStart: Joi.number().integer(),
     commenter: Joi.string(),
   });
   return schema.validate(data);
 };
 
+const becomePartnerValidation = (data) => {
+  const schema = Joi.object({
+    fullname: Joi.string().min(2).required(),
+    email: Joi.string().required().email(),
+    phone: Joi.number().integer(),
+  });
+  return schema.validate(data);
+};
+
+const bonAchatValidation = (data) => {
+  const schema = Joi.object({
+    solde : Joi.number(),
+    etat: Joi.string(),
+    code : Joi.string()
+  });
+  return schema.validate(data);
+};
+
+const catalogeValidation = (data) => {
+  const schema = Joi.object({
+    titre : Joi.string(),
+    description: Joi.string(),
+    prix : Joi.number(),
+    etat: Joi.string(),
+  });
+  return schema.validate(data);
+};
+
+const codepromoValidation = (data) => {
+  const schema = Joi.object({
+    code : Joi.string(),
+    pourcentage : Joi.number().integer(),
+  });
+  return schema.validate(data);
+};
+const librairieValidation = (data) => {
+  const schema = Joi.object({
+    adresse : Joi.string(),
+    telephone : Joi.number().integer(),
+    nameLibrairie: Joi.string(),
+    facebook : Joi.string(),
+    instagram : Joi.string(),
+    imageStore : Joi.string(),
+    emailLib : Joi.string(),
+  });
+  return schema.validate(data);0
+};
+const produitValidation = (data) => {
+  const schema = Joi.object({
+    titre : Joi.string(),
+    description : Joi.string(),
+    image: Joi.string(),
+    prix : { type : DataTypes.FLOAT}, 
+    prix_en_gros : Joi.number(), 
+    Qte: Joi.number().integer(),
+    etat : Joi.string(),  
+  });
+  return schema.validate(data);
+};
 module.exports = {
   registerValidation,
   loginValidation,
@@ -90,5 +149,11 @@ module.exports = {
   addcategoryValidation,
   filtercommandeValidation,
   addAdresseValidation,
-  addAvisProdValidation
+  addAvisProdValidation,
+  becomePartnerValidation,
+  bonAchatValidation,
+  catalogeValidation,
+  codepromoValidation,
+  librairieValidation,
+  produitValidation
 };

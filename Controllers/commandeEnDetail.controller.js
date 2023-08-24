@@ -3,8 +3,9 @@ const Model = require("../Models/index");
 const { Sequelize, where, Op } = require("sequelize");
 const commandeDetailController = {
   add: async (req, res) => {
+    const { commande } = req.body;
     try {
-      const { commande } = req.body;
+      
       commande.map((data) => {
         let commandes = {
           total_ttc: data.total_ttc,

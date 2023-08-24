@@ -1,9 +1,11 @@
 const Model = require("../Models/index");
+const { bonAchatValidation } = require("../middleware/auth/validationSchema");
 const bonAchatController = {
   add: async (req, res) => {
+    const { solde, userId, partenaireId, nbpoint } = req.body;
     try {
-      const { solde, userId, partenaireId, nbpoint } = req.body;
-      console.log(nbpoint, userId);
+      const { error } = bonAchatValidation(req.body);
+      if (error) return res.status(400).json(error.details[0].message);
       function generateRandomCode() {
         let code = "#";
 
@@ -53,6 +55,7 @@ const bonAchatController = {
       });
     }
   },
+
   update: async (req, res) => {
     try {
       Model.bonAchat
@@ -84,6 +87,7 @@ const bonAchatController = {
       });
     }
   },
+
   delete: async (req, res) => {
     try {
       Model.bonAchat
@@ -143,6 +147,7 @@ const bonAchatController = {
       });
     }
   },
+
   findByuser: async (req, res) => {
     try {
       Model.bonAchat
@@ -150,10 +155,11 @@ const bonAchatController = {
           where: {
             userId: req.params.id,
           },
-          attributes: { exclude: ["updatedAt","userId","partenaireId"] },
+          attributes: { exclude: ["updatedAt", "userId", "partenaireId"] },
           include: [
             {
-              model: Model.partenaire,attributes:["id","nameetablissement"],
+              model: Model.partenaire,
+              attributes: ["id", "nameetablissement"],
               include: [{ model: Model.user, attributes: ["fullname"] }],
             },
           ],
@@ -173,6 +179,7 @@ const bonAchatController = {
       });
     }
   },
+  
   findBypartenaire: async (req, res) => {
     try {
       Model.bonAchat

@@ -3,39 +3,44 @@ const Model = require("../Models/index");
 const bcrypt = require("bcrypt");
 const sendMail = require("../config/Noemailer.config");
 const fournisseur = require("../Models/fournisseur");
+const {
+  becomePartnerValidation,
+} = require("../middleware/auth/validationSchema");
 const BecomePartnerController = {
   add: async (req, res) => {
+    const {
+      fullname,
+      email,
+      phone,
+      Role,
+      name_work,
+      file,
+      links,
+      detail,
+      pack,
+      AdminId,
+    } = req.body;
+    const data = {
+      fullname: fullname,
+      email: email,
+      phone: phone,
+      Role: Role,
+      name_work: name_work,
+      file: file,
+      links: links,
+      detail: detail,
+      pack: pack,
+      etat: "en attente",
+      AdminId: AdminId,
+    };
     try {
+      const { error } = becomePartnerValidation(data);
+      if (error) return res.status(400).json(error.details[0].message);
       if (req.files.length !== 0) {
         req.body["file"] = req.files[0].filename;
       } else {
         req.body["file"] = null;
       }
-      const {
-        fullname,
-        email,
-        phone,
-        Role,
-        name_work,
-        file,
-        links,
-        detail,
-        pack,
-        AdminId,
-      } = req.body;
-      const data = {
-        fullname: fullname,
-        email: email,
-        phone: phone,
-        Role: Role,
-        name_work: name_work,
-        file: file,
-        links: links,
-        detail: detail,
-        pack: pack,
-        etat: "en attente",
-        AdminId: AdminId,
-      };
       Model.BecomePartner.create(data).then((response) => {
         if (response !== undefined) {
           return res.status(200).json({
@@ -56,6 +61,7 @@ const BecomePartnerController = {
       });
     }
   },
+
   findAll: async (req, res) => {
     try {
       Model.BecomePartner.findAll({
@@ -85,9 +91,9 @@ const BecomePartnerController = {
         Password += characters[Math.floor(Math.random() * characters.length)];
       }
       Model.BecomePartner.update(
-        { etat:"accepte"},
-        { where:{id:req.params.id}}
-      )
+        { etat: "accepte" },
+        { where: { id: req.params.id } }
+      );
       const passwordHash = bcrypt.hashSync(Password, 10);
       switch (Role) {
         case "Librairie":
@@ -97,10 +103,10 @@ const BecomePartnerController = {
             password: passwordHash,
             email_verifie: "verifie",
             role: "labrairie",
-            etatCompte:"active",
+            etatCompte: "active",
           };
-          Model.user.findOne({where:{email:email}}).then((response)=>{
-            if(response===null){
+          Model.user.findOne({ where: { email: email } }).then((response) => {
+            if (response === null) {
               Model.user.create(datauser).then((user) => {
                 if (user !== null) {
                   const dataLabriarie = {
@@ -118,63 +124,65 @@ const BecomePartnerController = {
                   });
                 }
               });
-            }else{
-              sendMail.DemendePartenariatRejected(email)
+            } else {
+              sendMail.DemendePartenariatRejected(email);
               return res.status(200).json({
                 success: false,
                 message: "email exist ",
               });
             }
-          })
+          });
           break;
         case "Fournisseur":
           const datauser1 = {
             email: email,
-            fullname:username,
+            fullname: username,
             password: passwordHash,
             email_verifie: "verifie",
             role: "fournisseur",
-            etatCompte:"active",
+            etatCompte: "active",
           };
-          Model.user.findOne({where:{email:email}}).then((response)=>{
-            if(response===null){
+          Model.user.findOne({ where: { email: email } }).then((response) => {
+            if (response === null) {
               Model.user.create(datauser1).then((user) => {
                 if (user !== null) {
                   const datafournisseur = {
                     id: user.id,
                     userId: user.id,
                   };
-                  Model.fournisseur.create(datafournisseur).then((fournisseur) => {
-                    sendMail.acceptationDemendePartenariat(email, Password);
-                    if (fournisseur !== null) {
-                      return res.status(200).json({
-                        success: true,
-                        message: "success create fournsisseur",
-                      });
-                    }
-                  });
+                  Model.fournisseur
+                    .create(datafournisseur)
+                    .then((fournisseur) => {
+                      sendMail.acceptationDemendePartenariat(email, Password);
+                      if (fournisseur !== null) {
+                        return res.status(200).json({
+                          success: true,
+                          message: "success create fournsisseur",
+                        });
+                      }
+                    });
                 }
               });
-            }else{
-              sendMail.DemendePartenariatRejected(email)
+            } else {
+              sendMail.DemendePartenariatRejected(email);
               return res.status(400).json({
                 success: false,
                 message: "email exist ",
               });
             }
-          })
+          });
           break;
         default:
           const datauser2 = {
             email: email,
-            fullname:username,
+            fullname: username,
             password: passwordHash,
             email_verifie: "verifie",
             role: "partenaire",
-            etatCompte:"active",
+            etatCompte: "active",
           };
-          Model.user.findOne({where:{email:email}}).then((response)=>{
-            if(response===null){
+          Model.user.findOne({ where: { email: email } }).then((response) => {
+            if (response === null) {
               Model.user.create(datauser2).then((user) => {
                 if (user !== null) {
                   const datapartenaire = {
@@ -192,14 +200,14 @@ const BecomePartnerController = {
                   });
                 }
               });
-            }else{
-              sendMail.DemendePartenariatRejected(email)
+            } else {
+              sendMail.DemendePartenariatRejected(email);
               return res.status(400).json({
                 success: false,
                 message: "email exist ",
               });
             }
-          })
+          });
           break;
       }
     } catch (err) {
@@ -209,33 +217,31 @@ const BecomePartnerController = {
       });
     }
   },
-  Annuler : async (req,res)=>{
+  Annuler: async (req, res) => {
     try {
-      Model.BecomePartner
-        .update(
-          { etat:"Annuler"},
-          { where:{id:req.params.id }}
-        )
-        .then((response) => {
-          if (response !== 0) {
-            return res.status(200).json({
-              success: true,
-              message: "demende  Annuler",
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              message: "error",
-            });
-          }
-        });
+      Model.BecomePartner.update(
+        { etat: "Annuler" },
+        { where: { id: req.params.id } }
+      ).then((response) => {
+        if (response !== 0) {
+          return res.status(200).json({
+            success: true,
+            message: "demende  Annuler",
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: "error",
+          });
+        }
+      });
     } catch (err) {
       return res.status(400).json({
         success: false,
         error: err,
       });
     }
-  }
+  },
 };
 
 module.exports = BecomePartnerController;

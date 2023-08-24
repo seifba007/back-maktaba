@@ -3,6 +3,6 @@ const passport = require("passport");
 const router = express.Router() ;
 const {ROLES,inRole} = require("../security/Rolemiddleware");
 const clientController = require ("../Controllers/client.controller");
-router.get("/findOne/:id",clientController.findOneClient)
-router.get("/filterproduct",clientController.filterproduit)
+const { AuthorizationUser } = require("../middleware/auth/auth");
+router.get("/findOne/:id",AuthorizationUser,clientController.findOneClient)
 module.exports = router

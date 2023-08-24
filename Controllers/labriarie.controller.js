@@ -4,6 +4,7 @@ const sendMail = require("../config/Noemailer.config");
 const { Sequelize } = require("sequelize");
 const { response } = require("express");
 const LabriarieController = {
+  
   addlabrairie: async (req, res) => {
     try {
       const {email,fullname}=req.body;
@@ -50,13 +51,16 @@ const LabriarieController = {
     }
   },
   updateProfile: async (req, res) => {
+    const {adresse,ville,nameLibrairie,telephone,facebook,instagram,image,emailLib}=req.body
     try {
+      const { error } = addadminValidation(req.body);
+      if (error) return res.status(400).json(error.details[0].message);
       if(req.files.length!==0){
         req.body["image"] = req.files[0].filename;
       }else{
         req.body["image"]==null
       }
-      const {adresse,ville,nameLibrairie,telephone,facebook,instagram,image,emailLib}=req.body
+      
       const data = {
         adresse :adresse,
         ville :ville,

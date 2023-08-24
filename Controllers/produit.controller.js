@@ -1,19 +1,22 @@
 const { response } = require("express");
 const Model = require("../Models/index");
+const { produitValidation } = require("../middleware/auth/validationSchema");
 const produitController = {
   add: async (req, res) => {
+    const {
+      titre,
+      description,
+      image,
+      Qte,
+      prix,
+      prix_en_gros,
+      fournisseurId,
+      categorieId,
+    } = req.body;
     try {
       req.body["image"] = req.file.filename;
-      const {
-        titre,
-        description,
-        image,
-        Qte,
-        prix,
-        prix_en_gros,
-        fournisseurId,
-        categorieId,
-      } = req.body;
+      const { error } = produitValidation(req.body);
+      if (error) return res.status(400).json(error.details[0].message);
       const produitData = {
         titre: titre,
         description: description,
