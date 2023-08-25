@@ -3,7 +3,7 @@ const router = express.Router();
 const SousCategorieController = require("../Controllers/sousCategorieController");
 const { AuthorizationUser } = require("../middleware/auth/auth");
 router.post("/add", AuthorizationUser, SousCategorieController.add);
-router.get("/findAll", AuthorizationUser, SousCategorieController.find);
+router.get("/findAll", SousCategorieController.find);
 router.put(
   "/updateSousCategorie/:id",
   AuthorizationUser,
@@ -14,9 +14,5 @@ router.delete(
   AuthorizationUser,
   SousCategorieController.delete
 );
-router.get(
-  "/findBycategorie/:id",
-  AuthorizationUser,
-  SousCategorieController.findByCategorie
-);
+router.get("/findBycategorie/:id", SousCategorieController.findByCategorie);
 module.exports = router;

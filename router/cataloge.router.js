@@ -9,8 +9,8 @@ router.post(
   upload.array("image", 3),
   CatalogeController.add
 );
-router.get("/findAll", AuthorizationUser, CatalogeController.findAll);
-router.get("/findOne/:id", AuthorizationUser, CatalogeController.findOne);
+router.get("/findAll", CatalogeController.findAll);
+router.get("/findOne/:id", CatalogeController.findOne);
 router.delete("/delete/:id", AuthorizationUser, CatalogeController.delete);
 router.put(
   "/changeVisibilite/:id",

@@ -9,5 +9,5 @@ router.post(
   upload.array("image", 3),
   suggestionProduitController.add
 );
-router.get("/findAll", AuthorizationUser, suggestionProduitController.find);
+router.get("/findAll", suggestionProduitController.find);
 module.exports = router;

@@ -8,12 +8,12 @@ const fournisseurController = require("../Controllers/fournisseur.controller");
 router.post("/add", AuthorizationUser, fournisseurController.addfournisseur);
 router.get(
   "/allfournisseurs",
-  AuthorizationUser,
+
   fournisseurController.findAllfournisseur
 );
 router.get(
   "/findOneFournisseur/:id",
-  AuthorizationUser,
+
   fournisseurController.findOneFournisseur
 );
 router.put(

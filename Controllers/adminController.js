@@ -540,6 +540,73 @@ const adminController = {
       });
     }
   },
+
+  findproduitbyname: async (req, res) => {
+    const {name} = req.body
+    try {
+      Model.produitlabrairie.findAll({
+        where: {
+        
+          titre: name, 
+        },
+    
+      }).then((response) => {
+        try {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              produits: response,
+            });
+          }
+        } catch (err) {
+          return res.status(400).json({
+            success: false,
+            error: err,
+          });
+        }
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  
+  findfournissbyname: async (req, res) => {
+    const {name} = req.body
+    try {
+      Model.fournisseur.findAll({
+        include: [
+          {
+            model: Model.user,
+            
+          
+          },
+        ]
+      }).then((response) => {
+        try {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              produits: response,
+            });
+          }
+        } catch (err) {
+          return res.status(400).json({
+            success: false,
+            error: err,
+          });
+        }
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
 };
 
 module.exports = adminController;

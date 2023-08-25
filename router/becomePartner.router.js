@@ -14,7 +14,7 @@ router.post(
   upload.array("file", 1),
   BecomePartnerController.add
 );
-router.get("/findAll", AuthorizationUser, BecomePartnerController.findAll);
+router.get("/findAll", BecomePartnerController.findAll);
 router.post(
   "/accepter/:id",
   AuthorizationUser,

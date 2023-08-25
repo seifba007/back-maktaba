@@ -25,30 +25,31 @@ router.delete(
   AuthorizationClient,
   ProduitLabrairieController.delete
 );
-router.get("/findAll", AuthorizationClient, ProduitLabrairieController.findAll);
+router.get("/findAll", ProduitLabrairieController.findAll);
 router.get(
   "/findBylabrairie/:id",
-  AuthorizationClient,
   ProduitLabrairieController.findAllProduitByLabrairie
 );
-router.get(
-  "/findOneProduit/:id",
-  AuthorizationClient,
-  ProduitLabrairieController.findOneProduit
-);
+router.get("/findOneProduit/:id", ProduitLabrairieController.findOneProduit);
 router.get(
   "/findProduitsBycategorie/:categorieId",
-  AuthorizationClient,
   ProduitLabrairieController.findProduitsBycategorie
 );
 router.get(
   "/ListeDeProduitslibrairie/:id",
-  AuthorizationClient,
   ProduitLabrairieController.Liste_de_produits_librairie
 );
+
 router.get(
   "/produit_mieux_notes/:id",
-  AuthorizationClient,
   ProduitLabrairieController.produit_mieux_notes
 );
+
+router.get("/produitrecements", ProduitLabrairieController.produitrecements);
+router.get("/produitpluscher", ProduitLabrairieController.produitpluscher);
+router.get("/produitmoinscher", ProduitLabrairieController.produitmoinscher);
+
+router.get("/produitalphabet", ProduitLabrairieController.produitAlphabet);
+
+router.get("/produitpagination", ProduitLabrairieController.produitAlphabet);
 module.exports = router;

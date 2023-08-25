@@ -1,11 +1,20 @@
 const Model = require("../Models/index");
 const { Sequelize } = require("sequelize");
-const { produitlibrairieValidation } = require("../middleware/auth/validationSchema");
+const {
+  produitlibrairieValidation,
+} = require("../middleware/auth/validationSchema");
 const produitController = {
-  
   add_produit_with_import_image: async (req, res) => {
-    const { titre, description, image, qte, prix, labrairieId, categorieId,SouscategorieId } =
-    req.body;
+    const {
+      titre,
+      description,
+      image,
+      qte,
+      prix,
+      labrairieId,
+      categorieId,
+      SouscategorieId,
+    } = req.body;
 
     try {
       const { error } = produitlibrairieValidation(req.body);
@@ -19,7 +28,7 @@ const produitController = {
         qte: qte,
         categorieId: categorieId,
         labrairieId: labrairieId,
-        SouscategorieId:SouscategorieId,
+        SouscategorieId: SouscategorieId,
       };
       const images = [];
       Model.produitlabrairie.create(produitData).then((response) => {
@@ -58,7 +67,16 @@ const produitController = {
     }
   },
   add: async (req, res) => {
-    const { titre, description, image, prix, labrairieId, categorieId,SouscategorieId,qte } = req.body;
+    const {
+      titre,
+      description,
+      image,
+      prix,
+      labrairieId,
+      categorieId,
+      SouscategorieId,
+      qte,
+    } = req.body;
     try {
       const { error } = produitlibrairieValidation(req.body);
       if (error) return res.status(400).json(error.details[0].message);
@@ -69,14 +87,14 @@ const produitController = {
         qte: qte,
         categorieId: categorieId,
         labrairieId: labrairieId,
-        SouscategorieId:SouscategorieId
+        SouscategorieId: SouscategorieId,
       };
       const images = [];
       Model.produitlabrairie.create(produitData).then((response) => {
         if (response !== null) {
           image.map((e) => {
             images.push({
-              name_Image:e.name_Image,
+              name_Image: e.name_Image,
               produitlabrairieId: response.id,
             });
           });
@@ -109,20 +127,15 @@ const produitController = {
   },
   update: async (req, res) => {
     try {
-      const {
-        qte,
-        prix,
-        prix_en_Solde,
-        remise,
-      } = req.body;
+      const { qte, prix, prix_en_Solde, remise } = req.body;
       if (prix_en_Solde !== undefined) {
         var etat = "remise";
       }
-      if(remise==0 || remise===undefined){
+      if (remise == 0 || remise === undefined) {
         var etat = "en_Stock";
-        var prix_solde=0
-      }else{
-        var prix_solde=prix_en_Solde
+        var prix_solde = 0;
+      } else {
+        var prix_solde = prix_en_Solde;
       }
       const produitData = {
         prix: prix,
@@ -196,9 +209,11 @@ const produitController = {
     }
   },
   findAll: async (req, res) => {
+    const { lim } = req.body;
     try {
       Model.produitlabrairie
         .findAll({
+          limit: lim,
           attributes: {
             exclude: ["updatedAt", "categorieId", "labrairieId", "description"],
           },
@@ -245,9 +260,11 @@ const produitController = {
     }
   },
   findAllProduitByLabrairie: async (req, res) => {
+    const { lim } = req.body;
     try {
       Model.produitlabrairie
         .findAll({
+          limit: lim,
           where: { labrairieId: req.params.id },
           attributes: {
             exclude: [
@@ -349,9 +366,11 @@ const produitController = {
     }
   },
   findProduitsBycategorie: async (req, res) => {
+    const { lim } = req.body;
     try {
       Model.produitlabrairie
         .findAll({
+          limit: lim,
           where: { categorieId: req.params.categorieId },
           attributes: {
             exclude: [
@@ -404,11 +423,13 @@ const produitController = {
     }
   },
   Liste_de_produits_librairie: async (req, res) => {
+    const { lim } = req.body;
     try {
       Model.produitlabrairie
         .findAll({
+          limit: lim,
           where: { labrairieId: req.params.id },
-          attributes: ["id", "titre", "prix", "updatedAt", "qte","remise"],
+          attributes: ["id", "titre", "prix", "updatedAt", "qte", "remise"],
           include: [
             { model: Model.categorie, attributes: ["id", "name"] },
             { model: Model.imageProduitLibrairie, attributes: ["name_Image"] },
@@ -434,11 +455,13 @@ const produitController = {
       });
     }
   },
-  
+
   produit_mieux_notes: async (req, res) => {
+    const { lim } = req.body;
     try {
       Model.produitlabrairie
         .findAll({
+          limit: lim,
           attributes: ["id", "titre"],
           include: [
             {
@@ -449,14 +472,109 @@ const produitController = {
               ],
             },
             {
-              model : Model.imageProduitLibrairie  , attributes : ["name_Image"]
-            }
+              model: Model.imageProduitLibrairie,
+              attributes: ["name_Image"],
+            },
           ],
           where: {
             labrairieId: req.params.id,
           },
           group: ["produitlabrairie.id", "produitlabrairie.titre"],
           having: Sequelize.literal("SUM(nbStart) >24"),
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              produit: response,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        err: err,
+      });
+    }
+  },
+
+  produitrecements: async (req, res) => {
+    const { lim } = req.body;
+    try {
+      Model.produitlabrairie
+        .findAll({
+          order: [["createdAt", "DESC"]],
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              produit: response,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        err: err,
+      });
+    }
+  },
+
+  produitpluscher: async (req, res) => {
+    const { lim } = req.body;
+    try {
+      Model.produitlabrairie
+        .findAll({
+          order: [["prix", "DESC"]],
+          limit: lim,
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              produit: response,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        err: err,
+      });
+    }
+  },
+  produitmoinscher: async (req, res) => {
+    const { lim } = req.body;
+    try {
+      Model.produitlabrairie
+        .findAll({
+          order: [["prix", "ASC"]],
+          limit: lim,
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              produit: response,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        err: err,
+      });
+    }
+  },
+
+  produitAlphabet: async (req, res) => {
+    const { lim } = req.body;
+    try {
+      Model.produitlabrairie
+        .findAll({
+          order: [["titre", "ASC"]],
+          limit: lim,
         })
         .then((response) => {
           if (response !== null) {

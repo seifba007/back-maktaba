@@ -4,5 +4,5 @@ const produitFavorieController = require("../Controllers/produitFavorie.controll
 const { AuthorizationClient } = require("../middleware/auth/auth");
 router.post("/add",AuthorizationClient,produitFavorieController.add)
 router.delete("/delete/:id/:userId",AuthorizationClient,produitFavorieController.delete)
-router.get("/findAllbyclient/:userId",AuthorizationClient,produitFavorieController.findAllByclient)
+router.get("/findAllbyclient/:userId",produitFavorieController.findAllByclient)
 module.exports=router
