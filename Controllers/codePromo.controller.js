@@ -81,6 +81,8 @@ const codePromo = {
         });
     }
   },
+
+  
   findOne: async (req, res) => {
     try {
       Model.codePromo.findOne({ where: { code: req.params.code },include:[{model : Model.labrairie,attributes:['id'],include:[{model:Model.user,attributes:['fullname']}]},{model:Model.partenaire,attributes:['id'],include:[{model:Model.user , attributes:["fullname"]}]}]}).then((response)=>{

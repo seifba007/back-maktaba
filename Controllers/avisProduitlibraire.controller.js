@@ -252,6 +252,8 @@ const avisProduitlibraireController = {
       });
     }
   },
+
+
   getAllavisBylibriarie: async (req, res) => {
     try {
       const labrairieId = req.params.id;
@@ -299,6 +301,55 @@ const avisProduitlibraireController = {
       });
     }
   },
+
+
+  getAvisByArticle: async (req, res) => {
+    const {nameArticle} = req.body
+    try {
+      Model.avisProduitlibraire
+        .findAll({
+          
+          attributes: {
+            exclude: ["updatedAt", "clientId", "produitlabrairieId"],
+          },
+          include: [
+            {
+              model: Model.produitlabrairie,
+              attributes: ["id", "titre","prix"],
+              where: { titre: nameArticle },
+              include: [
+                {
+                  model: Model.imageProduitLibrairie,
+                  attributes: ["name_Image"],
+                },
+                {
+                  model: Model.labrairie,
+                  attributes: ["nameLibrairie"],
+                },
+              ],
+           
+            },
+      
+          ],
+          
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              avis: response,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  
 
 };
 module.exports = avisProduitlibraireController;

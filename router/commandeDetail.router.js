@@ -48,4 +48,7 @@ router.get(
   commandeDetailController.findCommandeByadmindetail
 );
 router.get("/findCommandebyart", commandeDetailController.findCommabyart);
+
+router.get("/findCommandebyartandid", commandeDetailController.findCommabyartandid);
+
 module.exports = router;

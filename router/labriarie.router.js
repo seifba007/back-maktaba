@@ -14,4 +14,9 @@ router.put(
   labriarieController.updateProfile
 );
 router.get("/findalllibrarie", labriarieController.findAlllibrarie);
+
+router.get(
+  "/findallproductbyFiltre/:id",
+  labriarieController.findAllproduitbyfiltre
+);
 module.exports = router;

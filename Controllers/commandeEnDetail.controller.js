@@ -1054,20 +1054,15 @@ const commandeDetailController = {
   },
 
   findCommabyart: async (req, res) => {
-    const { lim, name, page, pageSize} = req.body;
-    const offset = (page - 1) * pageSize;
+    const { name} = req.body;
     try {
       Model.commandeEnDetail
         .findAll({
-          limit: lim,
           attributes: ["id", "total_ttc", "etatVender", "createdAt"],
           include: [
             { model: Model.user, attributes: ["fullname", "avatar"] },
             {
               model: Model.produitlabrairie,
-              attributes: [
-                [Sequelize.fn("COUNT", Sequelize.col("titre")), "nb_Article"],
-              ],
               where:{
                 titre:name
               }
@@ -1076,6 +1071,53 @@ const commandeDetailController = {
           ],
           group: ["commandeEnDetail.id"],
           order: [["createdAt", "ASC"]],
+        })
+        .then((response) => {
+          if (response.length != 0) {
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "zero commande trouve ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findCommabyartandid: async (req, res) => {
+    const { nameArt, page, pageSize, cmdId} = req.body;
+    const offset = (page - 1) * pageSize;
+    try {
+      if(cmdId){
+        Model.commandeEnDetail
+        .findAll({
+          where:{
+            id: cmdId
+          },
+          attributes: ["id", "total_ttc", "etatVender", "createdAt"],
+          include: [
+            { model: Model.user, attributes: ["fullname", "avatar"] },
+            {
+              model: Model.produitlabrairie,
+              attributes: [
+                ["titre"],
+              ],
+              
+            },
+            { model: Model.labrairie },
+          ],
+          group: ["commandeEnDetail.id"],
+          order: [["createdAt", "ASC"]],
+          limit: pageSize,
           offset: offset
         })
         .then((response) => {
@@ -1091,6 +1133,41 @@ const commandeDetailController = {
             });
           }
         });
+      }else if(nameArt){
+        Model.commandeEnDetail
+        .findAll({
+          attributes: ["id", "total_ttc", "etatVender", "createdAt"],
+          include: [
+            { model: Model.user, attributes: ["fullname", "avatar"] },
+            {
+              model: Model.produitlabrairie,
+              attributes: [
+              ],
+              where:{
+                titre: nameArt
+              },
+            },
+            { model: Model.labrairie },
+          ],
+          group: ["commandeEnDetail.id"],
+          order: [["createdAt", "ASC"]],
+          limit: pageSize,
+          offset: offset
+        })
+        .then((response) => {
+          if (response.length != 0) {
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "zero commande trouve ",
+            });
+          }
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
