@@ -49,7 +49,7 @@ const userController = {
                     message: "success",
                     accessToken: accessToken,
                     refreshToken: refreshToken,
-                    user: User,
+                    user: User 
                   });
                 }
               });
