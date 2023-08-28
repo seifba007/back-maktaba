@@ -163,6 +163,7 @@ const avisProduitlibraireController = {
         error: err,
       });
     }
+    
   },
   getAllAvisByPartnier: async (req, res) => {
     try {
