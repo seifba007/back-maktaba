@@ -70,6 +70,7 @@ const addAdresseValidation = (data) => {
     Gouvernorat: Joi.string(),
     Ville: Joi.string(),
     Code_postal: Joi.number().integer(),
+    clientId:Joi.number().integer(),
   });
   return schema.validate(data);
 };
