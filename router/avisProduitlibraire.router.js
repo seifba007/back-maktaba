@@ -34,4 +34,9 @@ router.get(
   "/getAvisByArticle",
   avisProduitlibraireController.getAvisByArticle
 );
+
+router.get(
+  "/getTopAvisProduit",
+  avisProduitlibraireController.getTopAvisProduit
+);
 module.exports = router;

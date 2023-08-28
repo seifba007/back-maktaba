@@ -5,7 +5,7 @@ const bonAchatController = {
     const { solde, userId, partenaireId, nbpoint } = req.body;
     try {
       const { error } = bonAchatValidation(req.body);
-      if (error) return res.status(400).json(error.details[0].message);
+      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
       function generateRandomCode() {
         let code = "#";
 

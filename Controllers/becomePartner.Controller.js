@@ -35,7 +35,7 @@ const BecomePartnerController = {
     };
     try {
       const { error } = becomePartnerValidation(data);
-      if (error) return res.status(400).json(error.details[0].message);
+      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
       if (req.files.length !== 0) {
         req.body["file"] = req.files[0].filename;
       } else {

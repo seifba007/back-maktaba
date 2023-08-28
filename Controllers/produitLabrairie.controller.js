@@ -18,7 +18,7 @@ const produitController = {
 
     try {
       const { error } = produitlibrairieValidation(req.body);
-      if (error) return res.status(400).json(error.details[0].message);
+      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
       req.body["image"] = req.files;
 
       const produitData = {

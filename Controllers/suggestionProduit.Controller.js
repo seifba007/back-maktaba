@@ -6,7 +6,7 @@ const suggestionProduitController = {
     req.body["image"] = req.files[0].filename;
     try {
       const { error } = suggestionProduitController(data);
-      if (error) return res.status(400).json(error.details[0].message);
+      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
 
       const data = {
         Titre: Titre,

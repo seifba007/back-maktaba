@@ -7,7 +7,7 @@ const AuthorizationUser = (req, res, next) => {
   if (typeof bearerHeader !== "undefined") {
     const bearer = bearerHeader.split(" ")[1];
 
-    jwt.verify(bearer, process.env.GOOGLE_CLIENT_SECRET, async (err, user) => {
+    jwt.verify(bearer, process.env.TOKEN_ACCESS_SECRET, async (err, user) => {
       if (err) return res.status(404).json({ msg: "Not Authorized" });
       req.user = user;
       const userAuth = await Model.user.findOne({ where: { id: user.id } });
