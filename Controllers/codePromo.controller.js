@@ -1,8 +1,11 @@
 const Model = require("../Models/index");
+const { codepromoValidation } = require("../middleware/auth/validationSchema");
 const codePromo = {
   add: async (req, res) => {
+    const { userName,pourcentage,labrairieId,partenaireId} = req.body;
     try {
-      const { userName,pourcentage,labrairieId,partenaireId} = req.body;
+    const {error} = codepromoValidation(req.body)
+    if (error) return res.status(400).json[error.details[0].message]
       const code = Math.floor(Math.random() * 9000) + userName;
       let data = {
         code:code,
@@ -78,6 +81,8 @@ const codePromo = {
         });
     }
   },
+
+  
   findOne: async (req, res) => {
     try {
       Model.codePromo.findOne({ where: { code: req.params.code },include:[{model : Model.labrairie,attributes:['id'],include:[{model:Model.user,attributes:['fullname']}]},{model:Model.partenaire,attributes:['id'],include:[{model:Model.user , attributes:["fullname"]}]}]}).then((response)=>{

@@ -6,8 +6,7 @@ const { response } = require("express");
 const LabriarieController = {
   addlabrairie: async (req, res) => {
     try {
-      const {email,fullname}=req.body;
-   
+      const { email, fullname } = req.body;
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -21,12 +20,7 @@ const LabriarieController = {
         .findOne({
           where: { id: req.params.id },
           attributes: {
-            exclude: [
-              "createdAt",
-              "updatedAt",
-              "userId",
-             
-            ],
+            exclude: ["createdAt", "updatedAt", "userId"],
           },
         })
         .then((response) => {
@@ -49,37 +43,52 @@ const LabriarieController = {
       });
     }
   },
+
   updateProfile: async (req, res) => {
+    const {
+      adresse,
+      ville,
+      nameLibrairie,
+      telephone,
+      facebook,
+      instagram,
+      image,
+      emailLib,
+    } = req.body;
     try {
-      if(req.files.length!==0){
+      const { error } = addadminValidation(req.body);
+      if (error) return res.status(400).json(error.details[0].message);
+      if (req.files.length !== 0) {
         req.body["image"] = req.files[0].filename;
-      }else{
-        req.body["image"]==null
+      } else {
+        req.body["image"] == null;
       }
-      const {adresse,ville,nameLibrairie,telephone,facebook,instagram,image,emailLib}=req.body
+
       const data = {
-        adresse :adresse,
-        ville :ville,
-        nameLibrairie :nameLibrairie,
-        telephone : telephone,
-        facebook : facebook , 
-        instagram : instagram,
+        adresse: adresse,
+        ville: ville,
+        nameLibrairie: nameLibrairie,
+        telephone: telephone,
+        facebook: facebook,
+        instagram: instagram,
         imageStore: image,
-        emailLib : emailLib
-      }
-      Model.labrairie.update(data,{where:{id:req.params.id}}).then((response)=>{
-        if(response!==0){
-          return res.status(200).json({
-            success :true , 
-            message : "update success"
-          })
-        }else{
-          return res.status(400).json({
-            success : false , 
-            message: "error to update "
-          })
-        }
-      })
+        emailLib: emailLib,
+      };
+      Model.labrairie
+        .update(data, { where: { id: req.params.id } })
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "update success",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error to update ",
+            });
+          }
+        });
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -87,32 +96,88 @@ const LabriarieController = {
       });
     }
   },
-  
-  findAlllibrarie : async(req,res)=>{
-    try{
-      Model.labrairie.findAll({
-        include: [{
-          model: Model.user,
-        }]
-      }).then((response)=>{
-        try{
-            if(response!==null){
+
+  findAlllibrarie: async (req, res) => {
+    try {
+      Model.labrairie
+        .findAll({
+          include: [
+            {
+              model: Model.user,
+            },
+          ],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
               return res.status(200).json({
-                success : true , 
+                success: true,
                 produits: response,
-              })
+              });
             }
-        }catch(err){
-          return res.status(400).json({
-            success: false,
-            error:err,
-          });
-        }
-      })
-    }catch(err){
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err,
+            });
+          }
+        });
+    } catch (err) {
       return res.status(400).json({
         success: false,
-        error:err,
+        error: err,
+      });
+    }
+  },
+
+  findAllproduitbyfiltre: async (req, res) => {
+    const { id } = req.params.id;
+
+    const { categorieId, SouscategorieId, titre, page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
+    const whereClause = {};
+
+    if (categorieId) {
+      whereClause.categorieId = categorieId;
+    }
+    if (SouscategorieId) {
+      whereClause.SouscategorieId = SouscategorieId;
+    }
+    if (titre) {
+      whereClause.titre = titre;
+    }
+    try {
+      Model.labrairie
+        .findAll({
+          where: id,
+          include: [
+            {
+              model: Model.produitlabrairie,
+              where: whereClause,
+              limit: pageSize,
+              offset: offset,
+            },
+          ],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              return res.status(200).json({
+                success: true,
+                produits: response,
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
       });
     }
   },

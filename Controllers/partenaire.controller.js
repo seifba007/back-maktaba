@@ -69,6 +69,7 @@ const partenaireController = {
       })
       }
     },
+
     findOnePartnaire: async (req, res) => {
       try {
         Model.user
@@ -112,9 +113,8 @@ const partenaireController = {
       }
     },
     updateProfile: async (req, res) => {
+      const {nameetablissement,telephone,facebook,instagram,email,address}=req.body
       try {
-      
-        const {nameetablissement,telephone,facebook,instagram,email,address}=req.body
         const data = {
           nameetablissement :nameetablissement,
           address:address,

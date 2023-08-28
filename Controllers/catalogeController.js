@@ -1,20 +1,23 @@
 const { response } = require("express");
 const Model = require("../Models/index");
+const { catalogeValidation } = require("../middleware/auth/validationSchema");
 const CatalogeController = {
+  
   add: async (req, res) => {
+    const { titre, description, prix, image,etat, AdminId, categorieId,SouscategorieId} = req.body;
+    const data = {
+      titre: titre,
+      description: description,
+      prix: prix,
+      etat: etat,
+      AdminId: AdminId,
+      categorieId: categorieId,
+      SouscategorieId:SouscategorieId
+    };
     try {
+      const { error } = catalogeValidation(req.body);
+      if (error) return res.status(400).json(error.details[0].message);
       req.body["image"] = req.files;
-      const { titre, description, prix, image,etat, AdminId, categorieId,SouscategorieId} =
-        req.body;
-      const data = {
-        titre: titre,
-        description: description,
-        prix: prix,
-        etat: etat,
-        AdminId: AdminId,
-        categorieId: categorieId,
-        SouscategorieId:SouscategorieId
-      };
       const images = [];
       Model.cataloge.create(data).then((response) => {
         if (response !== null) {

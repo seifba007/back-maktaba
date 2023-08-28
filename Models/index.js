@@ -5,7 +5,7 @@ const clientModel = require ("./client")
 const fournisseurModel = require("./fournisseur") 
 const partenaireModel = require ("./partenaire")
 const labrairieModel = require ("./labriarie")
-const codePromoModel = require("./code_promo")
+const codePromoModel = require("./codepromo")
 const bonAchatModel = require("./bonAchat")
 const categorieModel = require("./categorie")
 const produitModel = require ("./produit")
@@ -84,21 +84,31 @@ cataloge.belongsTo(admin)
 codePromo.belongsTo(labrairie)
 partenaire.hasMany(codePromo)
 codePromo.belongsTo(partenaire)
+fournisseur.hasMany(codePromo)
+codePromo.belongsTo(fournisseur)
 codePromo.belongsToMany(client,{ through:codeClient});
 client.belongsToMany(codePromo,{ through:codeClient});
 user.hasMany(bonAchat)
 bonAchat.belongsTo(user)
 partenaire.hasMany(bonAchat) 
 bonAchat.belongsTo(partenaire)
+fournisseur.hasMany(bonAchat) 
+bonAchat.belongsTo(fournisseur)
 labrairie.hasMany(bonAchat) 
 bonAchat.belongsTo(labrairie)
 categorie.hasMany(produit)
 produit.belongsTo(categorie)
 fournisseur.hasMany(produit)
 produit.belongsTo(fournisseur)
-categorie.hasMany(produitlabrairie)
+categorie.hasMany(produitlabrairie,{
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+})
 produitlabrairie.belongsTo(categorie)
-labrairie.hasMany(produitlabrairie)
+labrairie.hasMany(produitlabrairie,{
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+})
 produitlabrairie.belongsTo(labrairie)
 labrairie.hasMany(commandeEnGros)
 commandeEnGros.belongsTo(labrairie)
@@ -116,7 +126,12 @@ client.hasMany(avisProduitlibraire)
 avisProduitlibraire.belongsTo(client)
 partenaire.hasMany(avisProduitlibraire)
 avisProduitlibraire.belongsTo(partenaire)
-produitlabrairie.hasMany(avisProduitlibraire)
+fournisseur.hasMany(avisProduitlibraire)
+avisProduitlibraire.belongsTo(fournisseur)
+produitlabrairie.hasMany(avisProduitlibraire,{
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+})
 avisProduitlibraire.belongsTo(produitlabrairie)
 produitlabrairie.hasMany(signalerProduitlibraire)
 signalerProduitlibraire.belongsTo(produitlabrairie)
@@ -124,6 +139,8 @@ client.hasMany(adresses)
 adresses.belongsTo(client)
 partenaire.hasMany(adresses)
 adresses.belongsTo(partenaire)
+fournisseur.hasMany(adresses)
+adresses.belongsTo(fournisseur)
 produitlabrairie.hasMany(imageProduitLibrairie,{
   onDelete: 'CASCADE',
   onUpdate: 'CASCADE'
@@ -140,7 +157,10 @@ user.hasMany(produitFavorie)
 partenaire.hasMany(produitFavorie)
 produitFavorie.belongsTo(partenaire)
 produitFavorie.belongsTo(user)
-produitlabrairie.hasMany(produitFavorie)
+produitlabrairie.hasMany(produitFavorie,{
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+})
 produitFavorie.belongsTo(produitlabrairie)
 admin.hasMany(BecomePartner)
 BecomePartner.belongsTo(admin)
@@ -152,7 +172,10 @@ Souscategorie.hasMany(suggestionProduit)
 suggestionProduit.belongsTo(Souscategorie)
 categorie.hasMany(suggestionProduit)
 suggestionProduit.belongsTo(categorie)
-Souscategorie.hasMany(produitlabrairie)
+Souscategorie.hasMany(produitlabrairie,{
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+})
 produitlabrairie.belongsTo(Souscategorie)
 Souscategorie.hasMany(cataloge)
 cataloge.belongsTo(Souscategorie)

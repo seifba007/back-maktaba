@@ -40,6 +40,7 @@ const produitFavorieController = {
       });
     }
   },
+
   delete: async (req, res) => {
     try {
       Model.produitFavorie
@@ -66,6 +67,7 @@ const produitFavorieController = {
       });
     }
   },
+  
   findAllByclient: async (req, res) => {
     try {
       Model.produitFavorie

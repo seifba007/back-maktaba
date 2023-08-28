@@ -2,10 +2,13 @@ const { response } = require("express");
 const Model = require("../Models/index");
 const avisProduitlibraire = require("../Models/avisProduitlibraire");
 const { Sequelize } = require("sequelize");
+const { addAvisProdValidation } = require("../middleware/auth/validationSchema");
 const avisProduitlibraireController = {
   add: async (req, res) => {
+    const { nbStart, commenter, clientId, produitlabrairieId, partenaireId } = req.body;
     try {
-      const { nbStart, commenter, clientId, produitlabrairieId, partenaireId } = req.body;
+      const { error } = addAvisProdValidation(req.body);
+      if (error) return res.status(400).json(error.details[0].message);
       const dataclient = {
         nbStart: nbStart,
         commenter: commenter,
@@ -58,8 +61,11 @@ const avisProduitlibraireController = {
     }
   },
   update: async (req, res) => {
+    const { nbStart, commenter } = req.body;
+
     try {
-      const { nbStart, commenter } = req.body;
+      const { error } = addAvisProdValidation(req.body);
+      if (error) return res.status(400).json(error.details[0].message);
       const data = {
         nbStart: nbStart,
         commenter: commenter,
@@ -114,6 +120,7 @@ const avisProduitlibraireController = {
       });
     }
   },
+  
   getAllAvisByClient: async (req, res) => {
     try {
       Model.avisProduitlibraire
@@ -245,6 +252,8 @@ const avisProduitlibraireController = {
       });
     }
   },
+
+
   getAllavisBylibriarie: async (req, res) => {
     try {
       const labrairieId = req.params.id;
@@ -292,6 +301,55 @@ const avisProduitlibraireController = {
       });
     }
   },
+
+
+  getAvisByArticle: async (req, res) => {
+    const {nameArticle} = req.body
+    try {
+      Model.avisProduitlibraire
+        .findAll({
+          
+          attributes: {
+            exclude: ["updatedAt", "clientId", "produitlabrairieId"],
+          },
+          include: [
+            {
+              model: Model.produitlabrairie,
+              attributes: ["id", "titre","prix"],
+              where: { titre: nameArticle },
+              include: [
+                {
+                  model: Model.imageProduitLibrairie,
+                  attributes: ["name_Image"],
+                },
+                {
+                  model: Model.labrairie,
+                  attributes: ["nameLibrairie"],
+                },
+              ],
+           
+            },
+      
+          ],
+          
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              avis: response,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  
 
 };
 module.exports = avisProduitlibraireController;

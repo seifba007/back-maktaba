@@ -4,53 +4,40 @@ const jwt = require("jsonwebtoken");
 const sendMail = require("../config/Noemailer.config");
 const { response } = require("express");
 const { where } = require("sequelize");
+const { createAccessToken, createRefreshToken } = require("../services/jwt");
+const {
+  registerValidation,
+  loginValidation,
+} = require("../middleware/auth/validationSchema");
 const refreshTokens = [];
-const forgetpasswordToken = []
+const forgetpasswordToken = [];
+
 const userController = {
   login: async (req, res) => {
+    const data = req.body;
+    const { email, password } = req.body;
+
     try {
-      Model.user.findOne({ where: { email: req.body.email }}).then((User) => {
-     
+      const { error } = loginValidation(data);
+      if (error) return res.status(400).json(error.details[0].message);
+      Model.user.findOne({ where: { email: email } }).then((User) => {
         if (User === null) {
           return res.status(400).json({
             success: false,
-            err:"email is not correct"}
-            );
+            err: "email is not correct",
+          });
         } else {
-
-
-
-          if(User.etatCompte!=="bloque")
-          {
+          if (User.etatCompte !== "bloque") {
             if (User.email_verifie === "verifie") {
-              bcrypt.compare(req.body.password, User.password).then((isMatch) => {
+              bcrypt.compare(password, User.password).then((isMatch) => {
                 if (!isMatch) {
                   return res.status(400).json({
                     success: false,
-                    err:"password is not correct"});
+                    err: "password is not correct",
+                  });
                 } else {
-                  var accessToken = jwt.sign(
-                    {
-                      id: User.id,
-                      fullname:User.fullname,
-                      role :User.role ,
-                      avatar :User.avatar,
-                      etatCompte:User.etatCompte
-                    },
-                    process.env.PRIVATE_KEY,
-                    { expiresIn: "1h" }
-                  );
-                  var refreshToken = jwt.sign(
-                    {
-                      id: User.id,
-                      fullname:User.fullname,
-                      role : User.role,
-                      avatar :User.avatar,
-                      etatCompte:User.etatCompte
-                    },
-                    process.env.REFRESH_KEY,
-                    { expiresIn: "30d" }
-                  );
+                  const accessToken = createAccessToken({ id: User.id });
+                  const refreshToken = createRefreshToken({ id: User.id });
                   refreshTokens.push(refreshToken);
                   res.status(200).json({
                     success: true,
@@ -66,17 +53,13 @@ const userController = {
                 accessToken: "email",
               });
             }
-        }else{
-          return res.status(200).json({
-            success: false,
-            error: "bloque",
-          });
-         }
-
-     
+          } else {
+            return res.status(200).json({
+              success: false,
+              error: "bloque",
+            });
+          }
         }
-  
-    
       });
     } catch (err) {
       return res.status(400).json({
@@ -86,40 +69,45 @@ const userController = {
     }
   },
   register: async (req, res) => {
+    const data = req.body;
+    const { fullname, email, password } = req.body;
     try {
-      Model.user.findOne({ where: { email: req.body.email } }).then((user) => {
+      //------------------------------- REGISTER VALIDATION HANDLER------------------------//
+      const { error } = registerValidation(data);
+      if (error) return res.status(400).json(error.details[0].message);
+      Model.user.findOne({ where: { email: email } }).then((user) => {
         if (user !== null) {
-          return res.status(400).json({ 
+          return res.status(400).json({
             success: false,
-            err:"email exist"
+            err: "email exist",
           });
         } else {
-          const passwordHash = bcrypt.hashSync(req.body.password, 10);
+          const passwordHash = bcrypt.hashSync(password, 10);
           const datauser = {
-            fullname : req.body.fullname,
-            email: req.body.email,
+            fullname: fullname,
+            email: email,
             password: passwordHash,
             email_verifie: "non_verifie",
-            role : "client",
-            etatCompte:"active"
+            role: "client",
+            etatCompte: "active",
           };
           Model.user.create(datauser).then((user) => {
             if (user !== null) {
               const dataClient = {
-                id : user.id, 
-                userId : user.id
-              }
-              Model.client.create(dataClient).then((client)=>{
-                if(client!==null){
+                id: user.id,
+                userId: user.id,
+              };
+              Model.client.create(dataClient).then((client) => {
+                if (client !== null) {
                   let link = `${process.env.URL_BACK}/user/verif/${req.body.email}`;
                   sendMail.sendEmailVerification(req.body.email, link);
                   res.status(200).json({
-                    success: true, 
+                    success: true,
                     message: "verif your email now ",
                   });
                 }
-              })
-            } 
+              });
+            }
           });
         }
       });
@@ -131,7 +119,7 @@ const userController = {
     }
   },
   emailVerification: async (req, res) => {
-    try{
+    try {
       Model.user
         .findOne({ where: { email: req.params.email } })
         .then(async (user) => {
@@ -148,7 +136,7 @@ const userController = {
               .then((response) => {
                 if (response != 0) {
                   res.redirect(`${process.env.URL_FRONT}/login`);
-                } 
+                }
               });
           }
         });
@@ -164,8 +152,9 @@ const userController = {
       const refreshToken = req.body.refreshToken;
       if (!refreshToken || !refreshTokens.includes(refreshToken)) {
         return res.json({
-          success: false, 
-          error: "Refresh token not found"});
+          success: false,
+          error: "Refresh token not found",
+        });
       }
       jwt.verify(refreshToken, process.env.REFRESH_KEY, (err, User) => {
         if (!err) {
@@ -211,7 +200,7 @@ const userController = {
                 expiresIn: "5m",
               }
             );
-            forgetpasswordToken.push(token)
+            forgetpasswordToken.push(token);
             const link = `${process.env.URL_FRONT}/reset-password/${olduser.id}/${token}`;
             sendMail.sendEmailToForgetPassword(req.body.email, link);
             res.status(200).json({
@@ -229,12 +218,13 @@ const userController = {
   },
   forgotpassword: async (req, res) => {
     try {
-      const id= req.params.id;
-      const {password,token } = req.body;
-      if (!token ||!forgetpasswordToken.includes(token)) {
+      const id = req.params.id;
+      const { password, token } = req.body;
+      if (!token || !forgetpasswordToken.includes(token)) {
         return res.status(400).json({
-          success: false, 
-          error: " token not found"});
+          success: false,
+          error: " token not found",
+        });
       }
       Model.user.findOne({ where: { id: id } }).then((olduser) => {
         if (olduser !== null) {
@@ -283,7 +273,7 @@ const userController = {
   Contact: async (req, res) => {
     try {
       const { email, sujet, message, name } = req.body;
-      sendMail.sendContactEmail(email, sujet, message, name)
+      sendMail.sendContactEmail(email, sujet, message, name);
       res.status(200).json({
         success: true,
         message: " message envoyer ",
@@ -297,99 +287,96 @@ const userController = {
   },
   authWithSocialMedia: async (req, res) => {
     try {
-        const { email, fullname} = req.body;
-        Model.user.findOne({ where: { email: email }}).then((user) => {
-          if (user !== null) {
-            var accessToken = jwt.sign(
-              {
-                id: user.id,
-                fullname: user.fullname,
-                role: user.role,
-                avatar :user.avatar,
-                etatCompte:user.etatCompte
-              },
-              process.env.PRIVATE_KEY,
-              { expiresIn: "1h" }
-            );
-            var refreshToken = jwt.sign(
-              {
-                id: user.id,
-                fullname:user.fullname,
-                role: user.role,
-                avatar :user.avatar,
-                etatCompte:user.etatCompte
-              },
-              process.env.REFRESH_KEY,
-              { expiresIn: "30d" }
-            );
-            refreshTokens.push(refreshToken);
-            return res.status(200).json({
-              success: true,
-              message: "success login",
-              accessToken: accessToken,
-              refreshToken: refreshToken,
-            });
-          } else {
-            const characters =
-              "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            let Password = "";
-            for (let i = 0; i < 25; i++) {
-              Password +=
-                characters[Math.floor(Math.random() * characters.length)];
-            }
-            const passwordHash = bcrypt.hashSync(Password, 10);
-            const datauser = {
-              fullname : fullname,
-              email: email,
-              password: passwordHash,
-              email_verifie: "verifie",
-              role: "client",
-              etatCompte:"active"
-            };
-            Model.user.create(datauser).then((user) => {
-              if (user !== null) {
-                const dataClient = {
-                  id: user.id,
-                  userId : user.id
-                }
-                Model.client.create(dataClient).then((client)=>{
-                  if(client!==null){
-                    var accessToken = jwt.sign(
-                      {
-                        id: user.id,
-                        fullname:fullname,
-                        role: user.role,
-                        etatCompte:user.etatCompte
-                      
-                      },
-                      process.env.PRIVATE_KEY,
-                      { expiresIn: "1h" }
-                    );
-                    var refreshToken = jwt.sign(
-                      {
-                        id: user.id,
-                        fullname:fullname,
-                        role: user.role,
-                        etatCompte:user.etatCompte
-                        
-                      },
-                      process.env.REFRESH_KEY,
-                      { expiresIn: "30d" }
-                    );
-                    refreshTokens.push(refreshToken);
-                    return res.status(200).json({
-                        success: true,
-                        message: "success create and login ",
-                        accessToken: accessToken,
-                        refreshToken: refreshToken,
-                      });
-                    }
-                })
-                
-              }
-            });
+      const { email, fullname } = req.body;
+      Model.user.findOne({ where: { email: email } }).then((user) => {
+        if (user !== null) {
+          var accessToken = jwt.sign(
+            {
+              id: user.id,
+              fullname: user.fullname,
+              role: user.role,
+              avatar: user.avatar,
+              etatCompte: user.etatCompte,
+            },
+            process.env.PRIVATE_KEY,
+            { expiresIn: "1h" }
+          );
+          var refreshToken = jwt.sign(
+            {
+              id: user.id,
+              fullname: user.fullname,
+              role: user.role,
+              avatar: user.avatar,
+              etatCompte: user.etatCompte,
+            },
+            process.env.REFRESH_KEY,
+            { expiresIn: "30d" }
+          );
+          refreshTokens.push(refreshToken);
+          return res.status(200).json({
+            success: true,
+            message: "success login",
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+          });
+        } else {
+          const characters =
+            "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+          let Password = "";
+          for (let i = 0; i < 25; i++) {
+            Password +=
+              characters[Math.floor(Math.random() * characters.length)];
           }
-        });
+          const passwordHash = bcrypt.hashSync(Password, 10);
+          const datauser = {
+            fullname: fullname,
+            email: email,
+            password: passwordHash,
+            email_verifie: "verifie",
+            role: "client",
+            etatCompte: "active",
+          };
+          Model.user.create(datauser).then((user) => {
+            if (user !== null) {
+              const dataClient = {
+                id: user.id,
+                userId: user.id,
+              };
+              Model.client.create(dataClient).then((client) => {
+                if (client !== null) {
+                  var accessToken = jwt.sign(
+                    {
+                      id: user.id,
+                      fullname: fullname,
+                      role: user.role,
+                      etatCompte: user.etatCompte,
+                    },
+                    process.env.PRIVATE_KEY,
+                    { expiresIn: "1h" }
+                  );
+                  var refreshToken = jwt.sign(
+                    {
+                      id: user.id,
+                      fullname: fullname,
+                      role: user.role,
+                      etatCompte: user.etatCompte,
+                    },
+                    process.env.REFRESH_KEY,
+                    { expiresIn: "30d" }
+                  );
+                  refreshTokens.push(refreshToken);
+                  return res.status(200).json({
+                    success: true,
+                    message: "success create and login ",
+                    accessToken: accessToken,
+                    refreshToken: refreshToken,
+                  });
+                }
+              });
+            }
+          });
+        }
+      });
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -397,53 +384,61 @@ const userController = {
       });
     }
   },
-  updatePassword : async (req,res) =>{
-      try{
-        const {newPassword,ActuelPassword} = req.body ; 
-        Model.user.findOne({where : {id:req.params.id},attributes:["password"] }).then((response) => {
+  updatePassword: async (req, res) => {
+    try {
+      const { newPassword, ActuelPassword } = req.body;
+      Model.user
+        .findOne({ where: { id: req.params.id }, attributes: ["password"] })
+        .then((response) => {
           bcrypt.compare(ActuelPassword, response.password).then((isMatch) => {
-            if(!isMatch){
-              return  res.status(200).json({
-                success : false , 
-                message : " ActuelPassword not equal to password"
-              })
-            }else{
+            if (!isMatch) {
+              return res.status(200).json({
+                success: false,
+                message: " ActuelPassword not equal to password",
+              });
+            } else {
               const passwordHash = bcrypt.hashSync(newPassword, 10);
-              Model.user.update({password : passwordHash},{where :{id : req.params.id}}).then((response) => {
-                if(response!=0){
-                  return res.status(200).json({
-                    success : true , 
-                    message :" update Password done !! "
-                  })
-                }else{
-                  return res.status(400).json({
-                    success : false , 
-                    message : " err to update password " , 
-                  })
-                }
-            })
+              Model.user
+                .update(
+                  { password: passwordHash },
+                  { where: { id: req.params.id } }
+                )
+                .then((response) => {
+                  if (response != 0) {
+                    return res.status(200).json({
+                      success: true,
+                      message: " update Password done !! ",
+                    });
+                  } else {
+                    return res.status(400).json({
+                      success: false,
+                      message: " err to update password ",
+                    });
+                  }
+                });
             }
-          })
-        })
-      }catch(err){
-          return res.status(400).json({
-            success : false , 
-            err : err
-          })
-      }
+          });
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        err: err,
+      });
+    }
   },
   updateIdentite: async (req, res) => {
     try {
-      if(req.files.length!==0){
+      if (req.files.length !== 0) {
         req.body["image"] = req.files[0].filename;
-      }else{
-        req.body["image"]==null
+      } else {
+        req.body["image"] == null;
       }
 
-      const { Date_de_naissance,image,telephone,fullname,email } = req.body;
+      const { Date_de_naissance, image, telephone, fullname, email } = req.body;
       const data = {
-        Date_de_naissance: Date_de_naissance === "0000-00-00" ? null : Date_de_naissance,
-        avatar:image,
+        Date_de_naissance:
+          Date_de_naissance === "0000-00-00" ? null : Date_de_naissance,
+        avatar: image,
         telephone: telephone,
         fullname: fullname,
         email: email,
@@ -471,112 +466,128 @@ const userController = {
       });
     }
   },
-  addPoint : async (req,res)=>{
-    try{
-     Model.user.findByPk(req.params.id)
-      .then((user) => {
+  addPoint: async (req, res) => {
+    try {
+      Model.user.findByPk(req.params.id).then((user) => {
         if (user) {
-          const updatedPoint = user.point + (req.body.point);
-          Model.user.update({ point: updatedPoint },{ where: { id:req.params.id } }).then((response)=>{
-            if(response!==0){
-              return res.status(200).json({
-                success: true,
-                message: "update point done !!",
-              });
-            }else{
-              return res.status(400).json({
-                success: false,
-                message: " error de update point",
-              });
-            }
-          })
+          const updatedPoint = user.point + req.body.point;
+          Model.user
+            .update({ point: updatedPoint }, { where: { id: req.params.id } })
+            .then((response) => {
+              if (response !== 0) {
+                return res.status(200).json({
+                  success: true,
+                  message: "update point done !!",
+                });
+              } else {
+                return res.status(400).json({
+                  success: false,
+                  message: " error de update point",
+                });
+              }
+            });
         }
-        
       });
-    }catch(err){
+    } catch (err) {
       return res.status(400).json({
         success: false,
         error: err,
       });
     }
   },
-  bloque : async(req,res)=>{
-    try{
-      Model.user.update({etatCompte:"bloque"},{where : {id:req.params.id}}).then((response)=>{
-        if(response!==0){
-          return res.status(200).json({
-            success : true,
-            message :"blocage done !!!"
-          })
-        }else{
-          return res.status(400).json({
-            success : false,
-            message :"error"
-          })
-        }
-      })
-    }catch(err){
-      return res.status(400).json({
-        success: false,
-        error:err,
-      });
-    }
-  },
-  findAlluser : async(req,res)=>{
-    try{
-      Model.user.findAll({attributes:["id","fullname","email","avatar","role","telephone","createdAt","etatCompte"]}).then((response)=>{
-        try{
-            if(response!==null){
-              return res.status(200).json({
-                success : true , 
-                users: response,
-              })
-            }else{
-              return res.status(200).json({
-                success : true , 
-                users: [],
-              })
-            }
-        }catch(err){
-          return res.status(400).json({
-            success: false,
-            error:err,
-          });
-        }
-      })
-    }catch(err){
-      return res.status(400).json({
-        success: false,
-        error:err,
-      });
-    }
-  },
-  delete : async(req,res)=>{
-    try{
-      Model.user.destroy({
-        where: {
-          id: req.params.id,
-        },
-      }).then((response)=>{
-          if(response!==0){
+  bloque: async (req, res) => {
+    try {
+      Model.user
+        .update({ etatCompte: "bloque" }, { where: { id: req.params.id } })
+        .then((response) => {
+          if (response !== 0) {
             return res.status(200).json({
-              success:true , 
-              message: "user deleted" 
-            })
-          }else{
+              success: true,
+              message: "blocage done !!!",
+            });
+          } else {
             return res.status(400).json({
-              success:false , 
-              message: "error to delete user" 
-            })
+              success: false,
+              message: "error",
+            });
           }
-      })
-    }catch(error){
+        });
+    } catch (err) {
       return res.status(400).json({
         success: false,
-        error:err,
+        error: err,
       });
     }
-  }
+  },
+  findAlluser: async (req, res) => {
+    try {
+      Model.user
+        .findAll({
+          attributes: [
+            "id",
+            "fullname",
+            "email",
+            "avatar",
+            "role",
+            "telephone",
+            "createdAt",
+            "etatCompte",
+          ],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              return res.status(200).json({
+                success: true,
+                users: response,
+              });
+            } else {
+              return res.status(200).json({
+                success: true,
+                users: [],
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  delete: async (req, res) => {
+    try {
+      Model.user
+        .destroy({
+          where: {
+            id: req.params.id,
+          },
+        })
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "user deleted",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error to delete user",
+            });
+          }
+        });
+    } catch (error) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
 };
 module.exports = userController;
-
