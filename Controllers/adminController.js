@@ -15,7 +15,7 @@ const adminController = {
     const data = req.body;
     try {
       const { error } = addadminValidation(data);
-      if (error) return res.status(400).json(error.details[0].message);
+      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
       const passwordHash = bcrypt.hashSync(req.body.password, 10);
       const datauser = {
         fullname: req.body.fullname,
@@ -162,7 +162,7 @@ const adminController = {
     const { ids } = req.body;
     try {
       const { error } = deletecategoryValidation(req.body);
-      if (error) return res.status(400).json(error.details[0].message);
+      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
       Model.categorie
         .destroy({
           where: {
@@ -186,7 +186,7 @@ const adminController = {
   },
   addcategory: async (req, res) => {
     const { error } = addcategoryValidation(req.body);
-    if (error) return res.status(400).json(error.details[0].message);
+    if (error) return res.status(400).json({ success: false, err: error.details[0].message });
     try {
       if (req.files.length !== 0) {
         req.body["image"] = req.files[0].filename;
@@ -448,7 +448,7 @@ const adminController = {
     }
     try {
       const { error } = filtercommandeValidation(req.body);
-      if (error) return res.status(400).json(error.details[0].message);
+      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
       Model.produitlabrairie
         .findAll({
           where: whereClause,

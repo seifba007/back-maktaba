@@ -4,6 +4,7 @@ const codeClientController = {
   add: async (req, res) => {
     try {
       const { codePromoId, clientId } = req.body;
+      
       const data = {
         codePromoId: codePromoId,
         clientId: clientId,
@@ -56,6 +57,7 @@ const codeClientController = {
       });
     }
   },
+  
   findcode: async (req, res) => {
     try {
       Model.codePromo

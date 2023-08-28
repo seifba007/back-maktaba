@@ -2,6 +2,7 @@ const Model = require("../Models/index");
 const bcrypt = require("bcrypt");
 const sendMail = require("../config/Noemailer.config");
 const fournisseurController = {
+  
   addfournisseur: async (req, res) => {
     try {
       const { email, fullname } = req.body;

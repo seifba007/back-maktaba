@@ -14,7 +14,7 @@ const SousCategorieController = {
     };
     try {
       const { error } = subcategoryValidation(data);
-      if (error) return res.status(400).json(error.details[0].message);
+      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
 
       await Model.Souscategorie.create(data).then((reponse) => {
         if (reponse !== null) {
@@ -39,7 +39,7 @@ const SousCategorieController = {
 
     try {
       const { error } = subcategoryupdateValidation(data);
-      if (error) return res.status(400).json(error.details[0].message);
+      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
       await Model.Souscategorie.update(data, {
         where: {
           id: req.params.id,

@@ -3,10 +3,9 @@ const Joi = require("joi");
 const loginValidation = (data) => {
   const schema = Joi.object({
     email: Joi.string().required().email(),
-    password: Joi.string()
-      .min(6)
-      .required()
-      .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$")),
+    password:
+      Joi.string()
+      .required(),
   });
   return schema.validate(data);
 };
@@ -119,6 +118,7 @@ const codepromoValidation = (data) => {
   });
   return schema.validate(data);
 };
+
 const librairieValidation = (data) => {
   const schema = Joi.object({
     adresse: Joi.string(),
@@ -185,6 +185,7 @@ const suggestionProduitValidation = (data) => {
   });
   return schema.validate(data);
 };
+
 module.exports = {
   registerValidation,
   loginValidation,

@@ -20,7 +20,11 @@ const userController = {
 
     try {
       const { error } = loginValidation(data);
-      if (error) return res.status(400).json(error.details[0].message);
+      if (error)
+        return res.status(400).json({
+          success: false,
+          err: error.details[0].message,
+        });
       Model.user.findOne({ where: { email: email } }).then((User) => {
         if (User === null) {
           return res.status(400).json({
@@ -45,7 +49,7 @@ const userController = {
                     message: "success",
                     accessToken: accessToken,
                     refreshToken: refreshToken,
-                    user: User
+                    user: User 
                   });
                 }
               });
@@ -76,7 +80,10 @@ const userController = {
     try {
       //------------------------------- REGISTER VALIDATION HANDLER------------------------//
       const { error } = registerValidation(data);
-      if (error) return res.status(400).json(error.details[0].message);
+      if (error)
+        return res
+          .status(400)
+          .json({ success: false, err: error.details[0].message });
       Model.user.findOne({ where: { email: email } }).then((user) => {
         if (user !== null) {
           return res.status(400).json({
