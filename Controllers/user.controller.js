@@ -9,6 +9,7 @@ const {
   registerValidation,
   loginValidation,
 } = require("../middleware/auth/validationSchema");
+const user = require("../Models/user");
 const refreshTokens = [];
 const forgetpasswordToken = [];
 
@@ -44,7 +45,6 @@ const userController = {
                     message: "success",
                     accessToken: accessToken,
                     refreshToken: refreshToken,
-                    
                   });
                 }
               });
