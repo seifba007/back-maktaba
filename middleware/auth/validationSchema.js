@@ -107,6 +107,7 @@ const catalogeValidation = (data) => {
     description: Joi.string(),
     prix: Joi.number(),
     etat: Joi.string(),
+    AdminId:Joi.number(),
   });
   return schema.validate(data);
 };
@@ -150,12 +151,11 @@ const produitlibrairieValidation = (data) => {
     description: Joi.string(),
     image: Joi.string(),
     prix: { type: DataTypes.FLOAT },
-    prix_en_gros: Joi.number(),
     qte: Joi.number().integer(),
-    etat: Joi.string(),
-    prix_en_Solde: Joi.number(),
-    remise: Joi.number(),
-    refCataloge: Joi.string(),
+    labrairieId:Joi.number(),
+    categorieId:Joi.number(),
+    SouscategorieId:Joi.number(),
+
   });
   return schema.validate(data);
 };
