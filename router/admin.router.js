@@ -12,23 +12,20 @@ router.get("/allcategories", adminController.findAllcategories);
 router.get("/allproduits", adminController.findAllproduits);
 router.delete(
   "/deletecategory",
-  AuthorizationUser,
-  AuthorizationAdmin,
+
   adminController.deletecategory
 );
 
 router.post(
   "/addcategory",
-  AuthorizationUser,
-  AuthorizationAdmin,
+
   upload.array("image", 1),
   adminController.addcategory
 );
 
 router.delete(
   "/deletesuggestion",
-  AuthorizationUser,
-  AuthorizationAdmin,
+
   adminController.deletesuggestion
 );
 
