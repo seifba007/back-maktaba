@@ -58,6 +58,7 @@ const adminController = {
       });
     }
   },
+
   findAllusersrole: async (req, res) => {
     try {
       const response = await Model.user.findAll({
@@ -546,7 +547,7 @@ const adminController = {
     try {
       Model.produitlabrairie.findAll({
         where: {
-        
+      
           titre: name, 
         },
     

@@ -18,7 +18,10 @@ const produitController = {
 
     try {
       const { error } = produitlibrairieValidation(req.body);
-      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
+      if (error)
+        return res
+          .status(400)
+          .json({ success: false, err: error.details[0].message });
       req.body["image"] = req.files;
 
       const produitData = {
@@ -209,11 +212,14 @@ const produitController = {
     }
   },
   findAll: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
+
     try {
       Model.produitlabrairie
         .findAll({
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
           attributes: {
             exclude: ["updatedAt", "categorieId", "labrairieId", "description"],
           },
@@ -260,11 +266,13 @@ const produitController = {
     }
   },
   findAllProduitByLabrairie: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
     try {
       Model.produitlabrairie
         .findAll({
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
           where: { labrairieId: req.params.id },
           attributes: {
             exclude: [
@@ -366,11 +374,13 @@ const produitController = {
     }
   },
   findProduitsBycategorie: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
     try {
       Model.produitlabrairie
         .findAll({
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
           where: { categorieId: req.params.categorieId },
           attributes: {
             exclude: [
@@ -423,11 +433,13 @@ const produitController = {
     }
   },
   Liste_de_produits_librairie: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
     try {
       Model.produitlabrairie
         .findAll({
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
           where: { labrairieId: req.params.id },
           attributes: ["id", "titre", "prix", "updatedAt", "qte", "remise"],
           include: [
@@ -457,11 +469,14 @@ const produitController = {
   },
 
   produit_mieux_notes: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
+
     try {
       Model.produitlabrairie
         .findAll({
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
           attributes: ["id", "titre"],
           include: [
             {
@@ -498,12 +513,22 @@ const produitController = {
     }
   },
 
-  produitrecements: async (req, res) => {
-    const { lim } = req.body;
+  produitfiltreage: async (req, res) => {
+    const {sortBy, sortOrder, page, pageSize ,namearticle } = req.body;
+    const offset = (page - 1) * pageSize;
+    const wherec = {}
+    
+    if(sortBy, sortOrder,namearticle) {
+       order = [[sortBy, sortOrder === 'desc' ? 'DESC' : 'ASC']];
+       wherec.titre = namearticle 
+    }
     try {
       Model.produitlabrairie
         .findAll({
-          order: [["createdAt", "DESC"]],
+          order: order,
+          limit: +pageSize,
+          offset: offset,
+          where: wherec
         })
         .then((response) => {
           if (response !== null) {
@@ -522,12 +547,15 @@ const produitController = {
   },
 
   produitpluscher: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
+
     try {
       Model.produitlabrairie
         .findAll({
           order: [["prix", "DESC"]],
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
         })
         .then((response) => {
           if (response !== null) {
@@ -545,12 +573,15 @@ const produitController = {
     }
   },
   produitmoinscher: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
+
     try {
       Model.produitlabrairie
         .findAll({
           order: [["prix", "ASC"]],
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
         })
         .then((response) => {
           if (response !== null) {
@@ -569,12 +600,15 @@ const produitController = {
   },
 
   produitAlphabet: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
+
     try {
       Model.produitlabrairie
         .findAll({
           order: [["titre", "ASC"]],
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
         })
         .then((response) => {
           if (response !== null) {

@@ -45,11 +45,6 @@ router.get(
   ProduitLabrairieController.produit_mieux_notes
 );
 
-router.get("/produitrecements", ProduitLabrairieController.produitrecements);
-router.get("/produitpluscher", ProduitLabrairieController.produitpluscher);
-router.get("/produitmoinscher", ProduitLabrairieController.produitmoinscher);
+router.get("/produitfiltrage", ProduitLabrairieController.produitfiltreage);
 
-router.get("/produitalphabet", ProduitLabrairieController.produitAlphabet);
-
-router.get("/produitpagination", ProduitLabrairieController.produitAlphabet);
 module.exports = router;

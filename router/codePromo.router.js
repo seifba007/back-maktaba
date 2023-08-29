@@ -5,5 +5,6 @@ router.post("/add", codePromoController.add)
 router.delete("/delete/:id" , codePromoController.delete)
 router.get("/findAll",codePromoController.findAll) 
 router.get("/findOne/:code", codePromoController.findOne)
+router.get("/findCodeOrPartenaire", codePromoController.findCodeOrPartenaire)
 router.put("/update/:id" , codePromoController.update)
 module.exports = router
