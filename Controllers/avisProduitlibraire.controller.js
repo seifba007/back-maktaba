@@ -374,6 +374,10 @@ const avisProduitlibraireController = {
               order: [["nbStart", "DESC"]],
               limit: 1,
               include: [
+                { model: Model.client, attributes: ["userId"] , include:[{
+                  model: Model.user,
+                  attributes: ["fullname","avatar"],
+                }]},
                 {
                   model: Model.produitlabrairie,
                   attributes: ["id"],
