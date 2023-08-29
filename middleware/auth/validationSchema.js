@@ -3,9 +3,10 @@ const Joi = require("joi");
 const loginValidation = (data) => {
   const schema = Joi.object({
     email: Joi.string().required().email(),
-    password:
-      Joi.string()
-      .required(),
+    password: Joi.string()
+      .min(6)
+      .required()
+      .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$")),
   });
   return schema.validate(data);
 };
@@ -62,7 +63,6 @@ const filtercommandeValidation = (data) => {
   });
   return schema.validate(data);
 };
-
 const addAdresseValidation = (data) => {
   const schema = Joi.object({
     Nom_de_adresse: Joi.string(),
@@ -97,6 +97,9 @@ const bonAchatValidation = (data) => {
     solde: Joi.number(),
     etat: Joi.string(),
     code: Joi.string(),
+    userId:Joi.number(),
+    partenaireId:Joi.number(),
+    nbpoint:Joi.number()
   });
   return schema.validate(data);
 };
@@ -107,7 +110,6 @@ const catalogeValidation = (data) => {
     description: Joi.string(),
     prix: Joi.number(),
     etat: Joi.string(),
-    AdminId:Joi.number(),
   });
   return schema.validate(data);
 };
@@ -119,7 +121,6 @@ const codepromoValidation = (data) => {
   });
   return schema.validate(data);
 };
-
 const librairieValidation = (data) => {
   const schema = Joi.object({
     adresse: Joi.string(),
@@ -151,11 +152,12 @@ const produitlibrairieValidation = (data) => {
     description: Joi.string(),
     image: Joi.string(),
     prix: { type: DataTypes.FLOAT },
+    prix_en_gros: Joi.number(),
     qte: Joi.number().integer(),
-    labrairieId:Joi.number(),
-    categorieId:Joi.number(),
-    SouscategorieId:Joi.number(),
-
+    etat: Joi.string(),
+    prix_en_Solde: Joi.number(),
+    remise: Joi.number(),
+    refCataloge: Joi.string(),
   });
   return schema.validate(data);
 };
@@ -185,7 +187,6 @@ const suggestionProduitValidation = (data) => {
   });
   return schema.validate(data);
 };
-
 module.exports = {
   registerValidation,
   loginValidation,

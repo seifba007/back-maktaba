@@ -18,7 +18,6 @@ const bonAchatController = {
           const randomDigit = Math.floor(Math.random() * 10);
           code += randomDigit;
         }
-
         return code;
       }
       const data = {
