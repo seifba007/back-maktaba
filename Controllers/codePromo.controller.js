@@ -147,7 +147,7 @@ const codePromo = {
 
 
   findCodeOrPartenaire: async (req, res) => {
-    const {codeName, partenaireId} = req.body
+    const {codeName, partenaireId} = req.query
     if(codeName){
       try {
         Model.codePromo.findAll({

@@ -549,7 +549,7 @@ const adminController = {
   },
 
   findproduitbyname: async (req, res) => {
-    const {name} = req.body
+    const {name} = req.query
     try {
       Model.produitlabrairie.findAll({
         where: {
@@ -582,14 +582,15 @@ const adminController = {
 
   
   findfournissbyname: async (req, res) => {
-    const {name} = req.body
+    const {name} = req.query
     try {
       Model.fournisseur.findAll({
+        where:{
+          nameetablissement:name
+        },
         include: [
           {
             model: Model.user,
-            
-          
           },
         ]
       }).then((response) => {

@@ -35,13 +35,10 @@ router.get(
   "/findProduitsBycategorie/:categorieId",
   ProduitLabrairieController.findProduitsBycategorie
 );
-router.get(
-  "/ListeDeProduitslibrairie/:id",
-  ProduitLabrairieController.Liste_de_produits_librairie
-);
+
 
 router.get(
-  "/produit_mieux_notes/:id",
+  "/produit_mieux_notes",
   ProduitLabrairieController.produit_mieux_notes
 );
 

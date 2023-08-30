@@ -9,6 +9,8 @@ const adressesController = {
       Ville,
       Code_postal,
       clientId,
+      partenaireId,
+      fournisseurId
     } = req.body;
     try {
       const { error } = addAdresseValidation(req.body);
@@ -20,6 +22,8 @@ const adressesController = {
         Ville: Ville,
         Code_postal: Code_postal,
         clientId: clientId,
+        partenaireId:partenaireId,
+       fournisseurId:fournisseurId
       };
       Model.adresses.create(data).then((response) => {
         if (response !== null) {
