@@ -10,6 +10,7 @@ const adressesController = {
       Code_postal,
       clientId,
     } = req.body;
+    
     try {
       const { error } = addAdresseValidation(req.body);
       if (error) return res.status(400).json({ success: false, err: error.details[0].message });
