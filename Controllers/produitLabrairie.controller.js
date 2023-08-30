@@ -212,16 +212,21 @@ const produitController = {
     }
   },
   findAll: async (req, res) => {
-    const { page, pageSize } = req.body;
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    console.log(sortBy, sortOrder, page, pageSize)
     const offset = (page - 1) * pageSize;
 
+    if ((sortBy, sortOrder)) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
     try {
       Model.produitlabrairie
         .findAll({
           limit: +pageSize,
           offset: offset,
+          order: order,
           attributes: {
-            exclude: ["updatedAt", "categorieId", "labrairieId", "description"],
+            exclude: ["categorieId", "description"],
           },
           include: [
             {
@@ -235,14 +240,14 @@ const produitController = {
             },
             {
               model: Model.avisProduitlibraire,
-              attributes: [
-                [Sequelize.fn("max", Sequelize.col("nbStart")), "max_nb"],
-                [Sequelize.fn("SUM", Sequelize.col("nbStart")), "total_avis"],
-              ],
+              //attributes: [
+                //[Sequelize.fn("max", Sequelize.col("nbStart")), "max_nb"],
+                //[Sequelize.fn("SUM", Sequelize.col("nbStart")), "total_avis"],
+              //],
             },
             { model: Model.categorie, attributes: ["id", "name"] },
           ],
-          order: [["createdAt", "DESC"]],
+
           group: ["produitlabrairie.id"],
         })
         .then((response) => {
@@ -265,24 +270,23 @@ const produitController = {
       });
     }
   },
+
   findAllProduitByLabrairie: async (req, res) => {
-    const { page, pageSize } = req.body;
+    const { page, pageSize, sortBy, sortOrder } = req.query;
     const offset = (page - 1) * pageSize;
+
+    if ((sortBy, sortOrder)) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
+
     try {
       Model.produitlabrairie
         .findAll({
+          order: order,
           limit: +pageSize,
           offset: offset,
           where: { labrairieId: req.params.id },
-          attributes: {
-            exclude: [
-              "createdAt",
-              "updatedAt",
-              "categorieId",
-              "labrairieId",
-              "description",
-            ],
-          },
+          
           include: [
             {
               model: Model.labrairie,
@@ -301,7 +305,7 @@ const produitController = {
               ],
             },
           ],
-          order: [["createdAt", "DESC"]],
+
           group: ["produitlabrairie.id"],
         })
         .then((response) => {
@@ -373,23 +377,23 @@ const produitController = {
       });
     }
   },
+
   findProduitsBycategorie: async (req, res) => {
-    const { page, pageSize } = req.body;
+    const { page, pageSize, sortBy, sortOrder } = req.body;
     const offset = (page - 1) * pageSize;
+
+    if ((sortBy, sortOrder)) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
     try {
       Model.produitlabrairie
         .findAll({
+          order: order,
           limit: +pageSize,
           offset: offset,
           where: { categorieId: req.params.categorieId },
           attributes: {
-            exclude: [
-              "createdAt",
-              "updatedAt",
-              "categorieId",
-              "labrairieId",
-              "description",
-            ],
+            exclude: ["categorieId", "description"],
           },
           include: [
             {
@@ -409,7 +413,7 @@ const produitController = {
               ],
             },
           ],
-          order: [["createdAt", "DESC"]],
+          order: order,
           group: ["produitlabrairie.id"],
         })
         .then((response) => {
@@ -432,20 +436,27 @@ const produitController = {
       });
     }
   },
+
   Liste_de_produits_librairie: async (req, res) => {
-    const { page, pageSize } = req.body;
+    const { page, pageSize, sortBy, sortOrder } = req.body;
     const offset = (page - 1) * pageSize;
+
+    if ((sortBy, sortOrder)) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
     try {
       Model.produitlabrairie
         .findAll({
-          limit: +pageSize,
-          offset: offset,
+         
           where: { labrairieId: req.params.id },
-          attributes: ["id", "titre", "prix", "updatedAt", "qte", "remise"],
+          attributes: ["id", "titre", "prix", "updatedAt","createdAt", "qte", "remise"],
           include: [
             { model: Model.categorie, attributes: ["id", "name"] },
             { model: Model.imageProduitLibrairie, attributes: ["name_Image"] },
           ],
+          order: order,
+          limit: +pageSize,
+          offset: offset,
         })
         .then((response) => {
           if (response.length !== 0) {
@@ -469,12 +480,17 @@ const produitController = {
   },
 
   produit_mieux_notes: async (req, res) => {
-    const { page, pageSize } = req.body;
+    const { page, pageSize, sortBy, sortOrder } = req.body;
     const offset = (page - 1) * pageSize;
+
+    if ((sortBy, sortOrder)) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
 
     try {
       Model.produitlabrairie
         .findAll({
+          order: order,
           limit: +pageSize,
           offset: offset,
           attributes: ["id", "titre"],
@@ -514,13 +530,13 @@ const produitController = {
   },
 
   produitfiltreage: async (req, res) => {
-    const {sortBy, sortOrder, page, pageSize ,namearticle } = req.body;
+    const { sortBy, sortOrder, page, pageSize, namearticle } = req.body;
     const offset = (page - 1) * pageSize;
-    const wherec = {}
-    
-    if(sortBy, sortOrder,namearticle) {
-       order = [[sortBy, sortOrder === 'desc' ? 'DESC' : 'ASC']];
-       wherec.titre = namearticle 
+    const wherec = {};
+
+    if ((sortBy, sortOrder, namearticle)) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+      wherec.titre = namearticle;
     }
     try {
       Model.produitlabrairie
@@ -528,87 +544,7 @@ const produitController = {
           order: order,
           limit: +pageSize,
           offset: offset,
-          where: wherec
-        })
-        .then((response) => {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              produit: response,
-            });
-          }
-        });
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        err: err,
-      });
-    }
-  },
-
-  produitpluscher: async (req, res) => {
-    const { page, pageSize } = req.body;
-    const offset = (page - 1) * pageSize;
-
-    try {
-      Model.produitlabrairie
-        .findAll({
-          order: [["prix", "DESC"]],
-          limit: +pageSize,
-          offset: offset,
-        })
-        .then((response) => {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              produit: response,
-            });
-          }
-        });
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        err: err,
-      });
-    }
-  },
-  produitmoinscher: async (req, res) => {
-    const { page, pageSize } = req.body;
-    const offset = (page - 1) * pageSize;
-
-    try {
-      Model.produitlabrairie
-        .findAll({
-          order: [["prix", "ASC"]],
-          limit: +pageSize,
-          offset: offset,
-        })
-        .then((response) => {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              produit: response,
-            });
-          }
-        });
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        err: err,
-      });
-    }
-  },
-
-  produitAlphabet: async (req, res) => {
-    const { page, pageSize } = req.body;
-    const offset = (page - 1) * pageSize;
-
-    try {
-      Model.produitlabrairie
-        .findAll({
-          order: [["titre", "ASC"]],
-          limit: +pageSize,
-          offset: offset,
+          where: wherec,
         })
         .then((response) => {
           if (response !== null) {

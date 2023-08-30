@@ -1,6 +1,7 @@
 const { where, Sequelize } = require("sequelize");
 const Model = require("../Models/index");
 const clientController = {
+  
   findOneClient: async (req, res) => {
     try {
       Model.user
@@ -9,11 +10,10 @@ const clientController = {
           attributes: {
             exclude: [
               "password",
-              "createdAt",
-              "updatedAt",
-              "email_verifie",
-              "role",
             ],
+            where:{
+              role: ["client"]
+            }
           },
           include: [
             {

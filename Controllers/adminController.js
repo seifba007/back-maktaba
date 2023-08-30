@@ -224,7 +224,6 @@ const adminController = {
 
   deletesuggestion: async (req, res) => {
     const { ids } = req.body;
-
     try {
       Model.suggestionProduit
         .destroy({
@@ -374,13 +373,20 @@ const adminController = {
     try {
       Model.user
         .findAll({
-          where: {
-            role: ["partenaire"],
-          },
+          attributes:["id","email","email_verifie","role","fullname","avatar","Date_de_naissance","telephone","point"],
+          
           include: [
             {
               model: Model.partenaire,
               attributes: ["nameetablissement"],
+            },
+            {
+              model: Model.fournisseur,
+              attributes: ["nameetablissement"],
+            },
+            {
+              model: Model.labrairie,
+              attributes: ["nameLibrairie"],
             },
           ],
         })
@@ -413,7 +419,7 @@ const adminController = {
   },
 
   findCommandefiltre: async (req, res) => {
-    const filters = req.body;
+    const filters = req.query;
     const whereClause = {};
     if (filters.categorieId) {
       whereClause.categorieId = filters.categorieId;
