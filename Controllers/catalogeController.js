@@ -4,56 +4,66 @@ const { catalogeValidation } = require("../middleware/auth/validationSchema");
 const CatalogeController = {
   
   add: async (req, res) => {
-    const { titre, description, prix, image,etat, AdminId, categorieId,SouscategorieId} = req.body;
+    const { titre, description, prix, image, etat, AdminId, categorieId, SouscategorieId } = req.body;
     const data = {
-      titre: titre,
-      description: description,
-      prix: prix,
-      etat: etat,
-      AdminId: AdminId,
-      categorieId: categorieId,
-      SouscategorieId:SouscategorieId
+        titre: titre,
+        description: description,
+        prix: prix,
+        etat: etat,
+        AdminId: AdminId,
+        categorieId: categorieId,
+        SouscategorieId: SouscategorieId,
     };
     try {
-      const { error } = catalogeValidation(req.body);
-      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
-      req.body["image"] = req.files;
-      const images = [];
-      Model.cataloge.create(data).then((response) => {
-        if (response !== null) {
-          image.map((e) => {
-            images.push({
-              name_Image: e.filename,
-              catalogeId: response.id,
-            });
-          });
-          Model.imageCataloge.bulkCreate(images).then((response) => {
-            if (response !== null) {
-              return res.status(200).json({
-                success: true,
-                message: "Done !! ",
-              });
-            } else {
-              return res.status(400).json({
+        const { error } = catalogeValidation(req.body);
+        if (error) return res.status(400).json({ success: false, err: error.details[0].message });
+
+        if (!Array.isArray(req.files)) {
+            return res.status(400).json({
                 success: false,
-                error: "error",
-              });
-            }
-          });
-        } else {
-          return res.status(400).json({
-            success: false,
-            message: "error to create cataloge",
-          });
+                error: "Images should be an array",
+            });
         }
-      });
+
+        const images = [];
+
+        Model.cataloge.create(data).then((response) => {
+            if (response !== null) {
+                req.files.map((e) => {
+                    images.push({
+                        name_Image: e.filename,
+                        catalogeId: response.id,
+                    });
+                });
+
+                Model.imageCataloge.bulkCreate(images).then((response) => {
+                    if (response !== null) {
+                        return res.status(200).json({
+                            success: true,
+                            message: "Done !!",
+                        });
+                    } else {
+                        return res.status(400).json({
+                            success: false,
+                            error: "error",
+                        });
+                    }
+                });
+            } else {
+                return res.status(400).json({
+                    success: false,
+                    message: "error to create catalog",
+                });
+            }
+        });
     } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err,
-      });
+        return res.status(400).json({
+            success: false,
+            error: err,
+        });
     }
-  },
+},
+
   findAll: async (req, res) => {
     try {
       Model.cataloge
