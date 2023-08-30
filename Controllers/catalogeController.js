@@ -21,7 +21,7 @@ const CatalogeController = {
       const images = [];
       Model.cataloge.create(data).then((response) => {
         if (response !== null) {
-          image.map((e) => {
+          image?.map((e) => {
             images.push({
               name_Image: e.filename,
               catalogeId: response.id,

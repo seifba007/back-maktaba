@@ -9,11 +9,10 @@ const clientController = {
           attributes: {
             exclude: [
               "password",
-              "createdAt",
-              "updatedAt",
-              "email_verifie",
-              "role",
             ],
+            where:{
+              role: ["client"]
+            }
           },
           include: [
             {
@@ -42,7 +41,9 @@ const clientController = {
               message: "client introuvable",
             });
           }
-        });
+        }).catch(err=>{
+          console.log(err)
+        })
     } catch (err) {
       return res.status(400).json({
         success: false,

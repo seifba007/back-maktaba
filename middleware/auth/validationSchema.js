@@ -45,7 +45,7 @@ const addcategoryValidation = (data) => {
   const schema = Joi.object({
     name: Joi.string().min(2).required(),
     Description: Joi.string().min(6).required(),
-    subcategories: Joi.array().items(Joi.string()).unique(),
+    subcategories: Joi.string(),
   });
   return schema.validate(data);
 };
@@ -110,6 +110,9 @@ const catalogeValidation = (data) => {
     description: Joi.string(),
     prix: Joi.number(),
     etat: Joi.string(),
+    AdminId:Joi.number(),
+    categorieId: Joi.number(),
+    SouscategorieId:Joi.number(),
   });
   return schema.validate(data);
 };
