@@ -3,9 +3,7 @@ const Joi = require("joi");
 const loginValidation = (data) => {
   const schema = Joi.object({
     email: Joi.string().required().email(),
-    password:
-      Joi.string()
-      .required(),
+    password: Joi.string().required(),
   });
   return schema.validate(data);
 };
@@ -69,7 +67,9 @@ const addAdresseValidation = (data) => {
     Gouvernorat: Joi.string(),
     Ville: Joi.string(),
     Code_postal: Joi.number().integer(),
-    clientId:Joi.number().integer(),
+    clientId: Joi.number().integer(),
+    partenaireId: Joi.number().integer(),
+    fournisseurId: Joi.number().integer(),
   });
   return schema.validate(data);
 };
@@ -78,6 +78,9 @@ const addAvisProdValidation = (data) => {
   const schema = Joi.object({
     nbStart: Joi.number().integer(),
     commenter: Joi.string(),
+    clientId: Joi.number().integer(),
+    partenaireId: Joi.number().integer(),
+    produitlabrairieId: Joi.number().integer(),
   });
   return schema.validate(data);
 };
@@ -87,6 +90,14 @@ const becomePartnerValidation = (data) => {
     fullname: Joi.string().min(2).required(),
     email: Joi.string().required().email(),
     phone: Joi.number().integer(),
+    Role: Joi.string(),
+    name_work: Joi.string(),
+    file: Joi.string(),
+    links: Joi.string(),
+    detail: Joi.string(),
+    etat: Joi.string(),
+    pack: Joi.string(),
+    AdminId: Joi.number().integer(),
   });
   return schema.validate(data);
 };
@@ -96,6 +107,10 @@ const bonAchatValidation = (data) => {
     solde: Joi.number(),
     etat: Joi.string(),
     code: Joi.string(),
+    userId:Joi.number(),
+    partenaireId: Joi.number(),
+    fournisseurId: Joi.number(),
+    labrairieId:Joi.number(),
   });
   return schema.validate(data);
 };
@@ -108,7 +123,7 @@ const catalogeValidation = (data) => {
     etat: Joi.string(),
     AdminId: Joi.number(),
     categorieId: Joi.number(),
-    SouscategorieId: Joi.number()
+    SouscategorieId: Joi.number(),
   });
   return schema.validate(data);
 };
@@ -188,12 +203,20 @@ const suggestionProduitValidation = (data) => {
   return schema.validate(data);
 };
 
+const deletesuggestionValidation = (data) => {
+  const schema = Joi.object({
+    ids: Joi.array().items(Joi.number().integer()).unique(),
+  });
+  return schema.validate(data);
+};
+
 module.exports = {
   registerValidation,
   loginValidation,
   addadminValidation,
   deletecategoryValidation,
   addcategoryValidation,
+  deletesuggestionValidation,
   filtercommandeValidation,
   addAdresseValidation,
   addAvisProdValidation,

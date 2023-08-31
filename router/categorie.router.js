@@ -9,6 +9,7 @@ router.put(
   AuthorizationAdmin,
   categorieController.update
 );
+
 router.delete(
   "/deleteCategorie/:id",
   AuthorizationAdmin,

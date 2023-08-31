@@ -1,6 +1,5 @@
 const { where } = require("sequelize");
 const Model = require("../Models/index");
-const { codepromoValidation } = require("../middleware/auth/validationSchema");
 const codePromo = {
   add: async (req, res) => {
     const { userName,  pourcentage, labrairieId, partenaireId } = req.body;

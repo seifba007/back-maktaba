@@ -6,7 +6,7 @@ const {
   AuthorizationAdmin,
 } = require("../middleware/auth/auth");
 const router = express.Router();
-router.post("/add", AuthorizationUser, AuthorizationAdmin, adminController.add);
+router.post("/add", adminController.add);
 router.get("/allusersrole", adminController.findAllusersrole);
 router.get("/allcategories", adminController.findAllcategories);
 router.get("/allproduits", adminController.findAllproduits);

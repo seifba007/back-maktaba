@@ -9,6 +9,7 @@ const {
   deletecategoryValidation,
   addcategoryValidation,
   filtercommandeValidation,
+  deletesuggestionValidation,
 } = require("../middleware/auth/validationSchema");
 const adminController = {
   add: async (req, res) => {
@@ -218,12 +219,15 @@ const adminController = {
       return res.status(400).json({
         success: false,
         error: err,
-      });
-    }
-  },
+      });
+    }
+  },
 
   deletesuggestion: async (req, res) => {
     const { ids } = req.body;
+
+    const { error } = deletesuggestionValidation(req.body);
+    if (error) return res.status(400).json({ success: false, err: error.details[0].message });
     try {
       Model.suggestionProduit
         .destroy({

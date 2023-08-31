@@ -10,14 +10,13 @@ const {
 router.post(
   "/add",
   AuthorizationUser,
-  AuthorizationClient,
   upload.array("file", 1),
   BecomePartnerController.add
 );
 router.get("/findAll", BecomePartnerController.findAll);
 router.post(
   "/accepter/:id",
-  AuthorizationUser,
+  //AuthorizationUser,
   AuthorizationAdmin,
   BecomePartnerController.accepte
 );

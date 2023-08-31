@@ -9,11 +9,10 @@ router.post(
   upload.array("image", 3),
   ProduitLabrairieController.add_produit_with_import_image
 );
-router.post(
-  "/addProdCataloge",
-  AuthorizationUser,
-  ProduitLabrairieController.add
-);
+
+router.post("/addProdCataloge",
+AuthorizationUser,ProduitLabrairieController.add)
+
 router.put(
   "/update/:id",
   AuthorizationUser,
