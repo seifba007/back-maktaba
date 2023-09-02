@@ -70,9 +70,19 @@ const produitController = {
     }
   },
   add: async (req, res) => {
+    const {
+      titre,
+      description,
+      image,
+      prix,
+      labrairieId,
+      categorieId,
+      SouscategorieId,
+      qte,
+    } = req.body;
     try {
-      const { titre, description, image, prix, labrairieId, categorieId,SouscategorieId,qte } =
-        req.body;
+      const { error } = produitlibrairieValidation(req.body);
+      if (error) return res.status(400).json(error.details[0].message);
       const produitData = {
         titre: titre,
         description: description,
@@ -80,14 +90,14 @@ const produitController = {
         qte: qte,
         categorieId: categorieId,
         labrairieId: labrairieId,
-        SouscategorieId:SouscategorieId
+        SouscategorieId: SouscategorieId,
       };
       const images = [];
       Model.produitlabrairie.create(produitData).then((response) => {
         if (response !== null) {
           image.map((e) => {
             images.push({
-              name_Image:e.name_Image,
+              name_Image: e.name_Image,
               produitlabrairieId: response.id,
             });
           });
@@ -202,6 +212,7 @@ const produitController = {
     }
   },
 
+
   findAll: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize } = req.query;
 
@@ -257,9 +268,11 @@ const produitController = {
   findAllProduitByLabrairie: async (req, res) => {
     const { page, pageSize, sortBy, sortOrder } = req.query;
     const offset = (page - 1) * pageSize;
+
     if ((sortBy, sortOrder)) {
       order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     }
+
     try {
       Model.produitlabrairie
         .findAll({

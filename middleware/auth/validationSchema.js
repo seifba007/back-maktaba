@@ -70,6 +70,7 @@ const addAdresseValidation = (data) => {
     Gouvernorat: Joi.string(),
     Ville: Joi.string(),
     Code_postal: Joi.number().integer(),
+    clientId:Joi.number().integer(),
   });
   return schema.validate(data);
 };
@@ -78,7 +79,7 @@ const addAvisProdValidation = (data) => {
   const schema = Joi.object({
     nbStart: Joi.number().integer(),
     commenter: Joi.string(),
-  }); 
+  });
   return schema.validate(data);
 };
 
@@ -87,14 +88,6 @@ const becomePartnerValidation = (data) => {
     fullname: Joi.string().min(2).required(),
     email: Joi.string().required().email(),
     phone: Joi.number().integer(),
-    Role: Joi.string(),
-    name_work: Joi.string(),
-    file: Joi.string(),
-    links: Joi.string(),
-    detail: Joi.string(),
-    etat: Joi.string(),
-    pack: Joi.string(),
-    AdminId: Joi.number().integer(),
   });
   return schema.validate(data);
 };
@@ -117,9 +110,6 @@ const catalogeValidation = (data) => {
     description: Joi.string(),
     prix: Joi.number(),
     etat: Joi.string(),
-    AdminId:  Joi.number(),
-    categorieId:  Joi.number(),
-    SouscategorieId:  Joi.number(),
   });
   return schema.validate(data);
 };

@@ -8,21 +8,23 @@ const produitFavorieController = {
         userId: userId,
         produitlabrairieId: produitlabrairieId,
       };
-      Model.produitFavorie.findOne({where:{produitlabrairieId:produitlabrairieId}}).then((response)=>{
-          if(response!==null){
+
+      Model.produitFavorie.findOne({where:{userId:userId,produitlabrairieId:produitlabrairieId}}).then((response)=>{
+        if(response!==null){
             return res.status(200).json({
               success: false,
               message: " produit est deja dans la liste de produit favorie",
             });
           }else{
             Model.produitFavorie.create(data).then((response) => {
+             
               if (response !== null) {
                 return res.status(200).json({
                   success: true,
                   message: " add produitFavorie Done",
                 });
               } else {
-                return res.status(400).json({
+                return res.status(200).json({
                   success: false,
                   message: "  err  to add produit in list favorie",
                 });

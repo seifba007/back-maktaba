@@ -9,8 +9,11 @@ router.post(
   upload.array("image", 3),
   ProduitLabrairieController.add_produit_with_import_image
 );
-router.post("/addProdCataloge",
-AuthorizationUser,ProduitLabrairieController.add);
+router.post(
+  "/addProdCataloge",
+  AuthorizationUser,
+  ProduitLabrairieController.add
+);
 router.put(
   "/update/:id",
   AuthorizationUser,
@@ -23,7 +26,10 @@ router.delete(
   ProduitLabrairieController.delete
 );
 router.get("/findAll", ProduitLabrairieController.findAll);
-router.get(  "/findBylabrairie/:id",  ProduitLabrairieController.findAllProduitByLabrairie);
+router.get(
+  "/findBylabrairie/:id",
+  ProduitLabrairieController.findAllProduitByLabrairie
+);
 router.get("/findOneProduit/:id", ProduitLabrairieController.findOneProduit);
 router.get(
   "/findProduitsBycategorie/:categorieId",
