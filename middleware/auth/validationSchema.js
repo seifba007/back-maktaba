@@ -110,6 +110,9 @@ const catalogeValidation = (data) => {
     description: Joi.string(),
     prix: Joi.number(),
     etat: Joi.string(),
+    AdminId: Joi.number(),
+    categorieId: Joi.number(),
+    SouscategorieId: Joi.number(),
   });
   return schema.validate(data);
 };

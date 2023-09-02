@@ -10,8 +10,8 @@ const avisProduitlibraireController = {
     const { nbStart, commenter, clientId, produitlabrairieId, partenaireId } =
       req.body;
     try {
-      const { error } = addAvisProdValidation(req.body);
-      if (error)
+      const { error } = addAvisProdValidation({commenter:commenter,nbStart:nbStart});
+            if (error)
         return res
           .status(400)
           .json({ success: false, err: error.details[0].message });
