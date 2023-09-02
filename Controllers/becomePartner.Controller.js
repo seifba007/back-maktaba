@@ -33,7 +33,6 @@ const BecomePartnerController = {
       etat: "en attente",
       AdminId: AdminId,
     };
-    console.log(req.files[0].filename)
     try {
       if (req.files.length !== 0) {
         req.body["file"] = req.files[0].filename;
