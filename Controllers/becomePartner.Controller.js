@@ -26,13 +26,14 @@ const BecomePartnerController = {
       phone: phone,
       Role: Role,
       name_work: name_work,
-      file: file,
+      file: req.files[0].filename,
       links: links,
       detail: detail,
       pack: pack,
       etat: "en attente",
       AdminId: AdminId,
     };
+    console.log(req.files[0].filename)
     try {
       if (req.files.length !== 0) {
         req.body["file"] = req.files[0].filename;
