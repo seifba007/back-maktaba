@@ -466,7 +466,7 @@ const produitController = {
     const wherec = {};
     order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     wherec.titre = namearticle;
-    
+
     try {
       Model.produitlabrairie
         .findAll({
@@ -474,6 +474,16 @@ const produitController = {
           limit: +pageSize,
           offset: offset,
           where: wherec,
+          include: [
+            {
+              model: Model.imageProduitLibrairie,
+              attributes: ["name_Image"],
+            },
+            {
+              model: Model.labrairie,
+              attributes: ["id","adresse","telephone","nameLibrairie","facebook","instagram","imageStore","emailLib"]
+            },
+          ],
         })
         .then((response) => {
           if (response !== null) {

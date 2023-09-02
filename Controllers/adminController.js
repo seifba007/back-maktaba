@@ -421,82 +421,124 @@ const adminController = {
   findCommandefiltre: async (req, res) => {
     const filters = req.query;
     const whereClause = {};
+
     if (filters.categorieId) {
-      whereClause.categorieId = filters.categorieId;
+        if (typeof filters.categorieId === 'string') {
+            filters.categorieId = filters.categorieId.split(',').map(id => parseInt(id, 10));
+        }
+        whereClause.categorieId = filters.categorieId;
     }
+
     if (filters.SouscategorieId) {
-      whereClause.SouscategorieId = filters.SouscategorieId;
-    }
-    if (filters.prixMin && filters.prixMax) {
-      whereClause.prix = {
-        [sequelize.Op.between]: [filters.prixMin, filters.prixMax],
-      };
-    } else if (filters.prixMin) {
-      whereClause.prix = { [sequelize.Op.gte]: filters.prixMin };
-    } else if (filters.prixMax) {
-      whereClause.prix = { [sequelize.Op.lte]: filters.prixMax };
+        if (typeof filters.SouscategorieId === 'string') {
+            filters.SouscategorieId = filters.SouscategorieId.split(',').map(id => parseInt(id, 10));
+        }
+        whereClause.SouscategorieId = filters.SouscategorieId;
     }
 
     if (filters.qteMin && filters.qteMax) {
-      whereClause.qte = {
-        [sequelize.Op.between]: [filters.qteMin, filters.qteMax],
-      };
+        whereClause.qte = {
+            [sequelize.Op.between]: [filters.qteMin, filters.qteMax],
+        };
     } else if (filters.qteMin) {
-      whereClause.qte = { [sequelize.Op.gte]: filters.qteMin };
+        whereClause.qte = { [sequelize.Op.gte]: filters.qteMin };
     } else if (filters.qteMax) {
-      whereClause.qte = { [sequelize.Op.lte]: filters.qteMax };
+        whereClause.qte = { [sequelize.Op.lte]: filters.qteMax };
     }
 
     if (filters.etat) {
-      whereClause.etat = filters.etat;
+        whereClause.etat = filters.etat;
     }
+
     if (filters.titre) {
-      whereClause.titre = filters.titre;
+        whereClause.titre = filters.titre;
     }
+
+    if (filters.prixMin && filters.prixMax) {
+        whereClause[sequelize.Op.or] = [
+            {
+                prix: {
+                    [sequelize.Op.between]: [filters.prixMin, filters.prixMax],
+                },
+            },
+            {
+                prix_en_solde: {
+                    [sequelize.Op.between]: [filters.prixMin, filters.prixMax],
+                },
+            },
+        ];
+    } else if (filters.prixMin) {
+        whereClause[sequelize.Op.or] = [
+            {
+                prix: { [sequelize.Op.gte]: filters.prixMin },
+            },
+            {
+                prix_en_solde: { [sequelize.Op.gte]: filters.prixMin },
+            },
+        ];
+    } else if (filters.prixMax) {
+        whereClause[sequelize.Op.or] = [
+            {
+                prix: { [sequelize.Op.lte]: filters.prixMax },
+            },
+            {
+                prix_en_solde: { [sequelize.Op.lte]: filters.prixMax },
+            },
+        ];
+    }
+
     try {
-      const { error } = filtercommandeValidation(req.body);
-      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
-      Model.produitlabrairie
-        .findAll({
-          where: whereClause,
-          include: [
-            {
-              model: Model.categorie,
-              attributes: ["name"],
-            },
-            {
-              model: Model.Souscategorie,
-              attributes: ["name"],
-            },
-          ],
-        })
-        .then((response) => {
-          try {
-            if (response !== null) {
-              return res.status(200).json({
-                success: true,
-                produits: response,
-              });
-            } else {
-              return res.status(200).json({
-                success: true,
-                message: "il n'y a pas des produits",
-              });
-            }
-          } catch (err) {
-            return res.status(400).json({
-              success: false,
-              error: err,
+        const { error } = filtercommandeValidation(req.body);
+        if (error) return res.status(400).json({ success: false, err: error.details[0].message });
+        Model.produitlabrairie
+            .findAll({
+                where: whereClause,
+                include: [
+                    {
+                        model: Model.categorie,
+                        attributes: ["name"],
+                    },
+                    {
+                        model: Model.Souscategorie,
+                        attributes: ["name"],
+                    },
+                    {
+                        model: Model.imageProduitLibrairie,
+                        attributes: ["name_Image"],
+                    },
+                    {
+                        model: Model.labrairie,
+                        attributes: ["id", "adresse", "telephone", "nameLibrairie", "facebook", "instagram", "imageStore", "emailLib"]
+                    },
+                ],
+            })
+            .then((response) => {
+                try {
+                    if (response !== null) {
+                        return res.status(200).json({
+                            success: true,
+                            produits: response,
+                        });
+                    } else {
+                        return res.status(200).json({
+                            success: true,
+                            message: "Il n'y a pas de produits",
+                        });
+                    }
+                } catch (err) {
+                    return res.status(400).json({
+                        success: false,
+                        error: err,
+                    });
+                }
             });
-          }
-        });
     } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err,
-      });
+        return res.status(400).json({
+            success: false,
+            error: err,
+        });
     }
-  },
+},
 
   getAllAvis: async (req, res) => {
     try {
