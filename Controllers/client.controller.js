@@ -1,6 +1,7 @@
 const { where, Sequelize } = require("sequelize");
 const Model = require("../Models/index");
 const clientController = {
+  
   findOneClient: async (req, res) => {
     try {
       Model.user

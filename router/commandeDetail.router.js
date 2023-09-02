@@ -47,7 +47,7 @@ router.get(
   "/findCommandeByadmindetail/:id",
   commandeDetailController.findCommandeByadmindetail
 );
-router.get("/findCommandebyart", commandeDetailController.findCommabyart);
+router.get("/findCommandefiltrage", commandeDetailController.commandefiltrage);
 
 router.get("/findCommandebyartandid", commandeDetailController.findCommabyartandid);
 

@@ -1,3 +1,4 @@
+const { where } = require("sequelize");
 const Model = require("../Models/index");
 const { codepromoValidation } = require("../middleware/auth/validationSchema");
 const codePromo = {
@@ -125,6 +126,7 @@ const codePromo = {
       });
     }
   },
+
   findAll: async (req, res) => {
     try {
       Model.codePromo.findAll().then((response) => {
@@ -140,6 +142,60 @@ const codePromo = {
         success: false,
         error: err,
       });
+    }
+  },
+
+
+  findCodeOrPartenaire: async (req, res) => {
+    const {codeName, partenaireId} = req.query
+    if(codeName){
+      try {
+        Model.codePromo.findAll({
+          where: {
+            code: codeName
+          }
+        }).then((response) => {
+          if (response !== null) {
+            res.status(200).json({
+              success: true,
+              codes: response,
+            });
+          }
+        });
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: err,
+        });
+      }
+    }if(partenaireId){
+      try {
+        Model.codePromo.findAll({
+          include:[
+            {
+              model: Model.partenaire,
+              where: {
+                id: partenaireId
+              },
+              attributes:["nameetablissement"]
+              
+            }
+          ]
+         
+        }).then((response) => {
+          if (response !== null) {
+            res.status(200).json({
+              success: true,
+              codes: response,
+            });
+          }
+        });
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: err,
+        });
+      }
     }
   },
 };

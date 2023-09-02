@@ -62,11 +62,9 @@ const commandeDetailController = {
   },
 
   findCommandeByuser: async (req, res) => {
-    const { lim } = req.body;
     try {
       Model.commandeEnDetail
         .findAll({
-          limit: lim,
           where: { userId: req.params.id },
           attributes: {
             exclude: ["updatedAt", "userId", "labrairieId"],
@@ -456,13 +454,16 @@ const commandeDetailController = {
     }
   },
   nb_commande_par_jour: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
+
     try {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       Model.commandeEnDetail
         .findAll({
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
           attributes: [
             "createdAt",
             [
@@ -500,13 +501,16 @@ const commandeDetailController = {
     }
   },
   produit_plus_vendus: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
+
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       Model.commandeEnDetail
         .findAll({
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
           include: [
             {
               model: Model.produitlabrairie,
@@ -553,14 +557,17 @@ const commandeDetailController = {
     }
   },
   nb_commande: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
+
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       Model.commandeEnDetail
         .findAll({
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
           attributes: [
             [Sequelize.fn("COUNT", Sequelize.col("id")), "total_commandes"],
             [
@@ -623,41 +630,27 @@ const commandeDetailController = {
     }
   },
   findAllcommande: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+
     try {
-      Model.commandeEnDetail
-        .findAll({
-          limit: lim,
-          attributes: ["id", "total_ttc", "etatVender", "createdAt"],
-          include: [
-            { model: Model.user, attributes: ["fullname", "avatar"] },
-            {
-              model: Model.labrairie,
-              attributes: ["nameLibrairie"],
-            },
-            {
-              model: Model.produitlabrairie,
-              attributes: [
-                [Sequelize.fn("COUNT", Sequelize.col("titre")), "nb_Article"],
-              ],
-            },
-          ],
-        })
-        .then((response) => {
-          try {
-            if (response !== null) {
-              return res.status(200).json({
-                success: true,
-                commandes: response,
-              });
-            }
-          } catch (err) {
-            return res.status(400).json({
-              success: false,
-              error: err,
-            });
-          }
-        });
+      const response = await Model.commandeEnDetail.findAll({
+        limit: +pageSize,
+        offset: offset,
+        attributes: ["id", "total_ttc", "etatVender", "createdAt"],
+        include: [
+          { model: Model.user, attributes: ["fullname", "avatar"] },
+          { model: Model.labrairie, attributes: ["nameLibrairie"] },
+          {
+            model: Model.produitlabrairie,
+          },
+        ],
+      });
+
+      return res.status(200).json({
+        success: true,
+        commandes: response,
+      });
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -665,15 +658,19 @@ const commandeDetailController = {
       });
     }
   },
+
   findcommande30day: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
+
     try {
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - 30);
 
       Model.commandeEnDetail
         .findAll({
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
           where: {
             createdAt: {
               [Op.gte]: daysAgo,
@@ -717,7 +714,9 @@ const commandeDetailController = {
   },
 
   findCommandefiltre: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
+
     const commandeId = req.params.id;
     const {
       categorie,
@@ -747,7 +746,8 @@ const commandeDetailController = {
     try {
       Model.commandeEnDetail
         .findAll({
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
           where: { id: req.params.id },
           attributes: {
             exclude: ["updatedAt", "userId", "labrairieId"],
@@ -815,11 +815,14 @@ const commandeDetailController = {
   },
 
   findNumberArtInCmd: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
+
     try {
       Model.commandeEnDetail
         .findAll({
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
           where: { id: req.params.idcmd },
           attributes: ["id", "total_ttc", "etatVender", "createdAt"],
           include: [
@@ -854,24 +857,22 @@ const commandeDetailController = {
   },
 
   findCommandeByall: async (req, res) => {
-    const { lim } = req.body;
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+
     try {
       Model.commandeEnDetail
         .findAll({
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
+          order: [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]],
           attributes: ["id", "total_ttc", "etatVender", "createdAt"],
           include: [
-            { model: Model.user, attributes: ["fullname", "avatar"] },
             {
-              model: Model.produitlabrairie,
-              attributes: [
-                [Sequelize.fn("COUNT", Sequelize.col("titre")), "nb_Article"],
-              ],
+              model: Model.user,
+              attributes: ["fullname", "avatar"],
             },
-            { model: Model.labrairie },
           ],
-          group: ["commandeEnDetail.id"],
-          order: [["createdAt", "ASC"]],
         })
         .then((response) => {
           if (response.length != 0) {
@@ -894,31 +895,26 @@ const commandeDetailController = {
     }
   },
   findCommandeByadmindetail: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+
     try {
       Model.commandeEnDetail
         .findAll({
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
           where: { id: req.params.id },
-          attributes: {
-            exclude: ["updatedAt", "userId", "labrairieId"],
-          },
           include: [
             {
               model: Model.user,
               attributes: ["fullname", "avatar", "telephone", "email", "role"],
             },
           ],
-
-          order: [["createdAt", "ASC"]],
         })
         .then((response) => {
           Model.commandeEnDetail
             .findAll({
               where: { id: req.params.id },
-              attributes: {
-                exclude: ["updatedAt", "userId", "labrairieId"],
-              },
               include: [
                 {
                   model: Model.produitlabrairie,
@@ -941,7 +937,7 @@ const commandeDetailController = {
                     "email",
                     "role",
                   ],
-                  include: roleIsPartenaire(response[0].user.role),
+                  //include: roleIsPartenaire(response[0].user.role),
                 },
               ],
               order: [["createdAt", "ASC"]],
@@ -969,7 +965,9 @@ const commandeDetailController = {
   },
 
   findcmdinday: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize } = req.body;
+    const offset = (page - 1) * pageSize;
+
     const timestamp = req.params.timestamp;
 
     const startOfDay = new Date(timestamp);
@@ -981,13 +979,13 @@ const commandeDetailController = {
     try {
       Model.commandeEnDetail
         .findAll({
-          limit: lim,
+          limit: +pageSize,
+          offset: offset,
           where: {
             createdAt: {
               [Op.between]: [startOfDay, endOfDay],
             },
           },
-          limit: lim,
         })
         .then((response) => {
           if (response.length != 0) {
@@ -1011,14 +1009,12 @@ const commandeDetailController = {
   },
 
   findnbrcmdindate: async (req, res) => {
-    const { lim } = req.body;
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     try {
       Model.commandeEnDetail
         .findAll({
-          limit: lim,
           attributes: [
             [Sequelize.fn("date", Sequelize.col("createdAt")), "date"],
             [Sequelize.fn("count", Sequelize.col("id")), "nbr"],
@@ -1030,7 +1026,6 @@ const commandeDetailController = {
           },
 
           group: [Sequelize.fn("date", Sequelize.col("createdAt"))],
-          order: [[Sequelize.fn("date", Sequelize.col("createdAt")), "ASC"]],
         })
         .then((response) => {
           if (response.length != 0) {
@@ -1053,8 +1048,15 @@ const commandeDetailController = {
     }
   },
 
-  findCommabyart: async (req, res) => {
-    const { name} = req.body;
+  commandefiltrage: async (req, res) => {
+    const { sortBy, sortOrder, nameArt, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const wherec = {};
+
+    if ((sortBy, sortOrder, nameArt)) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+      wherec.titre = nameArt;
+    }
     try {
       Model.commandeEnDetail
         .findAll({
@@ -1063,14 +1065,13 @@ const commandeDetailController = {
             { model: Model.user, attributes: ["fullname", "avatar"] },
             {
               model: Model.produitlabrairie,
-              where:{
-                titre:name
-              }
+              where: wherec,
             },
             { model: Model.labrairie },
           ],
-          group: ["commandeEnDetail.id"],
           order: [["createdAt", "ASC"]],
+          limit: +pageSize,
+          offset: offset,
         })
         .then((response) => {
           if (response.length != 0) {
@@ -1094,31 +1095,40 @@ const commandeDetailController = {
   },
 
   findCommabyartandid: async (req, res) => {
-    const { nameArt, page, pageSize, cmdId} = req.body;
+    const { nameArt, page, pageSize, cmdId, sortBy, sortOrder } = req.query;
     const offset = (page - 1) * pageSize;
+    const wherec = {};
+    const wherep = {};
+
+    if (sortBy && sortOrder) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
+
+    if (nameArt) {
+      wherep.titre = nameArt;
+    }
+
+    if (cmdId) {
+      wherec.id = cmdId;
+    }
     try {
-      if(cmdId){
-        Model.commandeEnDetail
+      Model.commandeEnDetail
         .findAll({
-          where:{
-            id: cmdId
-          },
+          where: wherec,
+          //order: order,
+          offset: offset,
+
+          limit: +pageSize,
           attributes: ["id", "total_ttc", "etatVender", "createdAt"],
           include: [
             { model: Model.user, attributes: ["fullname", "avatar"] },
             {
               model: Model.produitlabrairie,
-              attributes: [
-                ["titre"],
-              ],
-              
+              attributes: [],
+              where: wherep,
             },
             { model: Model.labrairie },
           ],
-          group: ["commandeEnDetail.id"],
-          order: [["createdAt", "ASC"]],
-          limit: pageSize,
-          offset: offset
         })
         .then((response) => {
           if (response.length != 0) {
@@ -1133,41 +1143,6 @@ const commandeDetailController = {
             });
           }
         });
-      }else if(nameArt){
-        Model.commandeEnDetail
-        .findAll({
-          attributes: ["id", "total_ttc", "etatVender", "createdAt"],
-          include: [
-            { model: Model.user, attributes: ["fullname", "avatar"] },
-            {
-              model: Model.produitlabrairie,
-              attributes: [
-              ],
-              where:{
-                titre: nameArt
-              },
-            },
-            { model: Model.labrairie },
-          ],
-          group: ["commandeEnDetail.id"],
-          order: [["createdAt", "ASC"]],
-          limit: pageSize,
-          offset: offset
-        })
-        .then((response) => {
-          if (response.length != 0) {
-            return res.status(200).json({
-              success: true,
-              commandes: response,
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              err: "zero commande trouve ",
-            });
-          }
-        });
-      }
     } catch (err) {
       return res.status(400).json({
         success: false,

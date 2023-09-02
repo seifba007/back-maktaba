@@ -18,7 +18,10 @@ const produitController = {
 
     try {
       const { error } = produitlibrairieValidation(req.body);
-      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
+      if (error)
+        return res
+          .status(400)
+          .json({ success: false, err: error.details[0].message });
       req.body["image"] = req.files;
 
       const produitData = {
@@ -208,15 +211,22 @@ const produitController = {
       });
     }
   },
+
+
   findAll: async (req, res) => {
-    const { lim } = req.body;
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+
+    const offset = (page - 1) * pageSize;
+
+    if ((sortBy, sortOrder)) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
     try {
       Model.produitlabrairie
         .findAll({
-          limit: lim,
-          attributes: {
-            exclude: ["updatedAt", "categorieId", "labrairieId", "description"],
-          },
+          limit: +pageSize,
+          offset: offset,
+          order: order,
           include: [
             {
               model: Model.labrairie,
@@ -229,15 +239,10 @@ const produitController = {
             },
             {
               model: Model.avisProduitlibraire,
-              attributes: [
-                [Sequelize.fn("max", Sequelize.col("nbStart")), "max_nb"],
-                [Sequelize.fn("SUM", Sequelize.col("nbStart")), "total_avis"],
-              ],
+             
             },
             { model: Model.categorie, attributes: ["id", "name"] },
           ],
-          order: [["createdAt", "DESC"]],
-          group: ["produitlabrairie.id"],
         })
         .then((response) => {
           if (response !== null) {
@@ -259,22 +264,23 @@ const produitController = {
       });
     }
   },
+
   findAllProduitByLabrairie: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize, sortBy, sortOrder } = req.query;
+    const offset = (page - 1) * pageSize;
+
+    if ((sortBy, sortOrder)) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
+
     try {
       Model.produitlabrairie
         .findAll({
-          limit: lim,
+          order: order,
+          limit: +pageSize,
+          offset: offset,
           where: { labrairieId: req.params.id },
-          attributes: {
-            exclude: [
-              "createdAt",
-              "updatedAt",
-              "categorieId",
-              "labrairieId",
-              "description",
-            ],
-          },
+          
           include: [
             {
               model: Model.labrairie,
@@ -287,13 +293,10 @@ const produitController = {
             },
             {
               model: Model.avisProduitlibraire,
-              attributes: [
-                [Sequelize.fn("max", Sequelize.col("nbStart")), "max_nb"],
-                [Sequelize.fn("SUM", Sequelize.col("nbStart")), "total_avis"],
-              ],
+              
             },
           ],
-          order: [["createdAt", "DESC"]],
+
           group: ["produitlabrairie.id"],
         })
         .then((response) => {
@@ -316,6 +319,8 @@ const produitController = {
       });
     }
   },
+
+
   findOneProduit: async (req, res) => {
     try {
       const { id } = req.params;
@@ -365,21 +370,24 @@ const produitController = {
       });
     }
   },
+
+
   findProduitsBycategorie: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize, sortBy, sortOrder } = req.query;
+    const offset = (page - 1) * pageSize;
+
+    if ((sortBy, sortOrder)) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
     try {
       Model.produitlabrairie
         .findAll({
-          limit: lim,
+          order: order,
+          limit: +pageSize,
+          offset: offset,
           where: { categorieId: req.params.categorieId },
           attributes: {
-            exclude: [
-              "createdAt",
-              "updatedAt",
-              "categorieId",
-              "labrairieId",
-              "description",
-            ],
+            exclude: ["categorieId", "description"],
           },
           include: [
             {
@@ -393,14 +401,10 @@ const produitController = {
             },
             {
               model: Model.avisProduitlibraire,
-              attributes: [
-                [Sequelize.fn("max", Sequelize.col("nbStart")), "max_nb"],
-                [Sequelize.fn("SUM", Sequelize.col("nbStart")), "total_avis"],
-              ],
+             
             },
           ],
-          order: [["createdAt", "DESC"]],
-          group: ["produitlabrairie.id"],
+          order: order,
         })
         .then((response) => {
           if (response.length != 0) {
@@ -422,54 +426,26 @@ const produitController = {
       });
     }
   },
-  Liste_de_produits_librairie: async (req, res) => {
-    const { lim } = req.body;
-    try {
-      Model.produitlabrairie
-        .findAll({
-          limit: lim,
-          where: { labrairieId: req.params.id },
-          attributes: ["id", "titre", "prix", "updatedAt", "qte", "remise"],
-          include: [
-            { model: Model.categorie, attributes: ["id", "name"] },
-            { model: Model.imageProduitLibrairie, attributes: ["name_Image"] },
-          ],
-        })
-        .then((response) => {
-          if (response.length !== 0) {
-            return res.status(200).json({
-              success: true,
-              produit: response,
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              message: " zero produit trouve",
-            });
-          }
-        });
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        err: err,
-      });
-    }
-  },
+
 
   produit_mieux_notes: async (req, res) => {
-    const { lim } = req.body;
+    const { page, pageSize, sortBy, sortOrder } = req.query;
+    const offset = (page - 1) * pageSize;
+
+    if ((sortBy, sortOrder)) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
+
     try {
       Model.produitlabrairie
         .findAll({
-          limit: lim,
+          order: order,
+          limit: +pageSize,
+          offset: offset,
           attributes: ["id", "titre"],
           include: [
             {
               model: Model.avisProduitlibraire,
-              attributes: [
-                [Sequelize.fn("SUM", Sequelize.col("nbStart")), "total_stars"],
-                [Sequelize.fn("Max", Sequelize.col("nbStart")), "Max_avis"],
-              ],
             },
             {
               model: Model.imageProduitLibrairie,
@@ -479,8 +455,7 @@ const produitController = {
           where: {
             labrairieId: req.params.id,
           },
-          group: ["produitlabrairie.id", "produitlabrairie.titre"],
-          having: Sequelize.literal("SUM(nbStart) >24"),
+         
         })
         .then((response) => {
           if (response !== null) {
@@ -498,83 +473,20 @@ const produitController = {
     }
   },
 
-  produitrecements: async (req, res) => {
-    const { lim } = req.body;
+  produitfiltreage: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, namearticle } = req.query;
+    const offset = (page - 1) * pageSize;
+    const wherec = {};
+    order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    wherec.titre = namearticle;
+    
     try {
       Model.produitlabrairie
         .findAll({
-          order: [["createdAt", "DESC"]],
-        })
-        .then((response) => {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              produit: response,
-            });
-          }
-        });
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        err: err,
-      });
-    }
-  },
-
-  produitpluscher: async (req, res) => {
-    const { lim } = req.body;
-    try {
-      Model.produitlabrairie
-        .findAll({
-          order: [["prix", "DESC"]],
-          limit: lim,
-        })
-        .then((response) => {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              produit: response,
-            });
-          }
-        });
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        err: err,
-      });
-    }
-  },
-  produitmoinscher: async (req, res) => {
-    const { lim } = req.body;
-    try {
-      Model.produitlabrairie
-        .findAll({
-          order: [["prix", "ASC"]],
-          limit: lim,
-        })
-        .then((response) => {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              produit: response,
-            });
-          }
-        });
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        err: err,
-      });
-    }
-  },
-
-  produitAlphabet: async (req, res) => {
-    const { lim } = req.body;
-    try {
-      Model.produitlabrairie
-        .findAll({
-          order: [["titre", "ASC"]],
-          limit: lim,
+          order: order,
+          limit: +pageSize,
+          offset: offset,
+          where: wherec,
         })
         .then((response) => {
           if (response !== null) {

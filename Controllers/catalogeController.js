@@ -4,15 +4,15 @@ const { catalogeValidation } = require("../middleware/auth/validationSchema");
 const CatalogeController = {
   
   add: async (req, res) => {
-    const { titre, description, prix, image,etat, AdminId, categorieId,SouscategorieId} = req.body;
+    const { titre, description, prix, image, etat, AdminId, categorieId, SouscategorieId } = req.body;
     const data = {
-      titre: titre,
-      description: description,
-      prix: prix,
-      etat: etat,
-      AdminId: AdminId,
-      categorieId: categorieId,
-      SouscategorieId:SouscategorieId
+        titre: titre,
+        description: description,
+        prix: prix,
+        etat: etat,
+        AdminId: AdminId,
+        categorieId: categorieId,
+        SouscategorieId: SouscategorieId,
     };
     try {
       const { error } = catalogeValidation(req.body);
@@ -21,7 +21,7 @@ const CatalogeController = {
       const images = [];
       Model.cataloge.create(data).then((response) => {
         if (response !== null) {
-          image?.map((e) => {
+          image.map((e) => {
             images.push({
               name_Image: e.filename,
               catalogeId: response.id,
@@ -48,12 +48,13 @@ const CatalogeController = {
         }
       });
     } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err,
-      });
+        return res.status(400).json({
+            success: false,
+            error: err,
+        });
     }
-  },
+},
+
   findAll: async (req, res) => {
     try {
       Model.cataloge

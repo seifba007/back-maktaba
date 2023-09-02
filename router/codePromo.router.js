@@ -1,9 +1,11 @@
 const codePromoController = require("../Controllers/codePromo.controller")
 const express = require ("express")
+const { AuthorizationUser } = require("../middleware/auth/auth")
 const router =  express.Router() 
 router.post("/add", codePromoController.add) 
-router.delete("/delete/:id" , codePromoController.delete)
+router.delete("/delete/:id" ,AuthorizationUser ,codePromoController.delete)
 router.get("/findAll",codePromoController.findAll) 
 router.get("/findOne/:code", codePromoController.findOne)
+router.get("/findCodeOrPartenaire", codePromoController.findCodeOrPartenaire)
 router.put("/update/:id" , codePromoController.update)
 module.exports = router
