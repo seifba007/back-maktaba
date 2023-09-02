@@ -9,8 +9,6 @@ const {
 } = require("../middleware/auth/auth");
 router.post(
   "/add",
-  AuthorizationUser,
-  AuthorizationClient,
   upload.array("file", 1),
   BecomePartnerController.add
 );
