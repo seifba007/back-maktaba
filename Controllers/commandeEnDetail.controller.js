@@ -658,10 +658,10 @@ const commandeDetailController = {
       });
     }
   },
-
   findcommande30day: async (req, res) => {
-    const { page, pageSize } = req.body;
+    const { page, pageSize, sortBy, sortOrder } = req.query;
     const offset = (page - 1) * pageSize;
+    order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
     try {
       const daysAgo = new Date();
@@ -669,6 +669,7 @@ const commandeDetailController = {
 
       Model.commandeEnDetail
         .findAll({
+          order:order,
           limit: +pageSize,
           offset: offset,
           where: {
@@ -681,9 +682,6 @@ const commandeDetailController = {
             { model: Model.user, attributes: ["fullname", "avatar"] },
             {
               model: Model.produitlabrairie,
-              attributes: [
-                [Sequelize.fn("COUNT", Sequelize.col("titre")), "nb_Article"],
-              ],
             },
             { model: Model.labrairie },
           ],

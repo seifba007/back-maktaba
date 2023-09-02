@@ -45,50 +45,36 @@ const LabriarieController = {
   },
 
   updateProfile: async (req, res) => {
-    const {
-      adresse,
-      ville,
-      nameLibrairie,
-      telephone,
-      facebook,
-      instagram,
-      image,
-      emailLib,
-    } = req.body;
     try {
-      const { error } = addadminValidation(req.body);
-      if (error) return res.status(400).json(error.details[0].message);
-      if (req.files.length !== 0) {
+      if(req.files.length!==0){
         req.body["image"] = req.files[0].filename;
-      } else {
-        req.body["image"] == null;
+      }else{
+        req.body["image"]==null
       }
-
+      const {adresse,ville,nameLibrairie,telephone,facebook,instagram,image,emailLib}=req.body
       const data = {
-        adresse: adresse,
-        ville: ville,
-        nameLibrairie: nameLibrairie,
-        telephone: telephone,
-        facebook: facebook,
-        instagram: instagram,
+        adresse :adresse,
+        ville :ville,
+        nameLibrairie :nameLibrairie,
+        telephone : telephone,
+        facebook : facebook , 
+        instagram : instagram,
         imageStore: image,
-        emailLib: emailLib,
-      };
-      Model.labrairie
-        .update(data, { where: { id: req.params.id } })
-        .then((response) => {
-          if (response !== 0) {
-            return res.status(200).json({
-              success: true,
-              message: "update success",
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              message: "error to update ",
-            });
-          }
-        });
+        emailLib : emailLib
+      }
+      Model.labrairie.update(data,{where:{id:req.params.id}}).then((response)=>{
+        if(response!==0){
+          return res.status(200).json({
+            success :true , 
+            message : "update success"
+          })
+        }else{
+          return res.status(400).json({
+            success : false , 
+            message: "error to update "
+          })
+        }
+      })
     } catch (err) {
       return res.status(400).json({
         success: false,

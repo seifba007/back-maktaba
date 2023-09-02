@@ -7,13 +7,7 @@ const {
   AuthorizationClient,
   AuthorizationAdmin,
 } = require("../middleware/auth/auth");
-router.post(
-  "/add",
-  AuthorizationUser,
-  AuthorizationClient,
-  upload.array("file", 1),
-  BecomePartnerController.add
-);
+router.post( "/add",upload.array("file", 1),  BecomePartnerController.add);
 router.get("/findAll", BecomePartnerController.findAll);
 router.post(
   "/accepter/:id",
