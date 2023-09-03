@@ -461,6 +461,7 @@ const produitController = {
       });
     }
   },
+  
   produit_mieux: async (req, res) => {
     try {
       Model.produitlabrairie

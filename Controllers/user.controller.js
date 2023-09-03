@@ -189,6 +189,7 @@ const userController = {
       });
     }
   },
+  
   sendMailforgotPassword: async (req, res) => {
     try {
       Model.user

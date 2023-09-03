@@ -1,6 +1,6 @@
 const nodemailer = require("nodemailer");
-const user = "mahmoudbouattay178@gmail.com"; 
-const pass = "soyiabmwlaqkrlav";  
+const user = "maktba.tn01@gmail.com"; //
+const pass = "duvwkiciangtpdem";  
 
 const transport = nodemailer.createTransport({
   service: "Gmail",
@@ -141,8 +141,7 @@ module.exports.sendEmailVerification = (email, link) => {
                       <td class="m_h40" align="left" valign="bottom" height="50">
                         <a href=
                           title="Maktaba Verification Email">
-                         <img class="m_wh40" width="100" height="auto" border="0" src="https://www.goomlandscapes.co.nz/wp-content/uploads/2018/08/logo-placeholder.png" style="-ms-interpolation-mode:bicubic;text-decoration:none;display:block;outline:none;" />
-                        </a>
+                          <img src="https://res.cloudinary.com/doytw80zj/image/upload/v1693747797/Fichier_8_15_chy0ep.png" alt="Description de l'image" width="100" height="70" style="filter: grayscale(0%);">                        </a>
                       </td>
                     </tr>
                   </table>
@@ -244,11 +243,11 @@ module.exports.sendEmailVerification = (email, link) => {
                         <table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                           <tr>
                             <td align="left" style="font-family:helvetica neue,helvetica,arial,sans-serif;font-size:12px;line-height:22px;color:#444444">
-                              <a href="#" style="color:#444444;text-decoration:none;pointer-events:none;">[Adress here]</a>
+                              <a href="#" style="color:#444444;text-decoration:none;pointer-events:none;">Borj Louzir Ariana, Tunis, Tunisia</a>
                             </td>
                             <td align="left" style="padding:0 4px 0 4px;font-family:sans-serif;font-size:18px;color:#444444">&middot;</td>
                             <td align="left" style="font-family:helvetica neue,helvetica,arial,sans-serif;font-size:12px;line-height:22px;color:#444444">
-                              <a href="#" style="color:#444444;text-decoration:none;pointer-events:none;">[city here]</a>
+                              <a href="#" style="color:#444444;text-decoration:none;pointer-events:none;">Ariana</a>
                             </td>
                           </tr>
                         </table>
@@ -256,12 +255,12 @@ module.exports.sendEmailVerification = (email, link) => {
                           <tr>
                             <td align="left" style="font-family:helvetica neue,helvetica,arial,sans-serif;font-size:12px;line-height:22px;color:#444444">
                               <a href="mailto:contact@Maktaba.tn"
-                                style="color:#444444;text-decoration:underline;" title="Send us an email">contact@Maktaba.tn</a>
+                                style="color:#444444;text-decoration:underline;" title="Send us an email">maktaba.tn@gmail.com</a>
                             </td>
                             <td align="left" style="padding:0 4px 0 4px;font-family:sans-serif;font-size:18px;color:#444444">&middot;</td>
                             <td align="left" style="font-family:helvetica neue,helvetica,arial,sans-serif;font-size:12px;line-height:22px;color:#444444">
                               <a href="tel:+21600000000"
-                                style="color:#444444;text-decoration:underline">[phone here]</a>
+                                style="color:#444444;text-decoration:underline">+216 52 769 348</a>
                             </td>
                           </tr>
                         </table>

@@ -4,7 +4,15 @@ const passport = require("passport");
 const session = require("express-session");
 var cors = require('cors') 
 const app = express()
-app.use(cors("*"))
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE"
+  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  next();
+});
 const db = require('./config/database') ;
 require('dotenv').config()
 const port = process.env.PORT 
@@ -30,7 +38,6 @@ const labrairieRouter = require("./router/labriarie.router")
 const partenaireRouter = require("./router/partenaire.router")
 const fournisseurRouter = require("./router/fournisseur.router")
 const categorieRouter = require ("./router/categorie.router")
-const produitRouter = require ("./router/produit.router")
 const produitLabrairieRouter = require ("./router/produitLabrairie.router")
 const commandeEnGrosRouter = require("./router/commandeGros.router")
 const commandeEnDetail = require("./router/commandeDetail.router")
@@ -52,7 +59,6 @@ app.use("/labrairie",labrairieRouter)
 app.use("/partenaire",partenaireRouter)
 app.use("/fournisseur",fournisseurRouter)
 app.use("/categorie",categorieRouter)
-app.use("/produit",produitRouter)
 app.use("/produitLabrairie",produitLabrairieRouter)
 app.use("/commandeengros",commandeEnGrosRouter)
 app.use("/commandeDetail",commandeEnDetail)

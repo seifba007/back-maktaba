@@ -34,7 +34,6 @@ const partenaire = partenaireModel (db,Sequelize)
 const codePromo = codePromoModel(db,Sequelize)
 const bonAchat = bonAchatModel(db,Sequelize)
 const categorie = categorieModel(db,Sequelize)
-const produit = produitModel(db,Sequelize)
 const produitlabrairie = produitlabrairieModel(db,Sequelize)
 const commandeEnGros = commandeEnGrosModel(db,Sequelize)
 const ProduitCommandeEnGros = ProduitCommandeEnGrosModel(db,Sequelize)
@@ -88,7 +87,10 @@ fournisseur.hasMany(codePromo)
 codePromo.belongsTo(fournisseur)
 codePromo.belongsToMany(client,{ through:codeClient});
 client.belongsToMany(codePromo,{ through:codeClient});
-user.hasMany(bonAchat)
+user.hasMany(bonAchat,{
+  onDelete:'CASCADE',
+  onUpdate:'CASCADE'
+})
 bonAchat.belongsTo(user)
 partenaire.hasMany(bonAchat) 
 bonAchat.belongsTo(partenaire)
@@ -96,10 +98,8 @@ fournisseur.hasMany(bonAchat)
 bonAchat.belongsTo(fournisseur)
 labrairie.hasMany(bonAchat) 
 bonAchat.belongsTo(labrairie)
-categorie.hasMany(produit)
-produit.belongsTo(categorie)
-fournisseur.hasMany(produit)
-produit.belongsTo(fournisseur)
+fournisseur.hasMany(produitlabrairie)
+produitlabrairie.belongsTo(fournisseur)
 categorie.hasMany(produitlabrairie,{
   onDelete: 'CASCADE',
   onUpdate: 'CASCADE'
@@ -172,16 +172,16 @@ admin.hasMany(BecomePartner)
 BecomePartner.belongsTo(admin)
 user.hasMany(suggestionProduit)
 suggestionProduit.belongsTo(user)
-categorie.hasMany(Souscategorie)
+categorie.hasMany(Souscategorie,{
+  onDelete:'CASCADE',
+  onUpdate:'CASCADE'
+})
 Souscategorie.belongsTo(categorie)
 Souscategorie.hasMany(suggestionProduit)
 suggestionProduit.belongsTo(Souscategorie)
 categorie.hasMany(suggestionProduit)
 suggestionProduit.belongsTo(categorie)
-Souscategorie.hasMany(produitlabrairie,{
-  onDelete: 'CASCADE',
-  onUpdate: 'CASCADE'
-})
+Souscategorie.hasMany(produitlabrairie)
 produitlabrairie.belongsTo(Souscategorie)
 Souscategorie.hasMany(cataloge)
 cataloge.belongsTo(Souscategorie)
