@@ -8,7 +8,6 @@ const labrairieModel = require ("./labriarie")
 const codePromoModel = require("./codepromo")
 const bonAchatModel = require("./bonAchat")
 const categorieModel = require("./categorie")
-const produitModel = require ("./produit")
 const produitlabrairieModel = require("./produitLabriarie")
 const commandeEnGrosModel = require("./commandeGros")
 const ProduitCommandeEnGrosModel = require("./ProduitCommandeEnGros")
@@ -114,8 +113,8 @@ labrairie.hasMany(commandeEnGros)
 commandeEnGros.belongsTo(labrairie)
 fournisseur.hasMany(commandeEnGros)
 commandeEnGros.belongsTo(fournisseur)
-produit.belongsToMany(commandeEnGros, { through:ProduitCommandeEnGros});
-commandeEnGros.belongsToMany(produit, { through:ProduitCommandeEnGros});
+//produit.belongsToMany(commandeEnGros, { through:ProduitCommandeEnGros});
+//commandeEnGros.belongsToMany(produit, { through:ProduitCommandeEnGros});
 user.hasMany(commandeEnDetail,{
   onDelete: 'CASCADE',
   onUpdate: 'CASCADE'
@@ -197,10 +196,9 @@ module.exports = {
     codePromo,
     bonAchat,
     categorie,
-    produit,
     produitlabrairie,
     commandeEnGros,
-    ProduitCommandeEnGros,
+    //ProduitCommandeEnGros,
     commandeEnDetail,
     ProduitCommandeEnDetail,
     codeClient,
