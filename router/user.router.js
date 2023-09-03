@@ -2,7 +2,7 @@ const userController = require("../Controllers/user.controller");
 const express = require("express");
 const router = express.Router();
 const upload = require("../middleware/upload");
-const { AuthorizationAdmin } = require("../middleware/auth/auth");
+const { AuthorizationAdmin, AuthorizationUser } = require("../middleware/auth/auth");
 router.post("/register", userController.register);
 router.get("/verif/:email", userController.emailVerification);
 router.post("/login", userController.login);
@@ -18,7 +18,7 @@ router.put(
   userController.updateIdentite
 );
 router.put("/addPoint/:id", userController.addPoint);
-router.put("/bloque/:id", AuthorizationAdmin, userController.bloque);
+router.put("/bloque/:id", AuthorizationUser, userController.bloque);
 router.get("/findAll", userController.findAlluser);
-router.delete("/delete/:id", AuthorizationAdmin, userController.delete);
+router.delete("/delete/:id", AuthorizationUser, userController.delete);
 module.exports = router;

@@ -98,8 +98,10 @@ const bonAchatValidation = (data) => {
     etat: Joi.string(),
     code: Joi.string(),
     userId:Joi.number(),
-    partenaireId:Joi.number(),
-    nbpoint:Joi.number()
+    nbpoint:Joi.number(),
+    partenaireId: Joi.number(),
+    fournisseurId: Joi.number(),
+    labrairieId:Joi.number(),
   });
   return schema.validate(data);
 };
@@ -131,9 +133,10 @@ const librairieValidation = (data) => {
     nameLibrairie: Joi.string(),
     facebook: Joi.string(),
     instagram: Joi.string(),
-    imageStore: Joi.string(),
+    image: Joi.string(),
     emailLib: Joi.string(),
-  });
+  });      
+
   return schema.validate(data);
   0;
 };
@@ -187,6 +190,9 @@ const suggestionProduitValidation = (data) => {
     Description: Joi.string(),
     image: Joi.string(),
     etat: Joi.string(),
+    userId: Joi.number(),
+    categorieId:Joi.number(),
+    SouscategorieId:Joi.number(),
   });
   return schema.validate(data);
 };

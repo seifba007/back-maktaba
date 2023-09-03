@@ -223,7 +223,6 @@ const commandeDetailController = {
   Annuler: async (req, res) => {
     try {
       const produits = req.body.produit;
-      console.log(produits);
       Model.commandeEnDetail
         .update(
           {
@@ -252,7 +251,6 @@ const commandeDetailController = {
                     });
                   }
                 });
-              console.log("loop");
             });
             return res.status(200).json({
               success: true,
@@ -454,16 +452,11 @@ const commandeDetailController = {
     }
   },
   nb_commande_par_jour: async (req, res) => {
-    const { page, pageSize } = req.body;
-    const offset = (page - 1) * pageSize;
-
     try {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       Model.commandeEnDetail
         .findAll({
-          limit: +pageSize,
-          offset: offset,
           attributes: [
             "createdAt",
             [
@@ -501,16 +494,12 @@ const commandeDetailController = {
     }
   },
   produit_plus_vendus: async (req, res) => {
-    const { page, pageSize } = req.body;
-    const offset = (page - 1) * pageSize;
-
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       Model.commandeEnDetail
         .findAll({
-          limit: +pageSize,
-          offset: offset,
+          attributes: [],
           include: [
             {
               model: Model.produitlabrairie,
@@ -557,17 +546,12 @@ const commandeDetailController = {
     }
   },
   nb_commande: async (req, res) => {
-    const { page, pageSize } = req.body;
-    const offset = (page - 1) * pageSize;
-
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       Model.commandeEnDetail
         .findAll({
-          limit: +pageSize,
-          offset: offset,
           attributes: [
             [Sequelize.fn("COUNT", Sequelize.col("id")), "total_commandes"],
             [
@@ -609,10 +593,10 @@ const commandeDetailController = {
           ],
           where: {
             createdAt: {
-              [Op.gte]: thirtyDaysAgo,
+              [Op.gte]: thirtyDaysAgo
             },
-            labrairieId: req.params.id,
-          },
+            labrairieId : req.params.id
+          }
         })
         .then((response) => {
           if (response !== null) {
@@ -660,8 +644,9 @@ const commandeDetailController = {
   },
 
   findcommande30day: async (req, res) => {
-    const { page, pageSize } = req.body;
+    const { page, pageSize, sortBy, sortOrder } = req.query;
     const offset = (page - 1) * pageSize;
+    order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
     try {
       const daysAgo = new Date();
@@ -669,6 +654,7 @@ const commandeDetailController = {
 
       Model.commandeEnDetail
         .findAll({
+          order: order,
           limit: +pageSize,
           offset: offset,
           where: {
@@ -871,6 +857,12 @@ const commandeDetailController = {
             {
               model: Model.user,
               attributes: ["fullname", "avatar"],
+            },
+            {
+              model: Model.produitlabrairie,
+            },
+            {
+              model: Model.labrairie,
             },
           ],
         })

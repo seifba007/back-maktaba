@@ -116,13 +116,19 @@ fournisseur.hasMany(commandeEnGros)
 commandeEnGros.belongsTo(fournisseur)
 produit.belongsToMany(commandeEnGros, { through:ProduitCommandeEnGros});
 commandeEnGros.belongsToMany(produit, { through:ProduitCommandeEnGros});
-user.hasMany(commandeEnDetail);
+user.hasMany(commandeEnDetail,{
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+});
 commandeEnDetail.belongsTo(user);
 labrairie.hasMany(commandeEnDetail)
 commandeEnDetail.belongsTo(labrairie)
 produitlabrairie.belongsToMany(commandeEnDetail , {through :ProduitCommandeEnDetail})
 commandeEnDetail.belongsToMany(produitlabrairie , {through :ProduitCommandeEnDetail})
-client.hasMany(avisProduitlibraire)
+client.hasMany(avisProduitlibraire,{
+  onDelete: 'CASCADE',
+  onUpdate: 'CASCADE'
+})
 avisProduitlibraire.belongsTo(client)
 partenaire.hasMany(avisProduitlibraire)
 avisProduitlibraire.belongsTo(partenaire)

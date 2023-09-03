@@ -1,11 +1,12 @@
 const Model = require("../Models/index");
+const { suggestionProduitValidation } = require("../middleware/auth/validationSchema");
 const suggestionProduitController = {
   add: async (req, res) => {
     const { Titre, Description, image, userId, SouscategorieId, categorieId } =
       req.body;
     req.body["image"] = req.files[0].filename;
     try {
-      const { error } = suggestionProduitController(data);
+      const { error } = suggestionProduitValidation(req.body);
       if (error) return res.status(400).json({ success: false, err: error.details[0].message });
 
       const data = {

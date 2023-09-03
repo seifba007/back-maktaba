@@ -22,7 +22,6 @@ router.put(
 );
 router.delete(
   "/delete",
-  AuthorizationUser,
   ProduitLabrairieController.delete
 );
 router.get("/findAll", ProduitLabrairieController.findAll);
@@ -41,6 +40,7 @@ router.get(
   "/produit_mieux_notes",
   ProduitLabrairieController.produit_mieux_notes
 );
+router.get("/produit_mieux/:id",ProduitLabrairieController.produit_mieux);
 
 router.get("/produitfiltrage", ProduitLabrairieController.produitfiltreage);
 

@@ -49,6 +49,9 @@ router.get(
 );
 router.get("/findCommandefiltrage", commandeDetailController.commandefiltrage);
 
-router.get("/findCommandebyartandid", commandeDetailController.findCommabyartandid);
+router.get(
+  "/findCommandebyartandid",
+  commandeDetailController.findCommabyartandid
+);
 
 module.exports = router;

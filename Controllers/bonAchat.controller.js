@@ -2,18 +2,16 @@ const Model = require("../Models/index");
 const { bonAchatValidation } = require("../middleware/auth/validationSchema");
 const bonAchatController = {
   add: async (req, res) => {
-    const { solde, userId, partenaireId, nbpoint } = req.body;
+    const { solde, userId, partenaireId, nbpoint,fournisseurId ,labrairieId} = req.body;
     try {
       const { error } = bonAchatValidation(req.body);
       if (error) return res.status(400).json({ success: false, err: error.details[0].message });
       function generateRandomCode() {
         let code = "#";
-
         for (let i = 0; i < 7; i++) {
           const randomDigit = Math.floor(Math.random() * 10);
           code += randomDigit;
         }
-
         for (let i = 0; i < 2; i++) {
           const randomDigit = Math.floor(Math.random() * 10);
           code += randomDigit;
@@ -22,17 +20,19 @@ const bonAchatController = {
       }
       const data = {
         solde: solde,
-        etat: "Non Valide",
+        etat: "Valide",
         code: generateRandomCode(),
         userId: userId,
         partenaireId: partenaireId,
+        fournisseurId:fournisseurId,
+        labrairieId:labrairieId
       };
       Model.bonAchat.create(data).then((response) => {
         if (response !== null) {
           Model.user.findByPk(userId).then((user) => {
             if (user) {
               const updatedPoint = Number(user.point) - Number(nbpoint);
-              console.log(updatedPoint);
+              
               Model.user.update(
                 { point: updatedPoint },
                 { where: { id: userId } }
@@ -59,7 +59,7 @@ const bonAchatController = {
     try {
       Model.bonAchat
         .update(
-          { etat: "Valide" },
+          { etat: "Non Valide" },
           {
             where: {
               id: req.params.id,

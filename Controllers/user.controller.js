@@ -29,7 +29,7 @@ const userController = {
         if (User === null) {
           return res.status(400).json({
             success: false,
-            err: "email is not correct",
+            err: "l'email n'existe pas",
           });
         } else {
           if (User.etatCompte !== "bloque") {
@@ -38,7 +38,7 @@ const userController = {
                 if (!isMatch) {
                   return res.status(400).json({
                     success: false,
-                    err: "password is not correct",
+                    err: "le mot de passe n'est pas correct",
                   });
                 } else {
                   const accessToken = createAccessToken({ id: User.id });
@@ -56,7 +56,7 @@ const userController = {
             } else {
               return res.status(400).json({
                 success: false,
-                accessToken: "email",
+                err: "verifie votre compte s'il vous plait",
               });
             }
           } else {
@@ -78,7 +78,6 @@ const userController = {
     const data = req.body;
     const { fullname, email, password } = req.body;
     try {
-      //------------------------------- REGISTER VALIDATION HANDLER------------------------//
       const { error } = registerValidation(data);
       if (error)
         return res
@@ -238,7 +237,7 @@ const userController = {
       Model.user.findOne({ where: { id: id } }).then((olduser) => {
         if (olduser !== null) {
           const secret = process.env.forget_key + olduser.password;
-          jwt.verify(token, secret, async (err, User) => {
+          jwt.verify(token, secret, async (err, olduser) => {
             if (!err) {
               const newPassword = bcrypt.hashSync(password, 10);
               await Model.user
