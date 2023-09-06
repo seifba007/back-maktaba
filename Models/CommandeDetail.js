@@ -1,5 +1,5 @@
 module.exports = (db, DataTypes) => {
-    return  db.define('commandeEnDetail',{
+    return  db.define('commandeendetail',{
       id: { type: DataTypes.INTEGER,autoIncrement: true,primaryKey: true },
       total_ttc : {type : DataTypes.FLOAT , allowNull: false},
       etatClient:{type : DataTypes.STRING , allowNull: false},

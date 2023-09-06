@@ -254,57 +254,59 @@ const produitController = {
     }
   },
 
-  findAllProduitByLabrairie: async (req, res) => {
+ findAllProduitByLabrairie: async (req, res) => {
     const { page, pageSize, sortBy, sortOrder } = req.query;
     const offset = (page - 1) * pageSize;
-
-    if ((sortBy, sortOrder)) {
+  
+  
+    if (sortBy && sortOrder) {
       order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     }
-
+  
     try {
-      Model.produitlabrairie
-        .findAll({
-          order: order,
-          limit: +pageSize,
-          offset: offset,
-          where: { labrairieId: req.params.id },
-          
-          include: [
-            {
-              model: Model.labrairie,
-              attributes: ["imageStore", "nameLibrairie"],
-            },
-            {
-              model: Model.imageProduitLibrairie,
-              attributes: ["name_Image"],
-              separate: true,
-            },
-            {
-              model: Model.avisProduitlibraire,
-              
-            },
-          ],
-
-          group: ["produitlabrairie.id"],
-        })
-        .then((response) => {
-          if (response.length !== 0) {
-            res.status(200).json({
-              success: true,
-              produit: response,
-            });
-          } else {
-            res.status(400).json({
-              success: false,
-              err: " labrairieId have zero produit",
-            });
-          }
+      const totalCount = await Model.produitlabrairie.count({
+        where: { labrairieId: req.params.id },
+      });
+  
+      const products = await Model.produitlabrairie.findAll({
+        order: order,
+        limit: +pageSize,
+        offset: offset,
+        where: { labrairieId: req.params.id },
+        include: [
+          {
+            model: Model.labrairie,
+            attributes: ["imageStore", "nameLibrairie"],
+          },
+          {
+            model: Model.imageProduitLibrairie,
+            attributes: ["name_Image"],
+            separate: true,
+          },
+          {
+            model: Model.avisProduitlibraire,
+          },
+        ],
+        group: ["produitlabrairie.id"],
+      });
+  
+      if (products.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return res.status(200).json({
+          success: true,
+          produit: products,
+          totalPages: totalPages,
         });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "Aucun produit trouv� pour cette labrairie.",
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
-        err: err,
+        error: err.message,
       });
     }
   },
@@ -331,13 +333,10 @@ const produitController = {
             },
             {
               model: Model.avisProduitlibraire,
-              attributes: [
-                [Sequelize.fn("max", Sequelize.col("nbStart")), "max_nb"],
-                [Sequelize.fn("SUM", Sequelize.col("nbStart")), "total_avis"],
-              ],
+             
             },
           ],
-          group: ["produitlabrairie.id"],
+          
         })
         .then((response) => {
           if (response !== null) {

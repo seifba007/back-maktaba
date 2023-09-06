@@ -37,7 +37,7 @@ router.get(
 
 
 router.get(
-  "/produit_mieux_notes",
+  "/produit_mieux_notes/:id",
   ProduitLabrairieController.produit_mieux_notes
 );
 router.get("/produit_mieux/:id",ProduitLabrairieController.produit_mieux);

@@ -1,5 +1,5 @@
 module.exports = (db, DataTypes) => {
-    return  db.define('suggestionProduit',{
+    return  db.define('suggestionproduit',{
       id: { type: DataTypes.INTEGER,autoIncrement: true,primaryKey: true },
       Titre : {type : DataTypes.STRING},
       Description:{type : DataTypes.STRING},

@@ -192,12 +192,10 @@ const commandeDetailController = {
 
             {
               model: Model.produitlabrairie,
-              attributes: [
-                [Sequelize.fn("COUNT", Sequelize.col("titre")), "nb_Article"],
-              ],
+              
             },
           ],
-          group: ["commandeEnDetail.id"],
+          
           order: [["createdAt", "ASC"]],
         })
         .then((response) => {
@@ -303,7 +301,7 @@ const commandeDetailController = {
         .update(
           {
             Date_préparée: new Date(),
-            etatClient: "livre",
+            etatClient: "Livre",
             etatVender: "Compléter",
           },
           { where: { id: req.params.id } }

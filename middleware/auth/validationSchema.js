@@ -60,6 +60,7 @@ const filtercommandeValidation = (data) => {
     qteMax: Joi.number().integer(),
     etat: Joi.string(),
     titre: Joi.string(),
+   description: Joi.string(),
   });
   return schema.validate(data);
 };

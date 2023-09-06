@@ -91,16 +91,13 @@ const produitFavorieController = {
                 },
                 {
                   model: Model.avisProduitlibraire,
-                  attributes: [
-                    [Sequelize.fn("max", Sequelize.col("nbStart")), "max_nb"],
-                    [Sequelize.fn("SUM", Sequelize.col("nbStart")), "total_avis"],
-                  ],
+              
                 },
               ],
              
             },
           ],
-          group: ["produitlabrairie.id"]
+         
         })
         .then((response) => {
           if (response !== null) {
