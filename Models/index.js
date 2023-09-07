@@ -76,16 +76,45 @@ user.hasOne(admin,{
   onUpdate:'CASCADE'
 })
 admin.belongsTo(user)
-labrairie.hasMany(codePromo)
+
 admin.hasMany(cataloge)
 cataloge.belongsTo(admin)
-codePromo.belongsTo(labrairie)
-partenaire.hasMany(codePromo)
-codePromo.belongsTo(partenaire)
-fournisseur.hasMany(codePromo)
-codePromo.belongsTo(fournisseur)
-codePromo.belongsToMany(client,{ through:codeClient});
-client.belongsToMany(codePromo,{ through:codeClient});
+labrairie.hasMany(codePromo, {
+  foreignKey: 'labrairieId', // this line to make sure this is the unique foreignKey
+  constraints: false,  // this line to avoid duplicates
+});
+codePromo.belongsTo(labrairie, {
+  foreignKey: 'labrairieId',
+  constraints: false, 
+});
+partenaire.hasMany(codePromo, {
+  foreignKey: 'partenaireId',
+  constraints: false, 
+});
+codePromo.belongsTo(partenaire, {
+  foreignKey: 'partenaireId',
+  constraints: false, 
+});
+
+fournisseur.hasMany(codePromo, {
+  foreignKey: 'fournisseurId',
+  constraints: false, 
+});
+
+codePromo.belongsTo(fournisseur, {
+  foreignKey: 'fournisseurId',
+  constraints: false, 
+});
+client.belongsToMany(codePromo, {
+  through: codeClient,
+  foreignKey: 'clientId',
+  constraints: false, 
+});
+codePromo.belongsToMany(client, {
+  through: codeClient,
+  foreignKey: 'codePromoId',
+  constraints: false,
+});
 user.hasMany(bonAchat,{
   onDelete:'CASCADE',
   onUpdate:'CASCADE'

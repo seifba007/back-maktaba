@@ -15,7 +15,10 @@ const adminController = {
     const data = req.body;
     try {
       const { error } = addadminValidation(data);
-      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
+      if (error)
+        return res
+          .status(400)
+          .json({ success: false, err: error.details[0].message });
       const passwordHash = bcrypt.hashSync(req.body.password, 10);
       const datauser = {
         fullname: req.body.fullname,
@@ -163,7 +166,10 @@ const adminController = {
     const { ids } = req.body;
     try {
       const { error } = deletecategoryValidation(req.body);
-      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
+      if (error)
+        return res
+          .status(400)
+          .json({ success: false, err: error.details[0].message });
       Model.categorie
         .destroy({
           where: {
@@ -187,7 +193,10 @@ const adminController = {
   },
   addcategory: async (req, res) => {
     const { error } = addcategoryValidation(req.body);
-    if (error) return res.status(400).json({ success: false, err: error.details[0].message });
+    if (error)
+      return res
+        .status(400)
+        .json({ success: false, err: error.details[0].message });
     try {
       if (req.files.length !== 0) {
         req.body["image"] = req.files[0].filename;
@@ -373,8 +382,18 @@ const adminController = {
     try {
       Model.user
         .findAll({
-          attributes:["id","email","email_verifie","role","fullname","avatar","Date_de_naissance","telephone","point"],
-          
+          attributes: [
+            "id",
+            "email",
+            "email_verifie",
+            "role",
+            "fullname",
+            "avatar",
+            "Date_de_naissance",
+            "telephone",
+            "point",
+          ],
+
           include: [
             {
               model: Model.partenaire,
@@ -417,23 +436,23 @@ const adminController = {
       });
     }
   },
-findCommandefiltre: async (req, res) => {
+  findCommandefiltre: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize } = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-  
+
     const filters = req.body;
     const whereClause = {};
-  
+
     if (filters.categorieId) {
       if (typeof filters.categorieId === "string") {
-        filters.categorieId = filters.categorieId.split(",").map((id) =>
-          parseInt(id, 10)
-        );
+        filters.categorieId = filters.categorieId
+          .split(",")
+          .map((id) => parseInt(id, 10));
       }
       whereClause.categorieId = filters.categorieId;
     }
-  
+
     if (filters.SouscategorieId) {
       if (typeof filters.SouscategorieId === "string") {
         filters.SouscategorieId = filters.SouscategorieId.split(",").map((id) =>
@@ -442,7 +461,7 @@ findCommandefiltre: async (req, res) => {
       }
       whereClause.SouscategorieId = filters.SouscategorieId;
     }
-  
+
     if (filters.qteMin && filters.qteMax) {
       whereClause.qte = {
         [sequelize.Op.between]: [filters.qteMin, filters.qteMax],
@@ -452,15 +471,15 @@ findCommandefiltre: async (req, res) => {
     } else if (filters.qteMax) {
       whereClause.qte = { [sequelize.Op.lte]: filters.qteMax };
     }
-  
+
     if (filters.etat) {
       whereClause.etat = filters.etat;
     }
-  
+
     if (filters.titre) {
       whereClause.titre = filters.titre;
     }
-  
+
     if (filters.prixMin && filters.prixMax) {
       whereClause[sequelize.Op.or] = [
         {
@@ -493,12 +512,12 @@ findCommandefiltre: async (req, res) => {
         },
       ];
     }
-  
+
     try {
       const totalCount = await Model.produitlabrairie.count({
         where: whereClause,
       });
-  
+
       const produits = await Model.produitlabrairie.findAll({
         offset: offset,
         order: order,
@@ -531,7 +550,7 @@ findCommandefiltre: async (req, res) => {
           },
         ],
       });
-  
+
       if (produits.length > 0) {
         const totalPages = Math.ceil(totalCount / pageSize);
         return res.status(200).json({
@@ -542,7 +561,7 @@ findCommandefiltre: async (req, res) => {
       } else {
         return res.status(200).json({
           success: true,
-          message: "Aucun produit trouvé avec ces filtres.",
+          message: "Aucun produit trouvï¿½ avec ces filtres.",
         });
       }
     } catch (err) {
@@ -554,29 +573,29 @@ findCommandefiltre: async (req, res) => {
   },
 
   findproduitbyname: async (req, res) => {
-    const {name} = req.query
+    const { name } = req.query;
     try {
-      Model.produitlabrairie.findAll({
-        where: {
-      
-          titre: name, 
-        },
-    
-      }).then((response) => {
-        try {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              produits: response,
+      Model.produitlabrairie
+        .findAll({
+          where: {
+            titre: name,
+          },
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              return res.status(200).json({
+                success: true,
+                produits: response,
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err,
             });
           }
-        } catch (err) {
-          return res.status(400).json({
-            success: false,
-            error: err,
-          });
-        }
-      });
+        });
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -585,25 +604,51 @@ findCommandefiltre: async (req, res) => {
     }
   },
 
-  
   findfournissbyname: async (req, res) => {
-    const {name} = req.query
+    const { name } = req.query;
     try {
-      Model.fournisseur.findAll({
-        where:{
-          nameetablissement:name
-        },
-        include: [
-          {
-            model: Model.user,
+      Model.fournisseur
+        .findAll({
+          where: {
+            nameetablissement: name,
           },
-        ]
-      }).then((response) => {
+          include: [
+            {
+              model: Model.user,
+            },
+          ],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              return res.status(200).json({
+                success: true,
+                produits: response,
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  getAllAvis: async (req, res) => {
+    try {
+      Model.avisProduitlibraire.findAll({}).then((response) => {
         try {
           if (response !== null) {
             return res.status(200).json({
               success: true,
-              produits: response,
+              avis: response,
             });
           }
         } catch (err) {

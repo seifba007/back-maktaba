@@ -59,5 +59,5 @@ router.get(
   adminController.findfournissbyname
 );
 
-//router.get("/allavis", adminController.getAllAvis);
+router.get("/allavis", adminController.getAllAvis);
 module.exports = router;
