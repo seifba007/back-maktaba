@@ -1,243 +1,503 @@
-const Sequelize = require("sequelize")
-const db = require("../config/database")
-const userModel = require("./user")
-const clientModel = require ("./client")
-const fournisseurModel = require("./fournisseur") 
-const partenaireModel = require ("./partenaire")
-const labrairieModel = require ("./labriarie")
-const codePromoModel = require("./codepromo")
-const bonAchatModel = require("./bonAchat")
-const categorieModel = require("./categorie")
-const produitlabrairieModel = require("./produitLabriarie")
-const commandeEnGrosModel = require("./commandeGros")
-const ProduitCommandeEnGrosModel = require("./ProduitCommandeEnGros")
-const ProduitCommandeEnDetailModel = require ("./ProduitCommandeEnDetail")
-const commandeEnDetailModel = require ("./CommandeDetail")
-const codeClientModel = require("./codeClient")
-const avisProduitlibraireModel = require("./avisProduitlibraire")
-const signalerProduitlibraireModel = require ("./signalerProduitLibraire")
-const adressesModel = require("./adresses")
-const imageProduitLibrairieModel = require("./imageProduitLibrairie")
-const imageCatalogeModel=require("./imageCataloge")
-const produitFavorieModel = require("./produitFavorie")
-const BecomePartnerModel = require("./BecomePartner")
-const adminModel = require("./admin")
-const catalogeModel = require("./cataloge")
-const suggestionProduitModel=require("./suggestionProduit")
-const SouscategorieModel = require("./sousCategorie")
-const user = userModel(db, Sequelize)
-const client =  clientModel (db,Sequelize)
-const fournisseur = fournisseurModel (db, Sequelize)
-const labrairie = labrairieModel (db,Sequelize)
-const partenaire = partenaireModel (db,Sequelize)
-const codePromo = codePromoModel(db,Sequelize)
-const bonAchat = bonAchatModel(db,Sequelize)
-const categorie = categorieModel(db,Sequelize)
-const produitlabrairie = produitlabrairieModel(db,Sequelize)
-const commandeEnGros = commandeEnGrosModel(db,Sequelize)
-const ProduitCommandeEnGros = ProduitCommandeEnGrosModel(db,Sequelize)
-const commandeEnDetail = commandeEnDetailModel(db,Sequelize)
-const ProduitCommandeEnDetail = ProduitCommandeEnDetailModel(db,Sequelize)
-const codeClient = codeClientModel(db,Sequelize)
-const avisProduitlibraire = avisProduitlibraireModel(db,Sequelize)
-const signalerProduitlibraire = signalerProduitlibraireModel(db,Sequelize)
-const adresses  = adressesModel (db,Sequelize);
-const imageProduitLibrairie = imageProduitLibrairieModel(db,Sequelize)
-const imageCataloge=imageCatalogeModel(db,Sequelize)
-const produitFavorie = produitFavorieModel(db,Sequelize)
-const admin=adminModel(db,Sequelize)
-const BecomePartner = BecomePartnerModel(db,Sequelize)
-const cataloge=catalogeModel(db,Sequelize)
-const suggestionProduit = suggestionProduitModel(db,Sequelize)
-const Souscategorie = SouscategorieModel(db,Sequelize)
+const Sequelize = require("sequelize");
+const db = require("../config/database");
+const userModel = require("./user");
+const clientModel = require("./client");
+const fournisseurModel = require("./fournisseur");
+const partenaireModel = require("./partenaire");
+const labrairieModel = require("./labriarie");
+const codePromoModel = require("./codepromo");
+const bonAchatModel = require("./bonAchat");
+const categorieModel = require("./categorie");
+const produitlabrairieModel = require("./produitLabriarie");
+const commandeEnGrosModel = require("./commandeGros");
+const ProduitCommandeEnGrosModel = require("./ProduitCommandeEnGros");
+const ProduitCommandeEnDetailModel = require("./ProduitCommandeEnDetail");
+const commandeEnDetailModel = require("./CommandeDetail");
+const codeClientModel = require("./codeClient");
+const avisProduitlibraireModel = require("./avisProduitlibraire");
+const signalerProduitlibraireModel = require("./signalerProduitLibraire");
+const adressesModel = require("./adresses");
+const imageProduitLibrairieModel = require("./imageProduitLibrairie");
+const imageCatalogeModel = require("./imageCataloge");
+const produitFavorieModel = require("./produitFavorie");
+const BecomePartnerModel = require("./BecomePartner");
+const adminModel = require("./admin");
+const catalogeModel = require("./cataloge");
+const suggestionProduitModel = require("./suggestionProduit");
+const SouscategorieModel = require("./sousCategorie");
+const user = userModel(db, Sequelize);
+const client = clientModel(db, Sequelize);
+const fournisseur = fournisseurModel(db, Sequelize);
+const labrairie = labrairieModel(db, Sequelize);
+const partenaire = partenaireModel(db, Sequelize);
+const codePromo = codePromoModel(db, Sequelize);
+const bonAchat = bonAchatModel(db, Sequelize);
+const categorie = categorieModel(db, Sequelize);
+const produitlabrairie = produitlabrairieModel(db, Sequelize);
+const commandeEnGros = commandeEnGrosModel(db, Sequelize);
+const ProduitCommandeEnGros = ProduitCommandeEnGrosModel(db, Sequelize);
+const commandeEnDetail = commandeEnDetailModel(db, Sequelize);
+const ProduitCommandeEnDetail = ProduitCommandeEnDetailModel(db, Sequelize);
+const codeClient = codeClientModel(db, Sequelize);
+const avisProduitlibraire = avisProduitlibraireModel(db, Sequelize);
+const signalerProduitlibraire = signalerProduitlibraireModel(db, Sequelize);
+const adresses = adressesModel(db, Sequelize);
+const imageProduitLibrairie = imageProduitLibrairieModel(db, Sequelize);
+const imageCataloge = imageCatalogeModel(db, Sequelize);
+const produitFavorie = produitFavorieModel(db, Sequelize);
+const admin = adminModel(db, Sequelize);
+const BecomePartner = BecomePartnerModel(db, Sequelize);
+const cataloge = catalogeModel(db, Sequelize);
+const suggestionProduit = suggestionProduitModel(db, Sequelize);
+const Souscategorie = SouscategorieModel(db, Sequelize);
 // define relationships
-user.hasOne(client,{
-  onDelete: 'CASCADE',
-  onUpdate: 'CASCADE'
-})
-client.belongsTo(user)
-user.hasOne(fournisseur,{
-  onDelete: 'CASCADE',
-  onUpdate: 'CASCADE'
-})
-fournisseur.belongsTo(user)
-user.hasOne(labrairie,{
-  onDelete: 'CASCADE',
-  onUpdate: 'CASCADE'
-})
-labrairie.belongsTo(user)
-user.hasOne(partenaire,{
-  onDelete:'CASCADE',
-  onUpdate:'CASCADE'
-})
-partenaire.belongsTo(user)
-user.hasOne(admin,{
-  onDelete:'CASCADE',
-  onUpdate:'CASCADE'
-})
-admin.belongsTo(user)
+user.hasOne(client, {
+  foreignKey: "userclientfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+client.belongsTo(user, {
+  foreignKey: "userclientfk",
+  constraints: false,
+});
+user.hasOne(fournisseur, {
+  foreignKey: "userfourfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
 
-admin.hasMany(cataloge)
-cataloge.belongsTo(admin)
+fournisseur.belongsTo(user, {
+  foreignKey: "userfourfk",
+  constraints: false,
+});
+
+user.hasOne(labrairie, {
+  foreignKey: "userlabfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+labrairie.belongsTo(user, {
+  foreignKey: "userlabfk",
+  constraints: false,
+});
+user.hasOne(partenaire, {
+  foreignKey: "userparfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+partenaire.belongsTo(user, {
+  foreignKey: "userparfk",
+  constraints: false,
+});
+
+user.hasOne(admin, {
+  foreignKey: "useradminfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+admin.belongsTo(user, {
+  foreignKey: "useradminfk",
+  constraints: false,
+});
+
+admin.hasMany(cataloge, {
+  foreignKey: "admincatalogefk",
+  constraints: false,
+});
+
+cataloge.belongsTo(admin, {
+  foreignKey: "admincatalogefk",
+  constraints: false,
+});
 labrairie.hasMany(codePromo, {
-  foreignKey: 'labrairieId', // this line to make sure this is the unique foreignKey
-  constraints: false,  // this line to avoid duplicates
+  foreignKey: "labcodeprfk", 
+  constraints: false, 
 });
 codePromo.belongsTo(labrairie, {
-  foreignKey: 'labrairieId',
-  constraints: false, 
+  foreignKey: "labcodeprfk",
+  constraints: false,
 });
 partenaire.hasMany(codePromo, {
-  foreignKey: 'partenaireId',
-  constraints: false, 
+  foreignKey: "partcodeprfk",
+  constraints: false,
 });
 codePromo.belongsTo(partenaire, {
-  foreignKey: 'partenaireId',
-  constraints: false, 
+  foreignKey: "partcodeprfk",
+  constraints: false,
 });
 
 fournisseur.hasMany(codePromo, {
-  foreignKey: 'fournisseurId',
-  constraints: false, 
+  foreignKey: "fourcodeprfk",
+  constraints: false,
 });
 
 codePromo.belongsTo(fournisseur, {
-  foreignKey: 'fournisseurId',
-  constraints: false, 
-});
-client.belongsToMany(codePromo, {
-  through: codeClient,
-  foreignKey: 'clientId',
-  constraints: false, 
-});
-codePromo.belongsToMany(client, {
-  through: codeClient,
-  foreignKey: 'codePromoId',
+  foreignKey: "fourcodeprfk",
   constraints: false,
 });
-user.hasMany(bonAchat,{
-  onDelete:'CASCADE',
-  onUpdate:'CASCADE'
-})
-bonAchat.belongsTo(user)
-partenaire.hasMany(bonAchat) 
-bonAchat.belongsTo(partenaire)
-fournisseur.hasMany(bonAchat) 
-bonAchat.belongsTo(fournisseur)
-labrairie.hasMany(bonAchat) 
-bonAchat.belongsTo(labrairie)
-fournisseur.hasMany(produitlabrairie)
-produitlabrairie.belongsTo(fournisseur)
-categorie.hasMany(produitlabrairie,{
-  onDelete: 'CASCADE',
-  onUpdate: 'CASCADE'
-})
-produitlabrairie.belongsTo(categorie)
-labrairie.hasMany(produitlabrairie,{
-  onDelete: 'CASCADE',
-  onUpdate: 'CASCADE'
-})
-produitlabrairie.belongsTo(labrairie)
-labrairie.hasMany(commandeEnGros)
-commandeEnGros.belongsTo(labrairie)
-fournisseur.hasMany(commandeEnGros)
-commandeEnGros.belongsTo(fournisseur)
-//produit.belongsToMany(commandeEnGros, { through:ProduitCommandeEnGros});
-//commandeEnGros.belongsToMany(produit, { through:ProduitCommandeEnGros});
-user.hasMany(commandeEnDetail,{
-  onDelete: 'CASCADE',
-  onUpdate: 'CASCADE'
+
+client.belongsToMany(codePromo, {
+  through: codeClient,
+  foreignKey: "clientId", 
+  otherKey: "codePromoId", 
+  constraints: false,
 });
-commandeEnDetail.belongsTo(user);
-labrairie.hasMany(commandeEnDetail)
-commandeEnDetail.belongsTo(labrairie)
-produitlabrairie.belongsToMany(commandeEnDetail , {through :ProduitCommandeEnDetail})
-commandeEnDetail.belongsToMany(produitlabrairie , {through :ProduitCommandeEnDetail})
-client.hasMany(avisProduitlibraire,{
-  onDelete: 'CASCADE',
-  onUpdate: 'CASCADE'
-})
-avisProduitlibraire.belongsTo(client)
-partenaire.hasMany(avisProduitlibraire)
-avisProduitlibraire.belongsTo(partenaire)
-fournisseur.hasMany(avisProduitlibraire)
-avisProduitlibraire.belongsTo(fournisseur)
-produitlabrairie.hasMany(avisProduitlibraire,{
-  onDelete: 'CASCADE',
-  onUpdate: 'CASCADE'
-})
-avisProduitlibraire.belongsTo(produitlabrairie)
-produitlabrairie.hasMany(signalerProduitlibraire)
-signalerProduitlibraire.belongsTo(produitlabrairie)
-client.hasMany(adresses)
-adresses.belongsTo(client)
-partenaire.hasMany(adresses)
-adresses.belongsTo(partenaire)
-fournisseur.hasMany(adresses)
-adresses.belongsTo(fournisseur)
-produitlabrairie.hasMany(imageProduitLibrairie,{
-  onDelete: 'CASCADE',
-  onUpdate: 'CASCADE'
-})
-imageProduitLibrairie.belongsTo(produitlabrairie)
-cataloge.hasMany(imageCataloge,{
-  onDelete: 'CASCADE',
-  onUpdate: 'CASCADE'
-})
-imageCataloge.belongsTo(cataloge)
-categorie.hasMany(cataloge)
-cataloge.belongsTo(categorie)
-user.hasMany(produitFavorie)
-partenaire.hasMany(produitFavorie)
-produitFavorie.belongsTo(partenaire)
-produitFavorie.belongsTo(user)
-produitlabrairie.hasMany(produitFavorie,{
-  onDelete: 'CASCADE',
-  onUpdate: 'CASCADE'
-})
-produitFavorie.belongsTo(produitlabrairie)
-admin.hasMany(BecomePartner)
-BecomePartner.belongsTo(admin)
-user.hasMany(suggestionProduit)
-suggestionProduit.belongsTo(user)
-categorie.hasMany(Souscategorie,{
-  onDelete:'CASCADE',
-  onUpdate:'CASCADE'
-})
-Souscategorie.belongsTo(categorie)
-Souscategorie.hasMany(suggestionProduit)
-suggestionProduit.belongsTo(Souscategorie)
-categorie.hasMany(suggestionProduit)
-suggestionProduit.belongsTo(categorie)
-Souscategorie.hasMany(produitlabrairie)
-produitlabrairie.belongsTo(Souscategorie)
-Souscategorie.hasMany(cataloge)
-cataloge.belongsTo(Souscategorie)
+
+codePromo.belongsToMany(client, {
+  through: codeClient,
+  foreignKey: "codePromoId",
+  otherKey: "clientId", 
+  constraints: false,
+});
+
+user.hasMany(bonAchat, {
+  foreignKey: "userbonachafk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+
+bonAchat.belongsTo(user, {
+  foreignKey: "userbonachafk",
+  constraints: false,
+});
+
+partenaire.hasMany(bonAchat, {
+  foreignKey: "partbonachafk",
+  constraints: false,
+});
+
+bonAchat.belongsTo(partenaire, {
+  foreignKey: "partbonachafk",
+  constraints: false,
+});
+
+fournisseur.hasMany(bonAchat, {
+  foreignKey: "fourbonachafk",
+  constraints: false,
+});
+
+bonAchat.belongsTo(fournisseur, {
+  foreignKey: "fourbonachafk",
+  constraints: false,
+});
+
+labrairie.hasMany(bonAchat, {
+  foreignKey: "labbonachafk",
+  constraints: false,
+});
+
+bonAchat.belongsTo(labrairie, {
+  foreignKey: "labbonachafk",
+  constraints: false,
+});
+
+fournisseur.hasMany(produitlabrairie, {
+  foreignKey: "fourprodlabfk",
+  constraints: false,
+});
+
+produitlabrairie.belongsTo(fournisseur, {
+  foreignKey: "fourprodlabfk",
+  constraints: false,
+});
+
+categorie.hasMany(produitlabrairie, {
+  foreignKey: "categprodlabfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+produitlabrairie.belongsTo(categorie, {
+  foreignKey: "categprodlabfk",
+  constraints: false,
+});
+
+labrairie.hasMany(produitlabrairie, {
+  foreignKey: "labrprodfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+produitlabrairie.belongsTo(labrairie, {
+  foreignKey: "labrprodfk",
+  constraints: false,
+});
+
+labrairie.hasMany(commandeEnGros, {
+  foreignKey: "labrcomgrofk",
+  constraints: false,
+});
+
+commandeEnGros.belongsTo(labrairie, {
+  foreignKey: "labrcomgrofk",
+  constraints: false,
+});
+
+fournisseur.hasMany(commandeEnGros, {
+  foreignKey: "fourcomgrofk",
+  constraints: false,
+});
+
+commandeEnGros.belongsTo(fournisseur, {
+  foreignKey: "fourcomgrofk",
+  constraints: false,
+});
+
+user.hasMany(commandeEnDetail, {
+  foreignKey: "usercommdetfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+commandeEnDetail.belongsTo(user, {
+  foreignKey: "usercommdetfk",
+  constraints: false,
+});
+
+labrairie.hasMany(commandeEnDetail, {
+  foreignKey: "labrcomdetfk",
+  constraints: false,
+});
+
+commandeEnDetail.belongsTo(labrairie, {
+  foreignKey: "labrcomdetfk",
+  constraints: false,
+});
+
+produitlabrairie.belongsToMany(commandeEnDetail, {
+  through: ProduitCommandeEnDetail,
+  foreignKey: 'prodlaibrcommdetfk', 
+  otherKey: 'comdetprodlabrfk', 
+  constraints: false,
+});
+
+commandeEnDetail.belongsToMany(produitlabrairie, {
+  through: ProduitCommandeEnDetail,
+  foreignKey: 'comdetprodlabrfk', 
+  otherKey: 'prodlaibrcommdetfk', 
+  constraints: false,
+});
+
+client.hasMany(avisProduitlibraire, {
+  foreignKey: "clientavisprodfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+avisProduitlibraire.belongsTo(client, {
+  foreignKey: "clientavisprodfk",
+  constraints: false,
+});
+partenaire.hasMany(avisProduitlibraire, {
+  foreignKey: "partavisprodfk",
+  constraints: false,
+});
+avisProduitlibraire.belongsTo(partenaire, {
+  foreignKey: "partavisprodfk",
+  constraints: false,
+});
+fournisseur.hasMany(avisProduitlibraire, {
+  foreignKey: "fournavisprodfk",
+  constraints: false,
+});
+avisProduitlibraire.belongsTo(fournisseur, {
+  foreignKey: "fournavisprodfk",
+  constraints: false,
+});
+
+produitlabrairie.hasMany(avisProduitlibraire, {
+  foreignKey: "prodavisproduitsfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+avisProduitlibraire.belongsTo(produitlabrairie, {
+  foreignKey: "prodavisproduitsfk",
+  constraints: false,
+});
+
+produitlabrairie.hasMany(signalerProduitlibraire, {
+  foreignKey: "prodsignalerfk",
+  constraints: false,
+});
+signalerProduitlibraire.belongsTo(produitlabrairie, {
+  foreignKey: "prodsignalerfk",
+  constraints: false,
+});
+client.hasMany(adresses, {
+  foreignKey: "clientaddressfk",
+  constraints: false,
+});
+adresses.belongsTo(client, {
+  foreignKey: "clientaddressfk",
+  constraints: false,
+});
+partenaire.hasMany(adresses, {
+  foreignKey: "partenaireaddressfk",
+  constraints: false,
+});
+adresses.belongsTo(partenaire, {
+  foreignKey: "partenaireaddressfk",
+  constraints: false,
+});
+fournisseur.hasMany(adresses, {
+  foreignKey: "fournisseuraddressfk",
+  constraints: false,
+});
+adresses.belongsTo(fournisseur, {
+  foreignKey: "fournisseuraddressfk",
+  constraints: false,
+});
+produitlabrairie.hasMany(imageProduitLibrairie, {
+  foreignKey: "imageprodfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+imageProduitLibrairie.belongsTo(produitlabrairie, {
+  foreignKey: "imageprodfk",
+  constraints: false,
+});
+cataloge.hasMany(imageCataloge, {
+  foreignKey: "imagecatalogefk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+imageCataloge.belongsTo(cataloge, {
+  foreignKey: "imagecatalogefk",
+  constraints: false,
+});
+categorie.hasMany(cataloge, {
+  foreignKey: "categoriecatalogefk",
+  constraints: false,
+});
+cataloge.belongsTo(categorie, {
+  foreignKey: "categoriecatalogefk",
+  constraints: false,
+});
+user.hasMany(produitFavorie, {
+  foreignKey: "userprodfavfk",
+  constraints: false,
+});
+produitFavorie.belongsTo(user, {
+  foreignKey: "userprodfavfk",
+  constraints: false,
+});
+partenaire.hasMany(produitFavorie, {
+  foreignKey: "partprodfavfk",
+  constraints: false,
+});
+produitFavorie.belongsTo(partenaire, {
+  foreignKey: "partprodfavfk",
+  constraints: false,
+});
+
+produitlabrairie.hasMany(produitFavorie, {
+  foreignKey: "prodprodfavfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+produitFavorie.belongsTo(produitlabrairie, {
+  foreignKey: "prodprodfavfk",
+  constraints: false,
+});
+admin.hasMany(BecomePartner, {
+  foreignKey: "adminpartfk",
+  constraints: false,
+});
+BecomePartner.belongsTo(admin, {
+  foreignKey: "adminpartfk",
+  constraints: false,
+});
+user.hasMany(suggestionProduit, {
+  foreignKey: "usersuggeprodfk",
+  constraints: false,
+});
+suggestionProduit.belongsTo(user, {
+  foreignKey: "usersuggeprodfk",
+  constraints: false,
+});
+categorie.hasMany(Souscategorie, {
+  foreignKey: "catagsouscatafk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+Souscategorie.belongsTo(categorie, {
+  foreignKey: "catagsouscatafk",
+  constraints: false,
+});
+Souscategorie.hasMany(suggestionProduit, {
+  foreignKey: "soussuggestfk",
+  constraints: false,
+});
+suggestionProduit.belongsTo(Souscategorie, {
+  foreignKey: "soussuggestfk",
+  constraints: false,
+});
+categorie.hasMany(suggestionProduit, {
+  foreignKey: "categoriesuggestfk",
+  constraints: false,
+});
+suggestionProduit.belongsTo(categorie, {
+  foreignKey: "categoriesuggestfk",
+  constraints: false,
+});
+Souscategorie.hasMany(produitlabrairie, {
+  foreignKey: "souscatprodfk",
+  constraints: false,
+});
+produitlabrairie.belongsTo(Souscategorie, {
+  foreignKey: "souscatprodfk",
+  constraints: false,
+});
+Souscategorie.hasMany(cataloge, {
+  foreignKey: "souscatalogefk",
+  constraints: false,
+});
+cataloge.belongsTo(Souscategorie, {
+  foreignKey: "souscatalogefk",
+  constraints: false,
+});
+
 
 module.exports = {
-    user,
-    client,
-    labrairie,
-    fournisseur,
-    partenaire,
-    codePromo,
-    bonAchat,
-    categorie,
-    produitlabrairie,
-    commandeEnGros,
-    //ProduitCommandeEnGros,
-    commandeEnDetail,
-    ProduitCommandeEnDetail,
-    codeClient,
-    avisProduitlibraire,
-    signalerProduitlibraire,
-    adresses,
-    imageProduitLibrairie,
-    produitFavorie,
-    admin,
-    BecomePartner,
-    cataloge,
-    imageCataloge,
-    suggestionProduit,
-    Souscategorie
-}
+  user,
+  client,
+  labrairie,
+  fournisseur,
+  partenaire,
+  codePromo,
+  bonAchat,
+  categorie,
+  produitlabrairie,
+  commandeEnGros,
+  //ProduitCommandeEnGros,
+  commandeEnDetail,
+  ProduitCommandeEnDetail,
+  codeClient,
+  avisProduitlibraire,
+  signalerProduitlibraire,
+  adresses,
+  imageProduitLibrairie,
+  produitFavorie,
+  admin,
+  BecomePartner,
+  cataloge,
+  imageCataloge,
+  suggestionProduit,
+  Souscategorie,
+};
