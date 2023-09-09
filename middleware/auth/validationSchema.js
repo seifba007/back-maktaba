@@ -30,6 +30,9 @@ const addadminValidation = (data) => {
       .min(6)
       .required()
       .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$")),
+    email_verifie: Joi.string(),
+    etatCompte: Joi.string(),
+    role: Joi.string(),
   });
   return schema.validate(data);
 };
@@ -60,7 +63,7 @@ const filtercommandeValidation = (data) => {
     qteMax: Joi.number().integer(),
     etat: Joi.string(),
     titre: Joi.string(),
-   description: Joi.string(),
+    description: Joi.string(),
   });
   return schema.validate(data);
 };
@@ -71,7 +74,9 @@ const addAdresseValidation = (data) => {
     Gouvernorat: Joi.string(),
     Ville: Joi.string(),
     Code_postal: Joi.number().integer(),
-    clientId:Joi.number().integer(),
+    clientaddressfk: Joi.number().integer(),
+    partenaireaddressfk: Joi.number().integer(),
+   fournisseuraddressfk: Joi.number().integer(),
   });
   return schema.validate(data);
 };
@@ -98,11 +103,11 @@ const bonAchatValidation = (data) => {
     solde: Joi.number(),
     etat: Joi.string(),
     code: Joi.string(),
-    userId:Joi.number(),
-    nbpoint:Joi.number(),
-    partenaireId: Joi.number(),
-    fournisseurId: Joi.number(),
-    labrairieId:Joi.number(),
+    userbonachafk: Joi.number(),
+    nbpoint: Joi.number(),
+    partbonachafk: Joi.number(),
+    fourbonachafk: Joi.number(),
+    labbonachafk: Joi.number(),
   });
   return schema.validate(data);
 };
@@ -113,9 +118,9 @@ const catalogeValidation = (data) => {
     description: Joi.string(),
     prix: Joi.number(),
     etat: Joi.string(),
-    AdminId: Joi.number(),
-    categorieId: Joi.number(),
-    SouscategorieId: Joi.number(),
+    admincatalogefk: Joi.number(),
+    categoriecatalogefk: Joi.number(),
+    souscatalogefk: Joi.number(),
   });
   return schema.validate(data);
 };
@@ -136,7 +141,7 @@ const librairieValidation = (data) => {
     instagram: Joi.string(),
     image: Joi.string(),
     emailLib: Joi.string(),
-  });      
+  });
 
   return schema.validate(data);
   0;
@@ -173,7 +178,7 @@ const subcategoryValidation = (data) => {
   const schema = Joi.object({
     name: Joi.string().min(2).required(),
     Description: Joi.string().min(6).required(),
-    categorieId: Joi.number().integer(),
+    catagsouscatafk: Joi.number().integer(),
   });
   return schema.validate(data);
 };
@@ -191,9 +196,10 @@ const suggestionProduitValidation = (data) => {
     Description: Joi.string(),
     image: Joi.string(),
     etat: Joi.string(),
-    userId: Joi.number(),
-    categorieId:Joi.number(),
-    SouscategorieId:Joi.number(),
+    usersuggeprodfk: Joi.number(),
+    categoriesuggestfk: Joi.number(),
+    soussuggestfk: Joi.number(),
+  
   });
   return schema.validate(data);
 };

@@ -14,11 +14,11 @@ router.delete(
   avisProduitlibraireController.delete
 );
 router.get(
-  "/findAllbyclient/:clientId",
+  "/findAllbyclient/:clientavisprodfk",
   avisProduitlibraireController.getAllAvisByClient
 );
 router.get(
-  "/getAllAvisByproduit/:produitlabrairieId",
+  "/getAllAvisByproduit/:prodavisproduitsfk",
   avisProduitlibraireController.getAllAvisByproduit
 );
 router.get(
@@ -26,7 +26,7 @@ router.get(
   avisProduitlibraireController.getAllavisBylibriarie
 );
 router.get(
-  "/findAllbyPartnier/:partenaireId",
+  "/findAllbyPartnier/:partavisprodfk",
   avisProduitlibraireController.getAllAvisByPartnier
 );
 

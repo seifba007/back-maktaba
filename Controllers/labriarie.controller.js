@@ -33,7 +33,7 @@ const LabriarieController = {
           } else {
             res.status(200).json({
               success: false,
-              message: "profile not find",
+              message: "profil not found",
             });
           }
         });
@@ -120,15 +120,15 @@ const LabriarieController = {
   findAllproduitbyfiltre: async (req, res) => {
     const { id } = req.params.id;
 
-    const { categorieId, SouscategorieId, titre, page, pageSize } = req.body;
+    const { categprodlabfk, souscatprodfk, titre, page, pageSize } = req.query;
     const offset = (page - 1) * pageSize;
     const whereClause = {};
 
-    if (categorieId) {
-      whereClause.categorieId = categorieId;
+    if (categprodlabfk) {
+      whereClause.categprodlabfk = categprodlabfk;
     }
-    if (SouscategorieId) {
-      whereClause.SouscategorieId = SouscategorieId;
+    if (souscatprodfk) {
+      whereClause.souscatprodfk = souscatprodfk;
     }
     if (titre) {
       whereClause.titre = titre;

@@ -2,7 +2,7 @@ const Model = require("../Models/index");
 const { bonAchatValidation } = require("../middleware/auth/validationSchema");
 const bonAchatController = {
   add: async (req, res) => {
-    const { solde, userId, partenaireId, nbpoint,fournisseurId ,labrairieId} = req.body;
+    const { solde, userbonachafk, partbonachafk, nbpoint,fourbonachafk ,labbonachafk} = req.body;
     try {
       const { error } = bonAchatValidation(req.body);
       if (error) return res.status(400).json({ success: false, err: error.details[0].message });
@@ -22,20 +22,20 @@ const bonAchatController = {
         solde: solde,
         etat: "Valide",
         code: generateRandomCode(),
-        userId: userId,
-        partenaireId: partenaireId,
-        fournisseurId:fournisseurId,
-        labrairieId:labrairieId
+        userbonachafk: userbonachafk,
+        partbonachafk: partbonachafk,
+        fourbonachafk:fourbonachafk,
+        labbonachafk:labbonachafk
       };
       Model.bonAchat.create(data).then((response) => {
         if (response !== null) {
-          Model.user.findByPk(userId).then((user) => {
+          Model.user.findByPk(userbonachafk).then((user) => {
             if (user) {
               const updatedPoint = Number(user.point) - Number(nbpoint);
               
               Model.user.update(
                 { point: updatedPoint },
-                { where: { id: userId } }
+                { where: { id: userbonachafk } }
               );
             }
           });
@@ -152,9 +152,9 @@ const bonAchatController = {
       Model.bonAchat
         .findAll({
           where: {
-            userId: req.params.id,
+            userbonachafk: req.params.id,
           },
-          attributes: { exclude: ["updatedAt", "userId", "partenaireId"] },
+          attributes: { exclude: ["updatedAt", "userbonachafk", "partbonachafk"] },
           include: [
             {
               model: Model.partenaire,
@@ -184,7 +184,7 @@ const bonAchatController = {
       Model.bonAchat
         .findAll({
           where: {
-            partenaireId: req.params.id,
+            partbonachafk: req.params.id,
           },
           include: [
             {

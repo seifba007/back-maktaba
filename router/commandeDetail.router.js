@@ -1,15 +1,20 @@
 const express = require("express");
 const router = express.Router();
+const upload = require("../middleware/upload");
+
 const commandeDetailController = require("../Controllers/commandeEnDetail.controller");
 const { AuthorizationUser } = require("../middleware/auth/auth");
 router.post("/add", AuthorizationUser, commandeDetailController.add);
+router.post("/addcommandespecial", AuthorizationUser, commandeDetailController.add);
+
+router.post("/addcommandespecial", upload.single("fichier"), commandeDetailController.addcommandespecial);
 router.get(
   "/findcommandebyuser/:id",
   commandeDetailController.findCommandeByuser
 );
 router.get("/findOneCommande/:id", commandeDetailController.findOneCommande);
 router.get(
-  "/findCommandeBylibrairie/:labrairieId",
+  "/findCommandeBylibrairie/:labrcomdetfk",
   commandeDetailController.findCommandeBylibrairie
 );
 router.put(
@@ -25,7 +30,7 @@ router.post(
   commandeDetailController.addArticle
 );
 router.delete(
-  "/deleteArticle/:produitlabrairieId/:commandeEnDetailId",
+  "/deleteArticle/:produitlabrcomdetfk/:comdetprodlabrfk",
   AuthorizationUser,
   commandeDetailController.deleteArticle
 );
@@ -50,7 +55,7 @@ router.get(
 router.get("/findCommandefiltrage", commandeDetailController.commandefiltrage);
 
 router.get(
-  "/findCommandebyartandid",
+  "/findCommandebyartandid/:id",
   commandeDetailController.findCommabyartandid
 );
 

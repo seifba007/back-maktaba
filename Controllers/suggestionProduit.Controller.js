@@ -2,9 +2,9 @@ const Model = require("../Models/index");
 const { suggestionProduitValidation } = require("../middleware/auth/validationSchema");
 const suggestionProduitController = {
   add: async (req, res) => {
-    const { Titre, Description, image, userId, SouscategorieId, categorieId } =
+    const { Titre, Description, image, usersuggeprodfk, soussuggestfk, categoriesuggestfk } =
       req.body;
-    req.body["image"] = req.files[0].filename;
+    req.body["image"] = req.files[0];
     try {
       const { error } = suggestionProduitValidation(req.body);
       if (error) return res.status(400).json({ success: false, err: error.details[0].message });
@@ -14,9 +14,9 @@ const suggestionProduitController = {
         Description: Description,
         image: image,
         etat: "en_cours",
-        userId: userId,
-        SouscategorieId: SouscategorieId,
-        categorieId: categorieId,
+        usersuggeprodfk: usersuggeprodfk,
+        soussuggestfk: soussuggestfk,
+        categoriesuggestfk: categoriesuggestfk,
       };
       Model.suggestionProduit.create(data).then((response) => {
         if (response !== null) {

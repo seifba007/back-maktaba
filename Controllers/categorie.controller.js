@@ -1,6 +1,7 @@
 const { Sequelize } = require("sequelize");
 const Model = require("../Models/index");
 const categorieController = {
+
   add: async (req, res) => {
     try {
       const data = {
@@ -22,6 +23,8 @@ const categorieController = {
       });
     }
   },
+
+
   update: async (req, res) => {
     try {
       const data = {
@@ -75,7 +78,9 @@ const categorieController = {
     try {
       await Model.categorie.findAll(
         {
-         
+         where:{
+          id: req.params.id
+         },
           include: [
             {
               model: Model.Souscategorie,

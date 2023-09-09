@@ -7,13 +7,9 @@ router.post(
   "/add",
   AuthorizationUser,
   upload.array("image", 3),
-  ProduitLabrairieController.add_produit_with_import_image
+  ProduitLabrairieController.add_produit
 );
-router.post(
-  "/addProdCataloge",
-  AuthorizationUser,
-  ProduitLabrairieController.add
-);
+
 router.put(
   "/update/:id",
   AuthorizationUser,
@@ -31,7 +27,7 @@ router.get(
 );
 router.get("/findOneProduit/:id", ProduitLabrairieController.findOneProduit);
 router.get(
-  "/findProduitsBycategorie/:categorieId",
+  "/findProduitsBycategorie/:categprodlabfk",
   ProduitLabrairieController.findProduitsBycategorie
 );
 

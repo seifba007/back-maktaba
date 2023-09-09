@@ -14,7 +14,7 @@ module.exports.sendEmailVerification = (email, link) => {
     .sendMail({
       from: 000,
       to: email,
-      subject: " verification Email Maktaba.tn  ",
+      subject: "Vérification Email Maktaba.tn",
       html: `
       <head>
       <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -306,7 +306,7 @@ module.exports.sendContactEmail = (email,sujet,message, name)=>{
     transport
     .sendMail({
       sender : email,
-      to : "mahmoudbouattay178@gmail.com",
+      to : "maktba.tn01@gmail.com",
       subject : `message from  ${name} : ${sujet} ${email}`,
       text : message
     }).catch((err)=>console.log(err))

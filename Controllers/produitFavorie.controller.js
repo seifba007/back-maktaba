@@ -1,15 +1,16 @@
 const { Sequelize } = require("sequelize");
 const Model = require("../Models/index");
 const produitFavorieController = {
+
   add: async (req, res) => {
     try {
-      const { userId, produitlabrairieId } = req.body;
+      const { userprodfavfk, prodprodfavfk } = req.body;
       const data = {
-        userId: userId,
-        produitlabrairieId: produitlabrairieId,
+        userprodfavfk: userprodfavfk,
+        prodprodfavfk: prodprodfavfk,
       };
 
-      Model.produitFavorie.findOne({where:{userId:userId,produitlabrairieId:produitlabrairieId}}).then((response)=>{
+      Model.produitFavorie.findOne({where:{userprodfavfk:userprodfavfk,prodprodfavfk:prodprodfavfk}}).then((response)=>{
         if(response!==null){
             return res.status(200).json({
               success: false,
@@ -45,7 +46,7 @@ const produitFavorieController = {
     try {
       Model.produitFavorie
         .destroy({
-          where: { id: req.params.id, userId: req.params.userId },
+          where: { id: req.params.id, userprodfavfk: req.params.userprodfavfk },
         })
         .then((response) => {
           if (response !== 0) {
@@ -72,7 +73,7 @@ const produitFavorieController = {
     try {
       Model.produitFavorie
         .findAll({
-          where: { userId: req.params.userId },
+          where: { userprodfavfk: req.params.userprodfavfk },
           attributes: ["id"],
           include: [
             {

@@ -22,9 +22,6 @@ const clientController = {
               include: [
                 {
                   model: Model.adresses,
-                  attributes: {
-                    exclude: ["clientId", "createdAt", "updatedAt"],
-                  },
                 },
               ],
             },

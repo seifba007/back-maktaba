@@ -4,7 +4,6 @@ const router = express.Router();
 const upload = require("../middleware/upload");
 const {
   AuthorizationUser,
-  AuthorizationClient,
   AuthorizationAdmin,
 } = require("../middleware/auth/auth");
 router.post(

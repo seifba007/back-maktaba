@@ -2,7 +2,6 @@ const Model = require("../Models/index");
 const bcrypt = require("bcrypt");
 const sendMail = require("../config/Noemailer.config");
 const fournisseurController = {
-  
   addfournisseur: async (req, res) => {
     try {
       const { email, fullname } = req.body;
@@ -81,34 +80,32 @@ const fournisseurController = {
 
   findOneFournisseur: async (req, res) => {
     try {
-      Model.user
+      Model.fournisseur
         .findOne({
           where: { id: req.params.id },
-          attributes: {
-            exclude: [
-              "password",
-              "createdAt",
-              "updatedAt",
-              "email_verifie",
-              "role",
-            ],
-          },
+          attributes: [
+            "id",
+            "avatar",
+            "address",
+            "telephone",
+            "createdAt",
+            "updatedAt",
+          ],
           include: [
             {
-              model: Model.fournisseur,
-              attributes: [
-                "id",
-                "avatar",
-                "address",
-                "telephone",
-                "createdAt",
-                "updatedAt",
-              ],
-              include: [
-                {
-                  model: Model.adresses,
-                },
-              ],
+              model: Model.adresses,
+            },
+            {
+              model: Model.user,
+              attributes: {
+                exclude: [
+                  "password",
+                  "createdAt",
+                  "updatedAt",
+                  "email_verifie",
+                  "role",
+                ],
+              },
             },
           ],
         })
@@ -134,32 +131,41 @@ const fournisseurController = {
   },
 
   updateProfile: async (req, res) => {
-    const {nameetablissement,telephone,facebook,instagram,email,address}=req.body
+    const {
+      nameetablissement,
+      telephone,
+      facebook,
+      instagram,
+      email,
+      address,
+    } = req.body;
     try {
       const data = {
-        nameetablissement :nameetablissement,
-        address:address,
-        ville:null,
-        telephone : telephone,
-        email:email,
-        Facebook:facebook,
-        Instagram:instagram
-      }
+        nameetablissement: nameetablissement,
+        address: address,
+        ville: null,
+        telephone: telephone,
+        email: email,
+        Facebook: facebook,
+        Instagram: instagram,
+      };
 
-      Model.fournisseur.update(data,{where:{id:req.params.id}}).then((response)=>{
-        console.log(response)
-        if(response!==0){
-          return res.status(200).json({
-            success :true , 
-            message : "update success"
-          })
-        }else{
-          return res.status(400).json({
-            success : false , 
-            message: "error to update "
-          })
-        }
-      })
+      Model.fournisseur
+        .update(data, { where: { id: req.params.id } })
+        .then((response) => {
+          console.log(response);
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "update success",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error to update ",
+            });
+          }
+        });
     } catch (err) {
       return res.status(200).json({
         success: false,
@@ -168,32 +174,33 @@ const fournisseurController = {
     }
   },
   updateProfileimge: async (req, res) => {
-
     try {
-      if(req.files.length!==0){
+      if (req.files.length !== 0) {
         req.body["image"] = req.files[0].filename;
-      }else{
-        req.body["image"]==null
+      } else {
+        req.body["image"] == null;
       }
-      const {image}=req.body
+      const { image } = req.body;
       const data = {
         image: image,
-      }
+      };
 
-      Model.fournisseur.update(data,{where:{id:req.params.id}}).then((response)=>{
-        console.log(response)
-        if(response!==0){
-          return res.status(200).json({
-            success :true , 
-            message : "update  image success"
-          })
-        }else{
-          return res.status(200).json({
-            success : false , 
-            message: "error to update "
-          })
-        }
-      })
+      Model.fournisseur
+        .update(data, { where: { id: req.params.id } })
+        .then((response) => {
+          console.log(response);
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "update  image success",
+            });
+          } else {
+            return res.status(200).json({
+              success: false,
+              message: "error to update ",
+            });
+          }
+        });
     } catch (err) {
       return res.status(400).json({
         success: false,

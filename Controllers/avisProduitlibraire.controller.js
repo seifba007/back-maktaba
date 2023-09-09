@@ -7,7 +7,7 @@ const {
 } = require("../middleware/auth/validationSchema");
 const avisProduitlibraireController = {
   add: async (req, res) => {
-    const { nbStart, commenter, clientId, produitlabrairieId, partenaireId } =
+    const { nbStart, commenter, clientavisprodfk, prodavisproduitsfk, partavisprodfk } =
       req.body;
     try {
       const { error } = addAvisProdValidation({commenter:commenter,nbStart:nbStart});
@@ -18,18 +18,18 @@ const avisProduitlibraireController = {
       const dataclient = {
         nbStart: nbStart,
         commenter: commenter,
-        clientId: clientId,
-        partenaireId: partenaireId,
-        produitlabrairieId: produitlabrairieId,
+        clientavisprodfk: clientavisprodfk,
+        partavisprodfk: partavisprodfk,
+        prodavisproduitsfk: prodavisproduitsfk,
       };
       const datapartenaire = {
         nbStart: nbStart,
         commenter: commenter,
-        clientId: clientId,
-        partenaireId: partenaireId,
-        produitlabrairieId: produitlabrairieId,
+        clientavisprodfk: clientavisprodfk,
+        partavisprodfk: partavisprodfk,
+        prodavisproduitsfk: prodavisproduitsfk,
       };
-      if (clientId) {
+      if (clientavisprodfk) {
         Model.avisProduitlibraire.create(dataclient).then((response) => {
           if (response) {
             return res.status(200).json({
@@ -43,7 +43,7 @@ const avisProduitlibraireController = {
             });
           }
         });
-      } else if (partenaireId) {
+      } else if (partavisprodfk) {
         Model.avisProduitlibraire.create(datapartenaire).then((response) => {
           if (response) {
             return res.status(200).json({
@@ -99,6 +99,7 @@ const avisProduitlibraireController = {
       });
     }
   },
+
   delete: async (req, res) => {
     try {
       Model.avisProduitlibraire
@@ -130,9 +131,9 @@ const avisProduitlibraireController = {
     try {
       Model.avisProduitlibraire
         .findAll({
-          where: { clientId: req.params.clientId },
+          where: { clientavisprodfk: req.params.clientavisprodfk },
           attributes: {
-            exclude: ["updatedAt", "clientId", "produitlabrairieId"],
+            exclude: ["updatedAt", "clientavisprodfk", "prodavisproduitsfk"],
           },
           include: [
             {
@@ -170,9 +171,9 @@ const avisProduitlibraireController = {
   getAllAvisByPartnier: async (req, res) => {
     try {
       const response = await Model.avisProduitlibraire.findAll({
-        where: { partenaireId: req.params.partenaireId },
+        where: { partavisprodfk: req.params.partavisprodfk },
         attributes: {
-          exclude: ["updatedAt", "produitlabrairieId"],
+          exclude: ["updatedAt", "prodavisproduitsfk"],
         },
         include: [
           {
@@ -213,9 +214,9 @@ const avisProduitlibraireController = {
   getAllAvisByproduit: async (req, res) => {
     try {
       const avisOptions = {
-        where: { produitlabrairieId: req.params.produitlabrairieId },
+        where: { prodavisproduitsfk: req.params.prodavisproduitsfk },
         attributes: {
-          exclude: ["updatedAt", "clientId", "produitlabrairieId"],
+          exclude: ["updatedAt", "clientavisprodfk", "prodavisproduitsfk"],
         },
         include: [
           {
@@ -321,7 +322,7 @@ const avisProduitlibraireController = {
       Model.avisProduitlibraire
         .findAll({
           attributes: {
-            exclude: ["updatedAt", "clientId", "produitlabrairieId"],
+            exclude: ["updatedAt", "clientavisprodfk", "prodavisproduitsfk"],
           },
           include: [
             {
@@ -368,13 +369,13 @@ const avisProduitlibraireController = {
                 "id",
                 "nbStart",
                 "commenter",
-                "clientId",
-                "produitlabrairieId",
+                "clientavisprodfk",
+                "prodavisproduitsfk",
               ],
               order: [["nbStart", "DESC"]],
               limit: 1,
               include: [
-                { model: Model.client, attributes: ["userId"] , include:[{
+                { model: Model.client, attributes: ["userclientfk"] , include:[{
                   model: Model.user,
                   attributes: ["fullname","avatar"],
                 }]},

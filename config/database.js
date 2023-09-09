@@ -14,4 +14,4 @@ const sequelize = new Sequelize(
     logging: false, // Disable SQL query logging (optional)
   }
 );
-module.exports = sequelize;
+module.exports = sequelize;

@@ -8,9 +8,9 @@ const adressesController = {
       Gouvernorat,
       Ville,
       Code_postal,
-      clientId,
-      partenaireId,
-      fournisseurId
+      clientaddressfk,
+      partenaireaddressfk,
+      fournisseuraddressfk
     } = req.body;
     
     try {
@@ -22,9 +22,9 @@ const adressesController = {
         Gouvernorat: Gouvernorat,
         Ville: Ville,
         Code_postal: Code_postal,
-        clientId: clientId,
-        partenaireId:partenaireId,
-       fournisseurId:fournisseurId
+        clientaddressfk: clientaddressfk,
+        partenaireaddressfk:partenaireaddressfk,
+       fournisseuraddressfk:fournisseuraddressfk
       };
       Model.adresses.create(data).then((response) => {
         if (response !== null) {
@@ -47,6 +47,7 @@ const adressesController = {
       });
     }
   },
+  
   addbypartnier: async (req, res) => {
     try {
       const {
@@ -55,7 +56,7 @@ const adressesController = {
         Gouvernorat,
         Ville,
         Code_postal,
-        partenaireId,
+        partenaireaddressfk,
       } = req.body;
       const data = {
         Nom_de_adresse: Nom_de_adresse,
@@ -63,7 +64,7 @@ const adressesController = {
         Gouvernorat: Gouvernorat,
         Ville: Ville,
         Code_postal: Code_postal,
-        partenaireId: partenaireId,
+        partenaireaddressfk: partenaireaddressfk,
       };
       Model.adresses.create(data).then((response) => {
         if (response !== null) {
@@ -102,7 +103,7 @@ const adressesController = {
       };
       Model.adresses
         .update(data, {
-          where: { id: req.params.id, clientId: req.params.clientId },
+          where: { id: req.params.id, clientaddressfk: req.params.clientaddressfk },
         })
         .then((response) => {
           if (response != 0) {
@@ -130,7 +131,7 @@ const adressesController = {
     try {
       Model.adresses
         .destroy({
-          where: { id: req.params.id, clientId: req.params.clientId },
+          where: { id: req.params.id, clientaddressfk: req.params.clientaddressfk },
         })
         .then((response) => {
           if (response != 0) {

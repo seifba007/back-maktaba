@@ -20,7 +20,6 @@ router.delete(
 router.post(
   "/addcategory",
   AuthorizationUser,
-  AuthorizationAdmin,
   upload.array("image", 1),
   adminController.addcategory
 );

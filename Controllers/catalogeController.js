@@ -5,16 +5,16 @@ const CatalogeController = {
   add: async (req, res) => {
     try {
       req.body["image"] = req.files;
-      const { titre, description, prix, image,etat, AdminId, categorieId,SouscategorieId} =
+      const { titre, description, prix, image,etat, admincatalogefk, categoriecatalogefk,souscatalogefk} =
         req.body;
       const data = {
         titre: titre,
         description: description,
         prix: prix,
         etat: etat,
-        AdminId: AdminId,
-        categorieId: categorieId,
-        SouscategorieId:SouscategorieId
+        admincatalogefk: admincatalogefk,
+        categoriecatalogefk: categoriecatalogefk,
+        souscatalogefk:souscatalogefk
       };
       const images = [];
       Model.cataloge.create(data).then((response) => {
@@ -58,7 +58,7 @@ const CatalogeController = {
       Model.cataloge
         .findAll({
           attributes: {
-            exclude: ["updatedAt", "AdminId","categorieId"],
+            exclude: ["updatedAt", "admincatalogefk","categoriecatalogefk"],
           },
           include: [
             { model: Model.imageCataloge, attributes: ["id","name_Image"]},
@@ -126,12 +126,12 @@ const CatalogeController = {
             if(response!=0){
                 return res.status(200).json({
                     success: true,
-                    message: " produit deleted",
+                    message: " cataloge deleted",
                   });
             }else{
                 return res.status(400).json({
                     success: false,
-                    message: " produit deleted",
+                    message: "delete failed",
                   });
             }
           })
@@ -148,7 +148,7 @@ const CatalogeController = {
         if(response!==0){
           return res.status(200).json({
             success: true,
-            message: "  change etat produi tDone",
+            message: "  change etat cataloge tDone",
           });
         }else{
           return res.status(200).json({
@@ -166,13 +166,13 @@ const CatalogeController = {
   },
   update: async (req, res) => {
     try {
-      const { titre, description, etat,categorieId,SouscategorieId} =
+      const { titre, description, etat,categoriecatalogefk,souscatalogefk} =
       req.body;
       const data = {
         titre : titre,
         description : description , 
-        categorieId : categorieId ,
-        SouscategorieId:SouscategorieId,
+        categoriecatalogefk : categoriecatalogefk ,
+        souscatalogefk:souscatalogefk,
         etat:etat}
        Model.cataloge
         .update(data, { where: { id: req.params.id } })

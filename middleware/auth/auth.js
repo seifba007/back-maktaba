@@ -15,7 +15,7 @@ const AuthorizationUser = (req, res, next) => {
     });
 
     next();
-  } else {
+  } else {categorieId
 
     return res.status(402).json({ msg: "Access Denied" });
   }

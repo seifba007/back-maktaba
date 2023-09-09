@@ -5,12 +5,12 @@ const router = express.Router();
 router.post("/add",adressesController.add);
 router.post("/addbypartnier", adressesController.addbypartnier);
 router.put(
-  "/update/:id/:clientId",
+  "/update/:id/:clientaddressfk",
   AuthorizationUser,
   adressesController.update
 );
 router.delete(
-  "/delete/:id/:clientId",
+  "/delete/:id/:clientaddressfk",
   AuthorizationUser,
   adressesController.delete
 );

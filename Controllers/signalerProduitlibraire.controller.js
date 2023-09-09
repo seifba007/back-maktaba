@@ -1,5 +1,7 @@
 const Model = require ("../Models/index")
 const signalerProduitlibraireController = {
+
+
     add : async (req, res)=>{
         try{
             if(req.files.length===0){
@@ -10,15 +12,14 @@ const signalerProduitlibraireController = {
                 })
             }
             req.body["image"] = req.files[0].filename;
-            const {fullnameUser,email,message,image,produitlabrairieId} = req.body
+            const {fullnameUser,email,message,image,prodsignalerfk} = req.body
             const data = {
                 fullnameUser : fullnameUser , 
                 email : email , 
                 message : message , 
                 image : image , 
-                produitlabrairieId : produitlabrairieId
+                prodsignalerfk : prodsignalerfk
             }
-            console.log(data)
             Model.signalerProduitlibraire.create(data).then((response) => {
                 if(response !== null){
                     return res.status(200).json({

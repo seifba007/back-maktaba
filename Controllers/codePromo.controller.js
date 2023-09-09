@@ -3,7 +3,7 @@ const Model = require("../Models/index");
 const { codepromoValidation } = require("../middleware/auth/validationSchema");
 const codePromo = {
   add: async (req, res) => {
-    const { userName,  pourcentage, labrairieId, partenaireId } = req.body;
+    const { userName,  pourcentage, labcodeprfk, partcodeprfk ,fourcodeprfk} = req.body;
     try {
       const code = Math.floor(Math.random() * 9000) + userName;
 
@@ -11,8 +11,9 @@ const codePromo = {
         code: code,
         userName: userName,
         pourcentage: pourcentage,
-        labrairieId: labrairieId,
-        partenaireId: partenaireId,
+        labcodeprfk: labcodeprfk,
+        partcodeprfk: partcodeprfk,
+        fourcodeprfk:fourcodeprfk
       };
 
       Model.codePromo.create(data).then((response) => {
@@ -147,7 +148,7 @@ const codePromo = {
 
 
   findCodeOrPartenaire: async (req, res) => {
-    const {codeName, partenaireId} = req.query
+    const {codeName, partcodeprfk} = req.query
     if(codeName){
       try {
         Model.codePromo.findAll({
@@ -168,14 +169,14 @@ const codePromo = {
           error: err,
         });
       }
-    }if(partenaireId){
+    }if(partcodeprfk){
       try {
         Model.codePromo.findAll({
           include:[
             {
               model: Model.partenaire,
               where: {
-                id: partenaireId
+                id: partcodeprfk
               },
               attributes:["nameetablissement"]
               

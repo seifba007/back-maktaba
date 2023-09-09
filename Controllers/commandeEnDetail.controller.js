@@ -13,19 +13,19 @@ const commandeDetailController = {
           Adresse: data.Adresse,
           Mode_liv: data.Mode_liv,
           Mode_pay: data.Mode_pay,
-          userId: data.userId,
-          labrairieId: data.labrairieId,
+          usercommdetfk: data.usercommdetfk,
+          labrcomdetfk: data.labrcomdetfk,
         };
         Model.commandeEnDetail.create(commandes).then((response) => {
           if (response !== null) {
             data.produits.map((e) => {
-              e.commandeEnDetailId = response.id;
+              e.comdetprodlabrfk = response.id;
             });
             Model.ProduitCommandeEnDetail.bulkCreate(data.produits).then(
               (response) => {
                 data.produits.map((e) => {
                   Model.produitlabrairie
-                    .findByPk(e.produitlabrairieId)
+                    .findByPk(e.produitlabrcomdetfk)
                     .then((produit) => {
                       if (produit !== null) {
                         const updatedQte = produit.qte - e.Qte;
@@ -34,7 +34,7 @@ const commandeDetailController = {
                         }
                         return Model.produitlabrairie.update(
                           { qte: updatedQte },
-                          { where: { id: e.produitlabrairieId } }
+                          { where: { id: e.produitlabrcomdetfk } }
                         );
                       }
                     });
@@ -61,13 +61,45 @@ const commandeDetailController = {
     }
   },
 
+  addcommandespecial: async (req, res) => {
+    try {
+      const {          total_ttc,
+        etatClient,
+        etatVender,
+        Adresse,
+        Mode_liv,
+        Mode_pay,
+        usercommdetfk,
+        labrcomdetfk } = req.body;
+      const fichier = req.file;
+  
+      const commande = await Model.commandeSpecial.create({
+        total_ttc,
+        etatClient,
+        etatVender,
+        Adresse,
+        Mode_liv,
+        data_acceptation,
+        Mode_pay,
+        fichier,
+        usercommdetfk,
+        labrcomdetfk
+      });
+  
+      res.status(201).json(commande);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Erreur lors de la création de la commande' });
+    }
+  },
+
   findCommandeByuser: async (req, res) => {
     try {
       Model.commandeEnDetail
         .findAll({
-          where: { userId: req.params.id },
+          where: { usercommdetfk: req.params.id },
           attributes: {
-            exclude: ["updatedAt", "userId", "labrairieId"],
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
           },
           include: [
             {
@@ -108,14 +140,12 @@ const commandeDetailController = {
   },
 
   findOneCommande: async (req, res) => {
-    const { lim } = req.body;
     try {
       Model.commandeEnDetail
         .findAll({
-          limit: lim,
           where: { id: req.params.id },
           attributes: {
-            exclude: ["updatedAt", "userId", "labrairieId"],
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
           },
           include: [
             {
@@ -131,7 +161,7 @@ const commandeDetailController = {
             .findAll({
               where: { id: req.params.id },
               attributes: {
-                exclude: ["updatedAt", "userId", "labrairieId"],
+                exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
               },
               include: [
                 {
@@ -180,12 +210,11 @@ const commandeDetailController = {
   },
 
   findCommandeBylibrairie: async (req, res) => {
-    const { lim } = req.body;
     try {
       Model.commandeEnDetail
         .findAll({
-          limit: lim,
-          where: { labrairieId: req.params.labrairieId },
+  
+          where: { labrcomdetfk: req.params.labrcomdetfk },
           attributes: ["id", "total_ttc", "etatVender", "createdAt"],
           include: [
             { model: Model.user, attributes: ["fullname", "avatar"] },
@@ -328,29 +357,29 @@ const commandeDetailController = {
   },
   addArticle: async (req, res) => {
     try {
-      const { Qte, produitlabrairieId, commandeEnDetailId, prix } = req.body;
+      const { Qte, produitlabrcomdetfk, comdetprodlabrfk, prix } = req.body;
       const data = {
         Qte: Qte,
-        produitlabrairieId: produitlabrairieId,
-        commandeEnDetailId: commandeEnDetailId,
+        produitlabrcomdetfk: produitlabrcomdetfk,
+        comdetprodlabrfk: comdetprodlabrfk,
       };
       Model.ProduitCommandeEnDetail.findOne({
         where: {
-          produitlabrairieId: produitlabrairieId,
-          commandeEnDetailId: commandeEnDetailId,
+          produitlabrcomdetfk: produitlabrcomdetfk,
+          comdetprodlabrfk: comdetprodlabrfk,
         },
       }).then((response) => {
         if (response !== null) {
           const newQte = Number(response.Qte) + Number(Qte);
           Model.commandeEnDetail
-            .findOne({ where: { id: commandeEnDetailId } })
+            .findOne({ where: { id: comdetprodlabrfk } })
             .then((response) => {
               if (response !== null) {
                 const newPrix = response.total_ttc + Qte * prix;
                 Model.commandeEnDetail
                   .update(
                     { total_ttc: newPrix },
-                    { where: { id: commandeEnDetailId } }
+                    { where: { id: comdetprodlabrfk } }
                   )
                   .then((response) => {
                     if (response !== 0) {
@@ -358,8 +387,8 @@ const commandeDetailController = {
                         { Qte: newQte },
                         {
                           where: {
-                            produitlabrairieId: produitlabrairieId,
-                            commandeEnDetailId: commandeEnDetailId,
+                            produitlabrcomdetfk: produitlabrcomdetfk,
+                            comdetprodlabrfk: comdetprodlabrfk,
                           },
                         }
                       ).then((response) => {
@@ -378,14 +407,14 @@ const commandeDetailController = {
           Model.ProduitCommandeEnDetail.create(data).then((response) => {
             if (response !== null) {
               Model.commandeEnDetail
-                .findOne({ where: { id: commandeEnDetailId } })
+                .findOne({ where: { id: comdetprodlabrfk } })
                 .then((response) => {
                   if (response !== null) {
                     const newTot = Number(response.total_ttc) + prix * Qte;
                     Model.commandeEnDetail
                       .update(
                         { total_ttc: newTot },
-                        { where: { id: commandeEnDetailId } }
+                        { where: { id: comdetprodlabrfk } }
                       )
                       .then((response) => {
                         if (response !== 0) {
@@ -417,17 +446,17 @@ const commandeDetailController = {
     try {
       Model.ProduitCommandeEnDetail.destroy({
         where: {
-          produitlabrairieId: req.params.produitlabrairieId,
-          commandeEnDetailId: req.params.commandeEnDetailId,
+          produitlabrcomdetfk: req.params.produitlabrcomdetfk,
+          comdetprodlabrfk: req.params.comdetprodlabrfk,
         },
       }).then((response) => {
         if (response !== 0) {
           Model.ProduitCommandeEnDetail.findAll({
-            where: { commandeEnDetailId: req.params.commandeEnDetailId },
+            where: { comdetprodlabrfk: req.params.comdetprodlabrfk },
           }).then((response) => {
             if (response.length === 0) {
               Model.commandeEnDetail.destroy({
-                where: { id: req.params.commandeEnDetailId },
+                where: { id: req.params.comdetprodlabrfk },
               });
             }
           });
@@ -466,7 +495,7 @@ const commandeDetailController = {
             createdAt: {
               [Op.gte]: sevenDaysAgo,
             },
-            labrairieId: req.params.id,
+            labrcomdetfk: req.params.id,
           },
           group: ["createdAt"],
           raw: true,
@@ -505,7 +534,7 @@ const commandeDetailController = {
                 "titre",
                 [Sequelize.fn("COUNT", Sequelize.col("titre")), "total_ventes"],
               ],
-              through: { attributes: [] },
+              
               include: [
                 {
                   model: Model.imageProduitLibrairie,
@@ -518,7 +547,7 @@ const commandeDetailController = {
             createdAt: {
               [Op.gte]: thirtyDaysAgo,
             },
-            labrairieId: req.params.id,
+            labrcomdetfk: req.params.id,
           },
           group: ["id"],
           order: ["createdAt"],
@@ -593,7 +622,7 @@ const commandeDetailController = {
             createdAt: {
               [Op.gte]: thirtyDaysAgo
             },
-            labrairieId : req.params.id
+            labrcomdetfk : req.params.id
           }
         })
         .then((response) => {
@@ -734,7 +763,7 @@ const commandeDetailController = {
           offset: offset,
           where: { id: req.params.id },
           attributes: {
-            exclude: ["updatedAt", "userId", "labrairieId"],
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
           },
           include: [
             {
@@ -750,7 +779,7 @@ const commandeDetailController = {
             .findAll({
               where: { id: req.params.id },
               attributes: {
-                exclude: ["updatedAt", "userId", "labrairieId"],
+                exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
               },
               include: [
                 {
@@ -1146,7 +1175,7 @@ function roleIsPartenaire(role) {
     return [
       {
         model: Model.partenaire,
-        attributes: ["id"],
+        //attributes: ["id"],
         include: [{ model: Model.adresses }],
       },
     ];
@@ -1154,7 +1183,7 @@ function roleIsPartenaire(role) {
     return [
       {
         model: Model.client,
-        attributes: ["id"],
+        //attributes: ["id"],
         include: [{ model: Model.adresses }],
       },
     ];

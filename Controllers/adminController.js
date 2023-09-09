@@ -215,7 +215,7 @@ const adminController = {
       for (const subcateName of cat) {
         const subcategory = await await Model.Souscategorie.create({
           name: subcateName.name,
-          categorieId: category.id,
+          categprodlabfk: category.id,
         });
         souscategories.push(subcategory);
       }
@@ -257,20 +257,20 @@ const adminController = {
   },
 
   findAllavis: async (req, res) => {
-    const clientId = req.params.id;
+    const clientavisprodfk = req.params.id;
 
     try {
       Model.avisProduitlibraire
         .findOne({
           attributes: [
-            "clientId",
+            "clientavisprodfk",
             [
               sequelize.fn("SUM", sequelize.col("nbStart")),
               "nombre_total_etoiles",
             ],
           ],
           where: {
-            clientId: clientId,
+            clientavisprodfk: clientavisprodfk,
           },
         })
         .then((response) => {
@@ -297,16 +297,16 @@ const adminController = {
   },
 
   findavgavis: async (req, res) => {
-    const clientId = req.params.id;
+    const clientavisprodfk = req.params.id;
     try {
       Model.avisProduitlibraire
         .findOne({
           attributes: [
-            "clientId",
+            "clientavisprodfk",
             [sequelize.fn("AVG", sequelize.col("nbStart")), "moyenne_avis"],
           ],
           where: {
-            clientId: clientId,
+            clientavisprodfk: clientavisprodfk,
           },
         })
         .then((response) => {
@@ -339,14 +339,14 @@ const adminController = {
       const topProducts = await Model.avisProduitlibraire.findAll({
         attributes: [
           [sequelize.fn("SUM", sequelize.col("nbStart")), "totalAvis"],
-          "produitlabrairieId",
+          "prodavisproduitsfk",
         ],
         where: {
           createdAt: {
             [Op.gte]: thirtyDaysAgo,
           },
         },
-        group: ["produitlabrairieId"],
+        group: ["prodavisproduitsfk"],
         order: [[sequelize.literal("totalAvis"), "DESC"]],
         limit: 10,
         include: [
@@ -444,22 +444,22 @@ const adminController = {
     const filters = req.body;
     const whereClause = {};
 
-    if (filters.categorieId) {
-      if (typeof filters.categorieId === "string") {
-        filters.categorieId = filters.categorieId
+    if (filters.categprodlabfk) {
+      if (typeof filters.categprodlabfk === "string") {
+        filters.categprodlabfk = filters.categprodlabfk
           .split(",")
           .map((id) => parseInt(id, 10));
       }
-      whereClause.categorieId = filters.categorieId;
+      whereClause.categprodlabfk = filters.categprodlabfk;
     }
 
-    if (filters.SouscategorieId) {
-      if (typeof filters.SouscategorieId === "string") {
-        filters.SouscategorieId = filters.SouscategorieId.split(",").map((id) =>
+    if (filters.souscatprodfk) {
+      if (typeof filters.souscatprodfk === "string") {
+        filters.souscatprodfk = filters.souscatprodfk.split(",").map((id) =>
           parseInt(id, 10)
         );
       }
-      whereClause.SouscategorieId = filters.SouscategorieId;
+      whereClause.souscatprodfk = filters.souscatprodfk;
     }
 
     if (filters.qteMin && filters.qteMax) {
@@ -623,7 +623,7 @@ const adminController = {
             if (response !== null) {
               return res.status(200).json({
                 success: true,
-                produits: response,
+                fournisseur: response,
               });
             }
           } catch (err) {

@@ -14,11 +14,10 @@ const BecomePartnerController = {
       phone,
       Role,
       name_work,
-      file,
       links,
       detail,
       pack,
-      AdminId,
+      adminpartfk,
     } = req.body;
     const data = {
       fullname: fullname,
@@ -26,12 +25,12 @@ const BecomePartnerController = {
       phone: phone,
       Role: Role,
       name_work: name_work,
-      file: req.files[0].filename,
+      file: req.files[0],
       links: links,
       detail: detail,
       pack: pack,
       etat: "en attente",
-      AdminId: AdminId,
+      adminpartfk: adminpartfk,
     };
     try {
       if (req.files.length !== 0) {
@@ -64,7 +63,7 @@ const BecomePartnerController = {
     try {
       Model.BecomePartner.findAll({
         attributes: {
-          exclude: ["AdminId", "updatedAt"],
+          exclude: ["adminpartfk", "updatedAt"],
         },
       }).then((response) => {
         return res.status(200).json({

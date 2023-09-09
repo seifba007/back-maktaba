@@ -13,6 +13,7 @@ const commandeEnGrosModel = require("./commandeGros");
 const ProduitCommandeEnGrosModel = require("./ProduitCommandeEnGros");
 const ProduitCommandeEnDetailModel = require("./ProduitCommandeEnDetail");
 const commandeEnDetailModel = require("./CommandeDetail");
+const commandeSpecialModel = require("./commandespecial");
 const codeClientModel = require("./codeClient");
 const avisProduitlibraireModel = require("./avisProduitlibraire");
 const signalerProduitlibraireModel = require("./signalerProduitLibraire");
@@ -37,6 +38,7 @@ const produitlabrairie = produitlabrairieModel(db, Sequelize);
 const commandeEnGros = commandeEnGrosModel(db, Sequelize);
 const ProduitCommandeEnGros = ProduitCommandeEnGrosModel(db, Sequelize);
 const commandeEnDetail = commandeEnDetailModel(db, Sequelize);
+const commandeSpecial = commandeSpecialModel(db, Sequelize);
 const ProduitCommandeEnDetail = ProduitCommandeEnDetailModel(db, Sequelize);
 const codeClient = codeClientModel(db, Sequelize);
 const avisProduitlibraire = avisProduitlibraireModel(db, Sequelize);
@@ -264,6 +266,7 @@ commandeEnDetail.belongsTo(user, {
   constraints: false,
 });
 
+
 labrairie.hasMany(commandeEnDetail, {
   foreignKey: "labrcomdetfk",
   constraints: false,
@@ -285,6 +288,28 @@ commandeEnDetail.belongsToMany(produitlabrairie, {
   through: ProduitCommandeEnDetail,
   foreignKey: 'comdetprodlabrfk', 
   otherKey: 'prodlaibrcommdetfk', 
+  constraints: false,
+});
+
+user.hasMany(commandeSpecial, {
+  foreignKey: "usercommdespectfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+commandeSpecial.belongsTo(user, {
+  foreignKey: "usercommdespectfk",
+  constraints: false,
+});
+
+labrairie.hasMany(commandeSpecial, {
+  foreignKey: "labrcomdespectfk",
+  constraints: false,
+});
+
+commandeSpecial.belongsTo(labrairie, {
+  foreignKey: "labrcomdespectfk",
   constraints: false,
 });
 
@@ -473,6 +498,9 @@ cataloge.belongsTo(Souscategorie, {
   constraints: false,
 });
 
+db.sync({force:false}).then(() => {
+  console.log("Tables Created!")
+})
 
 module.exports = {
   user,
@@ -487,6 +515,7 @@ module.exports = {
   commandeEnGros,
   //ProduitCommandeEnGros,
   commandeEnDetail,
+  commandeSpecial,
   ProduitCommandeEnDetail,
   codeClient,
   avisProduitlibraire,
