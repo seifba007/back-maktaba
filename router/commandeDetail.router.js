@@ -5,12 +5,16 @@ const upload = require("../middleware/upload");
 const commandeDetailController = require("../Controllers/commandeEnDetail.controller");
 const { AuthorizationUser } = require("../middleware/auth/auth");
 router.post("/add", AuthorizationUser, commandeDetailController.add);
-router.post("/addcommandespecial", AuthorizationUser, commandeDetailController.add);
 
-router.post("/addcommandespecial", upload.single("fichier"), commandeDetailController.addcommandespecial);
+router.post("/addcommandespecial", upload.single("Fichier"), commandeDetailController.addcommandespecial);
 router.get(
   "/findcommandebyuser/:id",
   commandeDetailController.findCommandeByuser
+);
+
+router.get(
+  "/findspeccommandebyuser/:id",
+  commandeDetailController.findSpecCommandeByuser
 );
 router.get("/findOneCommande/:id", commandeDetailController.findOneCommande);
 router.get(
@@ -33,6 +37,11 @@ router.delete(
   "/deleteArticle/:produitlabrcomdetfk/:comdetprodlabrfk",
   AuthorizationUser,
   commandeDetailController.deleteArticle
+);
+
+router.delete(
+  "/deletecommandespecsial",
+  commandeDetailController.deleteCommandeSpec
 );
 router.get(
   "/nb_commande_par_jour/:id",

@@ -522,6 +522,7 @@ const adminController = {
         offset: offset,
         order: order,
         where: whereClause,
+        limit: +pageSize,
         include: [
           {
             model: Model.categorie,

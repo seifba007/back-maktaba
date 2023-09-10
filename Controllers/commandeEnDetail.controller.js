@@ -25,7 +25,7 @@ const commandeDetailController = {
               (response) => {
                 data.produits.map((e) => {
                   Model.produitlabrairie
-                    .findByPk(e.produitlabrcomdetfk)
+                    .findByPk(e.prodlaibrcommdetfk)
                     .then((produit) => {
                       if (produit !== null) {
                         const updatedQte = produit.qte - e.Qte;
@@ -34,7 +34,7 @@ const commandeDetailController = {
                         }
                         return Model.produitlabrairie.update(
                           { qte: updatedQte },
-                          { where: { id: e.produitlabrcomdetfk } }
+                          { where: { id: e.prodlaibrcommdetfk } }
                         );
                       }
                     });
@@ -63,35 +63,106 @@ const commandeDetailController = {
 
   addcommandespecial: async (req, res) => {
     try {
-      const {          total_ttc,
+     const {
+      total_ttc,
         etatClient,
         etatVender,
         Adresse,
         Mode_liv,
         Mode_pay,
-        usercommdetfk,
-        labrcomdetfk } = req.body;
-      const fichier = req.file;
+        usercommdespectfk,
+        labrcomdespectfk } = req.body;
+
+        const Fichier = req.file;
+
+        if (!Fichier) {
+          return res.status(400).json({ error: 'Aucun fichier téléchargé.' });
+        }
+  
   
       const commande = await Model.commandeSpecial.create({
-        total_ttc,
-        etatClient,
-        etatVender,
-        Adresse,
-        Mode_liv,
-        data_acceptation,
-        Mode_pay,
-        fichier,
-        usercommdetfk,
-        labrcomdetfk
+        total_ttc: total_ttc,
+        etatClient:etatClient,
+        etatVender : etatVender,
+        Fichier: Fichier.originalname,
+        Adresse :Adresse ,
+        Mode_liv:Mode_liv,
+        Mode_pay:Mode_pay,
+        usercommdespectfk : usercommdespectfk,
+        labrcomdespectfk :labrcomdespectfk
       });
   
-      res.status(201).json(commande);
+      res.status(200).json(commande);
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Erreur lors de la création de la commande' });
+      res.status(400).json({ error: 'Erreur lors de la création de la commande' });
     }
   },
+
+
+  deleteCommandeSpec: async (req, res) => {
+    const {ids} = req.body
+    try {
+      Model.commandeSpecial.destroy({
+        where: {
+          id : ids
+        },
+      }).then((response) => {
+        if (response !== null) {
+          return res.status(200).json({
+            success: true,
+            message: "Commande Deleted",
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Deleted Failed",
+          });
+        }
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findSpecCommandeByuser: async (req, res) => {
+    try {
+      Model.commandeSpecial
+        .findAll({
+          where: { usercommdespectfk: req.params.id },
+       
+          include: [
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie", "imageStore"],
+            },
+            
+          ],
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "  zero commande trouve ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
 
   findCommandeByuser: async (req, res) => {
     try {

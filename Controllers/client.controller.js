@@ -18,7 +18,6 @@ const clientController = {
           include: [
             {
               model: Model.client,
-              attributes: ["id"],
               include: [
                 {
                   model: Model.adresses,

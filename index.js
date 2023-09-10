@@ -73,7 +73,16 @@ app.use("/sousCategorie",sousCategorie)
 app.use("/suggestionProduit",suggestionProduit)
 /** end  */
 /** connection avec DB */
-
+/** end  */
+/** connection avec DB */
+//db.authenticate().then(() => {
+  //console.log("Connection has been established successfully.")
+//})
+//.catch(err => {
+  //console.error("Unable to connect to the database:", err)
+//})
+/**end  */  
+//app.listen(port, () => console.log(`server running on port ${port}`)) 
 
 async function connectToDatabase() {
   console.log("Trying to connect via sequelize");

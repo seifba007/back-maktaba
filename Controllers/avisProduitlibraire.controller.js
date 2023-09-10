@@ -221,14 +221,12 @@ const avisProduitlibraireController = {
         include: [
           {
             model: Model.client,
-            attributes: ["id"],
             include: [
               { model: Model.user, attributes: ["fullname", "avatar"] },
             ],
           },
           {
             model: Model.partenaire, // Include partenaire information directly
-            attributes: ["id", "nameetablissement", "image"],
             include: [
               { model: Model.user, attributes: ["fullname", "avatar"] },
             ],

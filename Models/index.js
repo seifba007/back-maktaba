@@ -498,9 +498,7 @@ cataloge.belongsTo(Souscategorie, {
   constraints: false,
 });
 
-db.sync({force:false}).then(() => {
-  console.log("Tables Created!")
-})
+
 
 module.exports = {
   user,

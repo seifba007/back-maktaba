@@ -144,7 +144,7 @@ const librairieValidation = (data) => {
   });
 
   return schema.validate(data);
-  0;
+  
 };
 const produitValidation = (data) => {
   const schema = Joi.object({

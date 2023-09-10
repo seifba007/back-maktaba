@@ -103,7 +103,7 @@ const userController = {
             if (user !== null) {
               const dataClient = {
                 id: user.id,
-                userId: user.id,
+                userclientfk: user.id,
               };
               Model.client.create(dataClient).then((client) => {
                 if (client !== null) {
@@ -350,7 +350,7 @@ const userController = {
             if (user !== null) {
               const dataClient = {
                 id: user.id,
-                userId: user.id,
+                userclientfk: user.id,
               };
               Model.client.create(dataClient).then((client) => {
                 if (client !== null) {
