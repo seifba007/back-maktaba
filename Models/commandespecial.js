@@ -9,6 +9,7 @@ module.exports = (db, DataTypes) => {
       Data_rejetée:{type:DataTypes.DATEONLY},
       Date_préparée:{type:DataTypes.DATEONLY},
       Adresse :{type: DataTypes.INTEGER},
+      Description : {type : DataTypes.STRING},
       Mode_liv :{type : DataTypes.STRING},
       Mode_pay :{type : DataTypes.STRING},
       Fichier : {type : DataTypes.STRING},

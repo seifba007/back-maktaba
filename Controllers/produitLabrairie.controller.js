@@ -1,5 +1,7 @@
 const Model = require("../Models/index");
 const { Sequelize } = require("sequelize");
+const cloudinary = require("../middleware/cloudinary");
+
 const {
   produitlibrairieValidation,
 } = require("../middleware/auth/validationSchema");
@@ -15,10 +17,14 @@ const produitController = {
         categprodlabfk: req.body.categprodlabfk,
         souscatprodfk: req.body.souscatprodfk,
       });
-
+      
       req.files.forEach(async (file) => {
+       
+        const result = await cloudinary.uploader.upload(file.path); 
+        const imageUrl = result.secure_url;
+
         await Model.imageProduitLibrairie.create({
-          name_Image: file.filename,
+          name_Image: imageUrl,
           imageprodfk: produit.id,
         });
       });
@@ -31,7 +37,6 @@ const produitController = {
         .json({ message: "Erreur lors de la création du produit" });
     }
   },
-
   update: async (req, res) => {
     try {
       const { qte, prix, prix_en_Solde, remise } = req.body;
@@ -138,7 +143,7 @@ const produitController = {
               model: Model.labrairie,
               attributes: ["id", "imageStore", "nameLibrairie"],
             },
-          
+
             {
               model: Model.avisProduitlibraire,
             },

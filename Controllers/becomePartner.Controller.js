@@ -1,11 +1,15 @@
 const { response } = require("express");
+const express = require("express");
 const Model = require("../Models/index");
 const bcrypt = require("bcrypt");
 const sendMail = require("../config/Noemailer.config");
+const cloudinary = require("../middleware/cloudinary");
+
 const fournisseur = require("../Models/fournisseur");
 const {
   becomePartnerValidation,
 } = require("../middleware/auth/validationSchema");
+const { image } = require("../middleware/cloudinary");
 const BecomePartnerController = {
   add: async (req, res) => {
     const {
@@ -19,35 +23,38 @@ const BecomePartnerController = {
       pack,
       adminpartfk,
     } = req.body;
-    const data = {
-      fullname: fullname,
-      email: email,
-      phone: phone,
-      Role: Role,
-      name_work: name_work,
-      file: req.files[0],
-      links: links,
-      detail: detail,
-      pack: pack,
-      etat: "en attente",
-      adminpartfk: adminpartfk,
-    };
+  
+    let result = ""; 
+
     try {
-      if (req.files.length !== 0) {
-        req.body["file"] = req.files[0].filename;
-      } else {
-        req.body["file"] = null;
-      }
+      req.files.forEach(async (file) => {
+        result = file.filename; 
+      });
+
+      const data = {
+        fullname: fullname,
+        email: email,
+        phone: phone,
+        Role: Role,
+        name_work: name_work,
+        file: result,
+        links: links,
+        detail: detail,
+        pack: pack,
+        etat: "en attente",
+        adminpartfk: adminpartfk,
+      };
+
       Model.BecomePartner.create(data).then((response) => {
         if (response !== undefined) {
           return res.status(200).json({
             success: true,
-            message: "votre demende bien recu ",
+            message: "Votre demande a bien été reçue",
           });
         } else {
           return res.status(200).json({
             success: true,
-            message: "votre demende bien recu ",
+            message: "Votre demande a bien été reçue",
           });
         }
       });
@@ -58,6 +65,7 @@ const BecomePartnerController = {
       });
     }
   },
+  
 
   findAll: async (req, res) => {
     try {

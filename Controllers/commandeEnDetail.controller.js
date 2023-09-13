@@ -1,6 +1,7 @@
 const { response } = require("express");
 const Model = require("../Models/index");
-const { Sequelize, where, Op } = require("sequelize");
+const cloudinary = require("../middleware/cloudinary");
+const { Sequelize, where, Op, or } = require("sequelize");
 const commandeDetailController = {
   add: async (req, res) => {
     const { commande } = req.body;
@@ -63,63 +64,68 @@ const commandeDetailController = {
 
   addcommandespecial: async (req, res) => {
     try {
-     const {
-      total_ttc,
+      const {
+        total_ttc,
         etatClient,
         etatVender,
         Adresse,
+        Description,
         Mode_liv,
         Mode_pay,
         usercommdespectfk,
-        labrcomdespectfk } = req.body;
+        labrcomdespectfk,
+      } = req.body;
 
-        const Fichier = req.file;
+      let filecommande = "";
 
-        if (!Fichier) {
-          return res.status(400).json({ error: 'Aucun fichier téléchargé.' });
-        }
-  
-  
+      req.files.forEach(async (file) => {
+        filecommande = file.filename;
+      });
+
       const commande = await Model.commandeSpecial.create({
         total_ttc: total_ttc,
-        etatClient:etatClient,
-        etatVender : etatVender,
-        Fichier: Fichier.originalname,
-        Adresse :Adresse ,
-        Mode_liv:Mode_liv,
-        Mode_pay:Mode_pay,
-        usercommdespectfk : usercommdespectfk,
-        labrcomdespectfk :labrcomdespectfk
+        etatClient: etatClient,
+        etatVender: etatVender,
+        Adresse: Adresse,
+        Description: Description,
+        Mode_liv: Mode_liv,
+        Mode_pay: Mode_pay,
+        Fichier: filecommande,
+        usercommdespectfk: usercommdespectfk,
+        labrcomdespectfk: labrcomdespectfk,
       });
-  
+
       res.status(200).json(commande);
     } catch (error) {
       console.error(error);
-      res.status(400).json({ error: 'Erreur lors de la création de la commande' });
+      res
+        .status(400)
+        .json({ error: "Erreur lors de la création de la commande" });
     }
   },
 
-
   deleteCommandeSpec: async (req, res) => {
-    const {ids} = req.body
+    const { ids } = req.body;
     try {
-      Model.commandeSpecial.destroy({
-        where: {
-          id : ids
-        },
-      }).then((response) => {
-        if (response !== null) {
-          return res.status(200).json({
-            success: true,
-            message: "Commande Deleted",
-          });
-        } else {
-          return res.status(400).json({
-            success: false,
-            err: "Deleted Failed",
-          });
-        }
-      });
+      Model.commandeSpecial
+        .destroy({
+          where: {
+            id: ids,
+          },
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              message: "Commande Deleted",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "Deleted Failed",
+            });
+          }
+        });
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -129,29 +135,40 @@ const commandeDetailController = {
   },
 
   findSpecCommandeByuser: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
     try {
+      const totalCount = await Model.commandeSpecial.count({
+        where: { usercommdespectfk: req.params.id },
+      });
+
       Model.commandeSpecial
         .findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
           where: { usercommdespectfk: req.params.id },
-       
           include: [
             {
               model: Model.labrairie,
               attributes: ["id", "nameLibrairie", "imageStore"],
             },
-            
           ],
         })
         .then((response) => {
           if (response !== null) {
+            const totalPages = Math.ceil(totalCount / pageSize);
             return res.status(200).json({
               success: true,
               commandes: response,
+              totalPages: totalPages,
             });
           } else {
             return res.status(400).json({
               success: false,
-              err: "  zero commande trouve ",
+              err: "Aucune commande trouvée.",
             });
           }
         });
@@ -163,49 +180,59 @@ const commandeDetailController = {
     }
   },
 
-
   findCommandeByuser: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
     try {
-      Model.commandeEnDetail
-        .findAll({
-          where: { usercommdetfk: req.params.id },
-          attributes: {
-            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+      const totalCount = await Model.commandeEnDetail.count({
+        where: { usercommdetfk: req.params.id },
+      });
+
+      const commandes = await Model.commandeEnDetail.findAll({
+        offset: offset,
+        order: order,
+        limit: +pageSize,
+        where: { usercommdetfk: req.params.id },
+        attributes: {
+          exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+        },
+        include: [
+          {
+            model: Model.labrairie,
+            attributes: ["id", "nameLibrairie", "imageStore"],
           },
-          include: [
-            {
-              model: Model.labrairie,
-              attributes: ["id", "nameLibrairie", "imageStore"],
-            },
-            {
-              model: Model.produitlabrairie,
-              attributes: ["id", "titre", "prix"],
-              include: [
-                {
-                  model: Model.imageProduitLibrairie,
-                  attributes: ["name_Image"],
-                },
-              ],
-            },
-          ],
-        })
-        .then((response) => {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              commandes: response,
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              err: "  zero commande trouve ",
-            });
-          }
+          {
+            model: Model.produitlabrairie,
+            attributes: ["id", "titre", "prix"],
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
+        ],
+      });
+
+      if (commandes.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return res.status(200).json({
+          success: true,
+          commandes: commandes,
+          totalPages: totalPages,
         });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "Aucune commande trouvée pour cet utilisateur.",
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message,
       });
     }
   },
@@ -280,11 +307,78 @@ const commandeDetailController = {
     }
   },
 
+
+  findOneSpecCommande: async (req, res) => {
+    try {
+      Model.commandeSpecial
+        .findAll({
+          where: { id: req.params.id },
+          include: [
+            {
+              model: Model.user,
+              attributes: ["fullname", "avatar", "telephone", "email", "role"],
+            },
+          ],
+
+          order: [["createdAt", "ASC"]],
+        })
+        .then((response) => {
+          Model.commandeEnDetail
+            .findAll({
+              where: { id: req.params.id },
+          
+              include: [
+                {
+                  model: Model.produitlabrairie,
+                  attributes: ["titre", "description", "prix", "prix_en_Solde"],
+                  include: [
+                    {
+                      model: Model.imageProduitLibrairie,
+                    },
+                  ],
+                },
+                {
+                  model: Model.user,
+                  attributes: [
+                    "fullname",
+                    "avatar",
+                    "telephone",
+                    "email",
+                    "role",
+                  ],
+                  include: roleIsPartenaire(response[0].user.role),
+                },
+              ],
+              order: [["createdAt", "ASC"]],
+            })
+            .then((response) => {
+              if (response !== null) {
+                return res.status(200).json({
+                  success: true,
+                  commandes: response,
+                });
+              } else {
+                return res.status(400).json({
+                  success: false,
+                  err: "zero commande trouve",
+                });
+              }
+            });
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        err: err,
+      });
+    }
+  },
+
+
+
   findCommandeBylibrairie: async (req, res) => {
     try {
       Model.commandeEnDetail
         .findAll({
-  
           where: { labrcomdetfk: req.params.labrcomdetfk },
           attributes: ["id", "total_ttc", "etatVender", "createdAt"],
           include: [
@@ -292,10 +386,9 @@ const commandeDetailController = {
 
             {
               model: Model.produitlabrairie,
-              
             },
           ],
-          
+
           order: [["createdAt", "ASC"]],
         })
         .then((response) => {
@@ -318,6 +411,44 @@ const commandeDetailController = {
       });
     }
   },
+
+  findSpecCommandeBylibrairie: async (req, res) => {
+    try {
+      Model.commandeSpecial
+        .findAll({
+          where: { labrcomdespectfk: req.params.id },
+          attributes: ["id", "total_ttc", "etatVender", "createdAt"],
+          include: [
+            { model: Model.user, attributes: ["fullname", "avatar"] },
+
+            {
+              model: Model.produitlabrairie,
+            },
+          ],
+
+          order: [["createdAt", "ASC"]],
+        })
+        .then((response) => {
+          if (response.length != 0) {
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "  zero commande trouve ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
   Annuler: async (req, res) => {
     try {
       const produits = req.body.produit;
@@ -605,7 +736,7 @@ const commandeDetailController = {
                 "titre",
                 [Sequelize.fn("COUNT", Sequelize.col("titre")), "total_ventes"],
               ],
-              
+
               include: [
                 {
                   model: Model.imageProduitLibrairie,
@@ -691,10 +822,10 @@ const commandeDetailController = {
           ],
           where: {
             createdAt: {
-              [Op.gte]: thirtyDaysAgo
+              [Op.gte]: thirtyDaysAgo,
             },
-            labrcomdetfk : req.params.id
-          }
+            labrcomdetfk: req.params.id,
+          },
         })
         .then((response) => {
           if (response !== null) {
