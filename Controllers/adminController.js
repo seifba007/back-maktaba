@@ -441,7 +441,7 @@ const adminController = {
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
-    const filters = req.body;
+    const filters = req.query;
     const whereClause = {};
 
     if (filters.categprodlabfk) {

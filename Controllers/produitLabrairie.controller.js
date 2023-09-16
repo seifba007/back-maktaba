@@ -134,6 +134,11 @@ const produitController = {
           limit: +pageSize,
           offset: offset,
           order: order,
+          where: {
+            qte: {
+              [Sequelize.Op.gt]: 0, 
+            },
+          },
           include: [
             {
               model: Model.imageProduitLibrairie,
@@ -188,7 +193,13 @@ const produitController = {
         order: order,
         limit: +pageSize,
         offset: offset,
-        where: { labrprodfk: req.params.id },
+        
+        where: {
+           labrprodfk: req.params.id,
+           qte: {
+            [Sequelize.Op.gt]: 0, 
+          },
+          },
         include: [
           {
             model: Model.labrairie,
@@ -232,7 +243,12 @@ const produitController = {
       const { id } = req.params;
       Model.produitlabrairie
         .findOne({
-          where: { id: id },
+          where: { 
+            id: id,
+            qte: {
+              [Sequelize.Op.gt]: 0, 
+            },
+          },
           attributes: {
             exclude: ["createdAt", "updatedAt", "labrprodfk"],
           },
@@ -285,7 +301,12 @@ const produitController = {
           order: order,
           limit: +pageSize,
           offset: offset,
-          where: { categprodlabfk: req.params.categprodlabfk },
+          where: { 
+            categprodlabfk: req.params.categprodlabfk ,
+            qte: {
+              [Sequelize.Op.gt]: 0, 
+            },
+          },
           attributes: {
             exclude: ["categprodlabfk", "description"],
           },
@@ -352,6 +373,9 @@ const produitController = {
           ],
           where: {
             labrprodfk: req.params.id,
+            qte: {
+              [Sequelize.Op.gt]: 0, 
+            },
           },
         })
         .then((response) => {
@@ -390,6 +414,9 @@ const produitController = {
           ],
           where: {
             labrprodfk: req.params.id,
+            qte: {
+              [Sequelize.Op.gt]: 0, 
+            },
           },
           group: ["produitlabrairie.id", "produitlabrairie.titre"],
           having: Sequelize.literal("SUM(nbStart) >24"),
@@ -413,7 +440,11 @@ const produitController = {
   produitfiltreage: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize, namearticle } = req.query;
     const offset = (page - 1) * pageSize;
-    const wherec = {};
+    const wherec = {
+      qte: {
+        [Sequelize.Op.gt]: 0, 
+      },
+    };
     order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     wherec.titre = namearticle;
 

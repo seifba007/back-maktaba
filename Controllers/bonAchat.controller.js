@@ -148,9 +148,17 @@ const bonAchatController = {
   },
 
   findByuser: async (req, res) => {
+
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
     try {
       Model.bonAchat
         .findAll({
+          offset:offset,
+          order:order,
+          limit: +pageSize,
           where: {
             userbonachafk: req.params.id,
           },

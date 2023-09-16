@@ -181,13 +181,16 @@ const commandeDetailController = {
   },
 
   findCommandeByuser: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const { sortBy, sortOrder, page, pageSize,etatcommande } = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
     try {
       const totalCount = await Model.commandeEnDetail.count({
-        where: { usercommdetfk: req.params.id },
+        where: { 
+          usercommdetfk: req.params.id,
+          etatVender : etatcommande
+        },
       });
 
       const commandes = await Model.commandeEnDetail.findAll({
