@@ -181,11 +181,15 @@ const bonAchatController = {
           where: {
             userbonachafk: req.params.id,
           },
-          attributes: { exclude: ["updatedAt", "userbonachafk", "partbonachafk"] },
           include: [
             {
               model: Model.partenaire,
               attributes: ["id", "nameetablissement"],
+              include: [{ model: Model.user, attributes: ["fullname"] }],
+            },
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie"],
               include: [{ model: Model.user, attributes: ["fullname"] }],
             },
           ],

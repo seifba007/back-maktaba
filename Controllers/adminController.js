@@ -4,6 +4,8 @@ const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 const sequelize = require("sequelize");
 const sousCategorie = require("../Models/sousCategorie");
+const cloudinary = require("../middleware/cloudinary");
+
 const {
   addadminValidation,
   deletecategoryValidation,
@@ -191,31 +193,28 @@ const adminController = {
       });
     }
   },
+
   addcategory: async (req, res) => {
-    const { error } = addcategoryValidation(req.body);
-    if (error)
-      return res
-        .status(400)
-        .json({ success: false, err: error.details[0].message });
+    let imageUrl = ""
+    //const { error } = addcategoryValidation(req.body);
+    //if (error)return res.status(400).json({ success: false, err: error.details[0].message });
     try {
-      if (req.files.length !== 0) {
-        req.body["image"] = req.files[0].filename;
-      } else {
-        req.body["image"] == null;
-      }
-      const { image, subcategories } = req.body;
+      req.files.forEach(async (file) => {
+        const result = await cloudinary.uploader.upload(file.path); 
+         imageUrl = result.secure_url;
+      });
+      const { subcategories } = req.body;
       const data = {
         name: req.body.name,
         Description: req.body.Description,
-        image: image,
+        image: imageUrl,
       };
       const category = await Model.categorie.create(data);
-      const cat = eval(subcategories);
       const souscategories = [];
-      for (const subcateName of cat) {
-        const subcategory = await await Model.Souscategorie.create({
-          name: subcateName.name,
-          categprodlabfk: category.id,
+      for (const subcateName of subcategories) {
+        const subcategory =  await Model.Souscategorie.create({
+          name: subcateName,
+          catagsouscatafk: category.id,
         });
         souscategories.push(subcategory);
       }

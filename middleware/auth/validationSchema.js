@@ -48,7 +48,7 @@ const addcategoryValidation = (data) => {
   const schema = Joi.object({
     name: Joi.string().min(2).required(),
     Description: Joi.string().min(6).required(),
-    subcategories: Joi.string(),
+    subcategories: Joi.array(),
   });
   return schema.validate(data);
 };

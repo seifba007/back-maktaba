@@ -184,38 +184,6 @@ const commandeDetailController = {
           usercommdetfk: req.params.id,
         },
       });
-      const totalCountspec = await Model.commandeSpecial.count({
-        where: {
-          usercommdespectfk: req.params.id,
-        },
-      });
-      const commandespec = await Model.commandeSpecial.findAll({
-        offset: offset,
-        order: order,
-        limit: +pageSize,
-        where: {
-          usercommdespectfk: req.params.id,
-        },
-        attributes: {
-          exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
-        },
-        include: [
-          {
-            model: Model.labrairie,
-            attributes: ["id", "nameLibrairie", "imageStore"],
-          },
-          {
-            model: Model.produitlabrairie,
-            attributes: ["id", "titre", "prix"],
-            include: [
-              {
-                model: Model.imageProduitLibrairie,
-                attributes: ["name_Image"],
-              },
-            ],
-          },
-        ],
-      });
       
       if(etatcommande == 'tout'){
         const commandes = await Model.commandeEnDetail.findAll({
@@ -247,15 +215,10 @@ const commandeDetailController = {
         });
         if (commandes.length > 0) {
           const totalPages = Math.ceil(totalCount / pageSize);
-          if(commandespec.length > 0){
-             totalPagesSpec = Math.ceil(totalCountspec / pageSize);
-          }
           return res.status(200).json({
             success: true,
             commandes: commandes,
-            commandespeciale: commandespec ,
             totalPages: totalPages,
-            totalPagesSpeciales: totalPagesSpec,
           });
           
         } else {
@@ -458,7 +421,6 @@ const commandeDetailController = {
     const { sortBy, sortOrder, page, pageSize } = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-    let totalPagesSpec = 0;
 
     try {
       const totalCount = await Model.commandeEnDetail.count({
@@ -466,11 +428,7 @@ const commandeDetailController = {
           labrcomdetfk: req.params.id,
         },
       });
-      const totalCountspec = await Model.commandeSpecial.count({
-        where: {
-          labrcomdespectfk: req.params.id,
-        },
-      });
+  
       const commandes = Model.commandeEnDetail.findAll({
         where: { labrcomdetfk: req.params.id },
         attributes: ["id", "total_ttc", "etatVender", "createdAt"],
@@ -481,27 +439,14 @@ const commandeDetailController = {
         order: order,
         offset: offset
       });
-      const commandesspeciales = Model.commandeSpecial.findAll({
-        where: { labrcomdespectfk: req.params.id },
-        include: [
-          { model: Model.user, attributes: ["fullname", "avatar"] },
-          { model: Model.produitlabrairie },
-        ],
-        order: order,
-        offset: offset
-      });
+     
       if (commandes.length > 0) {
         const totalPages = Math.ceil(totalCount / pageSize);
-          if(commandesspeciales.length > 0){
-             totalPagesSpec = Math.ceil(totalCountspec / pageSize);
-          }
-        
+     
         return res.status(200).json({
           success: true,
           commandes: commandes,
           totalPages: totalPages ,
-          commandesspeciales: commandesspeciales, 
-          totalPagesSpec: totalPagesSpec ,
         });
       } else {
         return res.status(400).json({
