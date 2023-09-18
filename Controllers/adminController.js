@@ -364,7 +364,41 @@ const adminController = {
       });
     }
   },
-
+  find: async (req, res) => {
+    const clientavisprodfk = req.params.id;
+    try {
+      Model.avisProduitlibraire
+        .findOne({
+          attributes: [
+            "clientavisprodfk",
+            [sequelize.fn("AVG", sequelize.col("nbStart")), "moyenne_avis"],
+          ],
+          where: {
+            clientavisprodfk: clientavisprodfk,
+          },
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              return res.status(200).json({
+                success: true,
+                avismoy: response,
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
   gettop10prod: async (req, res) => {
     try {
       const thirtyDaysAgo = new Date();

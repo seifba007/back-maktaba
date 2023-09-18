@@ -239,6 +239,36 @@ const bonAchatController = {
       });
     }
   },
+
+  find: async (req, res) => {
+    try {
+      Model.bonAchat
+        .findAll({
+          where: {
+            partbonachafk: req.params.id,
+          },
+          include: [
+            {
+              model: Model.user,
+              include: [Model.client, Model.fournisseur, Model.labrairie],
+            },
+          ],
+        })
+        .then((response) => {
+          if (response !== null) {
+            res.status(200).json({
+              success: true,
+              bonAchat: response,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
 };
 
 module.exports = bonAchatController;

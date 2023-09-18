@@ -52,6 +52,14 @@ const addcategoryValidation = (data) => {
   });
   return schema.validate(data);
 };
+const addcategory= (data) => {
+  const schema = Joi.object({
+    name: Joi.string().min(2).required(),
+    Description: Joi.string().min(6).required(),
+    subcategories: Joi.array(),
+  });
+  return schema.validate(data);
+};
 
 const filtercommandeValidation = (data) => {
   const schema = Joi.object({

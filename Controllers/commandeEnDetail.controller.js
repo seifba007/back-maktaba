@@ -550,6 +550,56 @@ const commandeDetailController = {
       });
     }
   },
+  Annulercommande: async (req, res) => {
+    try {
+      const produits = req.body.produit;
+      Model.commandeEnDetail
+        .update(
+          {
+            Data_rejetée: new Date(),
+            etatClient: "Annule",
+            etatVender: "Rejeter",
+          },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            produits?.map((e) => {
+              Model.produitlabrairie
+                .findOne({ where: { id: e.id } })
+                .then((response) => {
+                  if (response !== null) {
+                    const newQte = response.qte + Number(e.Qte);
+                    Model.produitlabrairie.update(
+                      { qte: newQte },
+                      { where: { id: e.id } }
+                    );
+                  } else {
+                    return res.status(400).json({
+                      success: false,
+                      message: " error to find produit ",
+                    });
+                  }
+                });
+            });
+            return res.status(200).json({
+              success: true,
+              message: "commande Annuler",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error Annuler commande ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
   Accepter: async (req, res) => {
     try {
       Model.commandeEnDetail
