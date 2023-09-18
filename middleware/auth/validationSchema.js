@@ -74,9 +74,6 @@ const addAdresseValidation = (data) => {
     Gouvernorat: Joi.string(),
     Ville: Joi.string(),
     Code_postal: Joi.number().integer(),
-    clientaddressfk: Joi.number().integer(),
-    partenaireaddressfk: Joi.number().integer(),
-   fournisseuraddressfk: Joi.number().integer(),
   });
   return schema.validate(data);
 };
@@ -103,11 +100,7 @@ const bonAchatValidation = (data) => {
     solde: Joi.number(),
     etat: Joi.string(),
     code: Joi.string(),
-    userbonachafk: Joi.number(),
     nbpoint: Joi.number(),
-    partbonachafk: Joi.number(),
-    fourbonachafk: Joi.number(),
-    labbonachafk: Joi.number(),
   });
   return schema.validate(data);
 };
@@ -196,7 +189,6 @@ const suggestionProduitValidation = (data) => {
     Description: Joi.string(),
     image: Joi.string(),
     etat: Joi.string(),
-    usersuggeprodfk: Joi.number(),
     categoriesuggestfk: Joi.number(),
     soussuggestfk: Joi.number(),
   

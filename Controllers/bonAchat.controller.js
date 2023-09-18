@@ -1,11 +1,21 @@
 const Model = require("../Models/index");
 const { bonAchatValidation } = require("../middleware/auth/validationSchema");
 const bonAchatController = {
+
   add: async (req, res) => {
-    const { solde, userbonachafk, partbonachafk, nbpoint,fourbonachafk ,labbonachafk} = req.body;
+    const { solde, userbonachafk, partbonachafk, nbpoint, fourbonachafk, labbonachafk } = req.body;
     try {
-      const { error } = bonAchatValidation(req.body);
-      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
+      //const { error } = bonAchatValidation(req.body);
+      //if (error) return res.status(400).json({ success: false, err: error.details[0].message });
+  
+      const user = await Model.user.findByPk(userbonachafk);
+      if (!user || user.point < nbpoint) {
+        return res.status(400).json({
+          success: false,
+          message: "L'utilisateur n'a pas suffisamment de points pour créer ce bon d'achat",
+        });
+      }
+  
       function generateRandomCode() {
         let code = "#";
         for (let i = 0; i < 7; i++) {
@@ -18,34 +28,28 @@ const bonAchatController = {
         }
         return code;
       }
+  
       const data = {
         solde: solde,
         etat: "Valide",
         code: generateRandomCode(),
         userbonachafk: userbonachafk,
         partbonachafk: partbonachafk,
-        fourbonachafk:fourbonachafk,
-        labbonachafk:labbonachafk
+        fourbonachafk: fourbonachafk,
+        labbonachafk: labbonachafk,
       };
-      Model.bonAchat.create(data).then((response) => {
-        if (response !== null) {
-          Model.user.findByPk(userbonachafk).then((user) => {
-            if (user) {
-              const updatedPoint = Number(user.point) - Number(nbpoint);
-              
-              Model.user.update(
-                { point: updatedPoint },
-                { where: { id: userbonachafk } }
-              );
-            }
-          });
-        }
-        return res.status(200).json({
-          success: true,
-          message: " bon d'Achat created",
-          bonAchat: response,
-          nbpoint: nbpoint,
-        });
+  
+      const updatedPoint = Number(user.point) - Number(nbpoint);
+      await Model.user.update({ point: updatedPoint }, { where: { id: userbonachafk } });
+  
+      
+      const response = await Model.bonAchat.create(data);
+  
+      return res.status(200).json({
+        success: true,
+        message: "Bon d'achat créé",
+        bonAchat: response,
+        nbpoint: nbpoint,
       });
     } catch (err) {
       return res.status(400).json({
@@ -54,7 +58,7 @@ const bonAchatController = {
       });
     }
   },
-
+  
   update: async (req, res) => {
     try {
       Model.bonAchat
@@ -127,10 +131,25 @@ const bonAchatController = {
       });
     }
   },
+
   findOne: async (req, res) => {
     try {
       Model.bonAchat
-        .findOne({ where: { id: req.params.id } })
+        .findOne({
+           where: { id: req.params.id },
+           include: [
+            {
+              model: Model.partenaire,
+              attributes: ["id", "nameetablissement"],
+              include: [{ model: Model.user, attributes: ["fullname"] }],
+            },
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie"],
+              include: [{ model: Model.user, attributes: ["fullname"] }],
+            },
+          ],
+          })
         .then((response) => {
           if (response !== null) {
             res.status(200).json({

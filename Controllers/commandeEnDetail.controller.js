@@ -181,56 +181,101 @@ const commandeDetailController = {
   },
 
   findCommandeByuser: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize,etatcommande } = req.query;
+    const { sortBy, sortOrder, page, pageSize,etatcommande } = req.query;  
+  
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-
+  
     try {
       const totalCount = await Model.commandeEnDetail.count({
-        where: { 
+        where: {
           usercommdetfk: req.params.id,
-          etatVender : etatcommande
         },
       });
-
-      const commandes = await Model.commandeEnDetail.findAll({
-        offset: offset,
-        order: order,
-        limit: +pageSize,
-        where: { usercommdetfk: req.params.id },
-        attributes: {
-          exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
-        },
-        include: [
-          {
-            model: Model.labrairie,
-            attributes: ["id", "nameLibrairie", "imageStore"],
+  
+      if(etatcommande == 'tout'){
+        const commandes = await Model.commandeEnDetail.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            usercommdetfk: req.params.id,
           },
-          {
-            model: Model.produitlabrairie,
-            attributes: ["id", "titre", "prix"],
-            include: [
-              {
-                model: Model.imageProduitLibrairie,
-                attributes: ["name_Image"],
-              },
-            ],
+          attributes: {
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
           },
-        ],
-      });
-
-      if (commandes.length > 0) {
-        const totalPages = Math.ceil(totalCount / pageSize);
-        return res.status(200).json({
-          success: true,
-          commandes: commandes,
-          totalPages: totalPages,
+          include: [
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie", "imageStore"],
+            },
+            {
+              model: Model.produitlabrairie,
+              attributes: ["id", "titre", "prix"],
+              include: [
+                {
+                  model: Model.imageProduitLibrairie,
+                  attributes: ["name_Image"],
+                },
+              ],
+            },
+          ],
         });
-      } else {
-        return res.status(400).json({
-          success: false,
-          err: "Aucune commande trouvée pour cet utilisateur.",
+        if (commandes.length > 0) {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          return res.status(200).json({
+            success: true,
+            commandes: commandes,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune commande trouvée pour cet utilisateur.",
+          });
+        }
+      }else{
+        const commandes = await Model.commandeEnDetail.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            usercommdetfk: req.params.id,
+            etatClient: etatcommande
+          },
+          attributes: {
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+          },
+          include: [
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie", "imageStore"],
+            },
+            {
+              model: Model.produitlabrairie,
+              attributes: ["id", "titre", "prix"],
+              include: [
+                {
+                  model: Model.imageProduitLibrairie,
+                  attributes: ["name_Image"],
+                },
+              ],
+            },
+          ],
         });
+        if (commandes.length > 0) {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          return res.status(200).json({
+            success: true,
+            commandes: commandes,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune commande trouvée pour cet utilisateur.",
+          });
+        }
       }
     } catch (err) {
       return res.status(400).json({
@@ -239,6 +284,7 @@ const commandeDetailController = {
       });
     }
   },
+  
 
   findOneCommande: async (req, res) => {
     try {

@@ -5,14 +5,64 @@ const cloudinary = require("../middleware/cloudinary");
 const {
   produitlibrairieValidation,
 } = require("../middleware/auth/validationSchema");
+const updateProductNewState = async () => {
+  try {
+    const products = await Model.produitlabrairie.findAll({
+      where: {
+        etat: 'Nouveau',
+      }
+    });
+
+    for (const product of products) {
+      product.etat = 'ancien';
+      await product.save();
+    }
+    //console.log('État des produits mis à jour.');
+  } catch (err) {
+    console.error('Erreur lors de la mise à jour de l\'état des produits :', err);
+  }
+};
+const updateProductTopState = async () => {
+  try {
+    Model.ProduitCommandeEnDetail.findAll({
+      attributes: ['prodlaibrcommdetfk', [Sequelize.fn('COUNT', 'prodlaibrcommdetfk'), 'count']],
+      group: ['prodlaibrcommdetfk'],
+      order: [[Sequelize.literal('count'), 'DESC']],
+      limit: 3
+    }).then(topProducts => {
+      Model.produitlabrairie.update({ etat: 'ancien' }, { where: { etat: 'plus ventes' } })
+      topProducts.forEach(product => {
+        Model.produitlabrairie.update({ etat: 'plus ventes' }, { where: { id: product.prodlaibrcommdetfk } })
+          .then(() => {
+            console.log(`Produit ID: ${product.prodlaibrcommdetfk} mis à jour avec succès.`);
+          })
+          .catch(err => {
+            console.error(`Erreur lors de la mise à jour du produit ID ${product.prodlaibrcommdetfk} :`, err);
+          });
+      });
+    }).catch(err => {
+      console.error('Erreur lors de la récupération des produits :', err);
+    });
+    //console.log('État des produits mis à jour.');
+  } catch (err) {
+    console.error('Erreur lors de la mise à jour de l\'état des produits :', err);
+  }
+};
+const updateNewInterval = 24 * 60 * 60 * 1000; 
+const updateTopInterval =  72 * 60 * 60 * 1000;
+setInterval(updateProductNewState, updateNewInterval);
+setInterval(updateProductTopState, updateTopInterval);
 const produitController = {
+  
   add_produit: async (req, res) => {
+
     try {
       const produit = await Model.produitlabrairie.create({
         titre: req.body.titre,
         description: req.body.description,
         qte: req.body.qte,
         prix: req.body.prix,
+        etat: "Nouveau",
         labrprodfk: req.body.labrprodfk,
         categprodlabfk: req.body.categprodlabfk,
         souscatprodfk: req.body.souscatprodfk,

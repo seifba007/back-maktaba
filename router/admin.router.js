@@ -35,6 +35,7 @@ router.get(
   "/getallavisuser/nombre_total_etoiles/:id",
   adminController.findAllavis
 );
+router.get("/findavisproduit/nombre_avis/:id", adminController.findavisproduit);
 router.get("/getavgavisuser/moyenne_avis/:id", adminController.findavgavis);
 router.get("/top10product", adminController.gettop10prod);
 router.get(

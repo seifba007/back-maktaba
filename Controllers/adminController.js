@@ -296,6 +296,40 @@ const adminController = {
     }
   },
 
+  findavisproduit: async (req, res) => {
+    const produitid = req.params.id;
+    try {
+      Model.avisProduitlibraire
+        .findOne({
+          attributes: ['nbStart', [sequelize.fn('COUNT', sequelize.col('nbStart')), 'nombre_avis']],
+          where: {
+            prodavisproduitsfk: produitid,
+          },
+          group: ['nbStart'],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              return res.status(200).json({
+                success: true,
+                avis: response,
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
   findavgavis: async (req, res) => {
     const clientavisprodfk = req.params.id;
     try {
@@ -436,13 +470,18 @@ const adminController = {
       });
     }
   },
+  
   findCommandefiltre: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize } = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
     const filters = req.query;
-    const whereClause = {};
+    const whereClause = {
+      qte: {
+        [sequelize.Op.gt]: 0, 
+      },
+    };
 
     if (filters.categprodlabfk) {
       if (typeof filters.categprodlabfk === "string") {

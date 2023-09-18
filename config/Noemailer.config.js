@@ -341,3 +341,12 @@ module.exports.DemendePartenariatRejected = (email) => {
     })
     .catch((err) => console.log(err));
 };
+module.exports.sendSignaleProduitEmail = (email,message,productname)=>{
+  transport
+  .sendMail({
+    sender : email,
+    to : "maktba.tn01@gmail.com",
+    subject : `Nouveau signalement de produit  ${productname}  par l'utilisateur: ${email}`,
+    text : `Le produit ${productname} a été signalé pour la raison suivante : ${message}`
+  }).catch((err)=>console.log(err))
+}
