@@ -7,6 +7,7 @@ const { AuthorizationUser } = require("../middleware/auth/auth");
 router.post("/add", AuthorizationUser, commandeDetailController.add);
 
 router.post("/addcommandespecial", upload.array("fichier",1), commandeDetailController.addcommandespecial);
+
 router.get(
   "/findcommandebyuser/:id",
   commandeDetailController.findCommandeByuser
@@ -19,7 +20,7 @@ router.get(
 router.get("/findOneCommande/:id", commandeDetailController.findOneCommande);
 router.get("/findOneSpecCommande/:id", commandeDetailController.findOneSpecCommande);
 router.get(
-  "/findCommandeBylibrairie/:labrcomdetfk",
+  "/findCommandeBylibrairie/:id",
   commandeDetailController.findCommandeBylibrairie
 );
 

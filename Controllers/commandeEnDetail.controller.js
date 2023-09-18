@@ -65,13 +65,9 @@ const commandeDetailController = {
   addcommandespecial: async (req, res) => {
     try {
       const {
-        total_ttc,
         etatClient,
-        etatVender,
         Adresse,
         Description,
-        Mode_liv,
-        Mode_pay,
         usercommdespectfk,
         labrcomdespectfk,
       } = req.body;
@@ -83,13 +79,9 @@ const commandeDetailController = {
       });
 
       const commande = await Model.commandeSpecial.create({
-        total_ttc: total_ttc,
         etatClient: etatClient,
-        etatVender: etatVender,
         Adresse: Adresse,
         Description: Description,
-        Mode_liv: Mode_liv,
-        Mode_pay: Mode_pay,
         Fichier: filecommande,
         usercommdespectfk: usercommdespectfk,
         labrcomdespectfk: labrcomdespectfk,
@@ -185,14 +177,46 @@ const commandeDetailController = {
   
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-  
+    let totalPagesSpec = 0;
     try {
       const totalCount = await Model.commandeEnDetail.count({
         where: {
           usercommdetfk: req.params.id,
         },
       });
-  
+      const totalCountspec = await Model.commandeSpecial.count({
+        where: {
+          usercommdespectfk: req.params.id,
+        },
+      });
+      const commandespec = await Model.commandeSpecial.findAll({
+        offset: offset,
+        order: order,
+        limit: +pageSize,
+        where: {
+          usercommdespectfk: req.params.id,
+        },
+        attributes: {
+          exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+        },
+        include: [
+          {
+            model: Model.labrairie,
+            attributes: ["id", "nameLibrairie", "imageStore"],
+          },
+          {
+            model: Model.produitlabrairie,
+            attributes: ["id", "titre", "prix"],
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
+        ],
+      });
+      
       if(etatcommande == 'tout'){
         const commandes = await Model.commandeEnDetail.findAll({
           offset: offset,
@@ -223,11 +247,17 @@ const commandeDetailController = {
         });
         if (commandes.length > 0) {
           const totalPages = Math.ceil(totalCount / pageSize);
+          if(commandespec.length > 0){
+             totalPagesSpec = Math.ceil(totalCountspec / pageSize);
+          }
           return res.status(200).json({
             success: true,
             commandes: commandes,
+            commandespeciale: commandespec ,
             totalPages: totalPages,
+            totalPagesSpeciales: totalPagesSpec,
           });
+          
         } else {
           return res.status(400).json({
             success: false,
@@ -425,34 +455,60 @@ const commandeDetailController = {
 
 
   findCommandeBylibrairie: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    let totalPagesSpec = 0;
+
     try {
-      Model.commandeEnDetail
-        .findAll({
-          where: { labrcomdetfk: req.params.labrcomdetfk },
-          attributes: ["id", "total_ttc", "etatVender", "createdAt"],
-          include: [
-            { model: Model.user, attributes: ["fullname", "avatar"] },
-
-            {
-              model: Model.produitlabrairie,
-            },
-          ],
-
-          order: [["createdAt", "ASC"]],
-        })
-        .then((response) => {
-          if (response.length != 0) {
-            return res.status(200).json({
-              success: true,
-              commandes: response,
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              err: "  zero commande trouve ",
-            });
+      const totalCount = await Model.commandeEnDetail.count({
+        where: {
+          labrcomdetfk: req.params.id,
+        },
+      });
+      const totalCountspec = await Model.commandeSpecial.count({
+        where: {
+          labrcomdespectfk: req.params.id,
+        },
+      });
+      const commandes = Model.commandeEnDetail.findAll({
+        where: { labrcomdetfk: req.params.id },
+        attributes: ["id", "total_ttc", "etatVender", "createdAt"],
+        include: [
+          { model: Model.user, attributes: ["fullname", "avatar"] },
+          { model: Model.produitlabrairie },
+        ],
+        order: order,
+        offset: offset
+      });
+      const commandesspeciales = Model.commandeSpecial.findAll({
+        where: { labrcomdespectfk: req.params.id },
+        include: [
+          { model: Model.user, attributes: ["fullname", "avatar"] },
+          { model: Model.produitlabrairie },
+        ],
+        order: order,
+        offset: offset
+      });
+      if (commandes.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+          if(commandesspeciales.length > 0){
+             totalPagesSpec = Math.ceil(totalCountspec / pageSize);
           }
+        
+        return res.status(200).json({
+          success: true,
+          commandes: commandes,
+          totalPages: totalPages ,
+          commandesspeciales: commandesspeciales, 
+          totalPagesSpec: totalPagesSpec ,
         });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "Aucune commande trouvée",
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -460,6 +516,7 @@ const commandeDetailController = {
       });
     }
   },
+  
 
   findSpecCommandeBylibrairie: async (req, res) => {
     try {
