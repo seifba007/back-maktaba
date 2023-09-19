@@ -296,6 +296,7 @@ const adminController = {
     }
   },
 
+
   findavisproduit: async (req, res) => {
     const produitid = req.params.id;
     try {
@@ -329,6 +330,135 @@ const adminController = {
       });
     }
   },
+
+  findNbreAvisProduit: async (req, res) => {
+    const produitid = req.params.id;
+  
+    try {
+      const avisProduit = await Model.avisProduitlibraire.findAll({
+        where: {
+          prodavisproduitsfk: produitid,
+        },
+      });
+  
+      if (avisProduit.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Aucun avis trouvé pour ce produit.",
+        });
+      }
+  
+      const etoileCounts = {
+        5: 0,
+        4: 0,
+        3: 0,
+        2: 0,
+        1: 0,
+      };
+  
+      avisProduit.forEach((avis) => {
+        console.log(avis)
+        etoileCounts[avis.dataValues.nbStart] += 1;
+      });
+  
+      const response = {
+        success: true,
+        avis: {
+          5: etoileCounts[5],
+          4: etoileCounts[4],
+          3: etoileCounts[3],
+          2: etoileCounts[2],
+          1: etoileCounts[1],
+        },
+      };
+  
+      return res.status(200).json(response);
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findTotalAvisProduit: async (req, res) => {
+    const produitid = req.params.id;
+  
+    try {
+      const allAvis = await Model.avisProduitlibraire.findAll({
+        where:{
+          prodavisproduitsfk: produitid
+        }
+      });
+  
+      if (allAvis.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Aucun avis trouvé pour ce produit.",
+        });
+      }
+  
+      let totalStars = 0;
+  
+      allAvis.forEach((avis) => {
+        totalStars += avis.dataValues.nbStart;
+      });
+  
+      const response = {
+        success: true,
+        sommeStart: totalStars,
+      };
+  
+      return res.status(200).json(response);
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findMoyeAvisProduit: async (req, res) => {
+    const produitid = req.params.id;
+
+  try {
+    const avisProduit = await Model.avisProduitlibraire.findAll({
+      where: {
+        prodavisproduitsfk: produitid,
+      },
+    });
+
+    if (avisProduit.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Aucun avis trouvé pour ce produit.",
+      });
+    }
+
+    let totalStars = 0;
+
+    const totalAvis = avisProduit.length;
+
+    avisProduit.forEach((avis) => {
+      totalStars += avis.dataValues.nbStart;
+    });
+
+    const moyenne = totalStars / totalAvis;
+
+    const response = {
+      success: true,
+      moyenneAvis: moyenne,
+    };
+
+    return res.status(200).json(response);
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+  },
+  
 
   findavgavis: async (req, res) => {
     const clientavisprodfk = req.params.id;

@@ -33,8 +33,11 @@ router.delete(
 
 router.get(
   "/getallavisuser/nombre_total_etoiles/:id",
-  adminController.findAllavis
+  adminController.findAllavis 
 );
+router.get("/findnbravisproduit/:id", adminController.findNbreAvisProduit);
+router.get("/findtotalavisproduit/:id", adminController.findTotalAvisProduit);
+router.get("/findavismoyeproduit/:id", adminController.findMoyeAvisProduit);
 router.get("/findavisproduit/nombre_avis/:id", adminController.findavisproduit);
 router.get("/getavgavisuser/moyenne_avis/:id", adminController.findavgavis);
 router.get("/top10product", adminController.gettop10prod);
