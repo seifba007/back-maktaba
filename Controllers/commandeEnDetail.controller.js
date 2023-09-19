@@ -177,15 +177,15 @@ const commandeDetailController = {
   
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-    let totalPagesSpec = 0;
     try {
-      const totalCount = await Model.commandeEnDetail.count({
-        where: {
-          usercommdetfk: req.params.id,
-        },
-      });
+       
       
       if(etatcommande == 'tout'){
+       const totalCounttout = await Model.commandeEnDetail.count({
+          where: {
+            usercommdetfk: req.params.id,
+          },
+        });
         const commandes = await Model.commandeEnDetail.findAll({
           offset: offset,
           order: order,
@@ -214,7 +214,7 @@ const commandeDetailController = {
           ],
         });
         if (commandes.length > 0) {
-          const totalPages = Math.ceil(totalCount / pageSize);
+          const totalPages = Math.ceil(totalCounttout / pageSize);
           return res.status(200).json({
             success: true,
             commandes: commandes,
@@ -228,11 +228,17 @@ const commandeDetailController = {
           });
         }
       }else{
+        const totalCount = await Model.commandeEnDetail.count({
+          where: {
+            usercommdetfk: req.params.id,
+            etatClient: etatcommande
+          },
+        });
         const commandes = await Model.commandeEnDetail.findAll({
           offset: offset,
           order: order,
           limit: +pageSize,
-          where: {
+          where: {  
             usercommdetfk: req.params.id,
             etatClient: etatcommande
           },

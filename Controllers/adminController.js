@@ -209,6 +209,7 @@ const adminController = {
         Description: req.body.Description,
         image: imageUrl,
       };
+      console.log(typeof subcategories)
       const category = await Model.categorie.create(data);
       const souscategories = [];
       for (const subcateName of subcategories) {
