@@ -742,7 +742,11 @@ const adminController = {
           },
           {
             model: Model.imageProduitLibrairie,
-            attributes: ["name_Image"],
+            where:{
+              name_image :{
+                [sequelize.Op.ne]: "https://res.cloudinary.com/doytw80zj/image/upload/v1693689652/27002_omkvdd.jpg"
+              }
+            }
           },
           {
             model: Model.avisProduitlibraire,

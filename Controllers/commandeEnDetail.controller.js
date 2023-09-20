@@ -98,31 +98,31 @@ const commandeDetailController = {
 
   addcommandespecial: async (req, res) => {
     try {
-      if (req.files.length !== 0) {
-        req.body["Fichier"] = req.files[0].filename;
-      } else {
-        req.body["Fichier"] == null;
-      }
       const {
         etatClient,
         Adresse,
         Description,
-        Fichier,
         usercommdespectfk,
         labrcomdespectfk,
       } = req.body;
-  
+      let imageUrl = "";
 
-      const commande = await Model.commandeSpecial.create({
-        etatClient: etatClient,
-        Adresse: Adresse,
-        Description: Description,
-        Fichier: Fichier, 
-        usercommdespectfk: usercommdespectfk,
-        labrcomdespectfk: labrcomdespectfk,
+      req.files.forEach(async (file) => {
+       
+        const result = await cloudinary.uploader.upload(file.path); 
+         imageUrl = result.secure_url;
+         console.log(imageUrl)
+         const commande = await Model.commandeSpecial.create({
+           etatClient: etatClient,
+           Adresse: Adresse,
+           Description: Description,
+           Fichier: imageUrl, 
+           usercommdespectfk: usercommdespectfk,
+           labrcomdespectfk: labrcomdespectfk,
+         });
+         res.status(200).json(commande);
       });
-  
-      res.status(200).json(commande);
+
     } catch (error) {
       console.error(error);
       res.status(400).json({ error: "Erreur lors de la création de la commande" });
@@ -429,7 +429,6 @@ const commandeDetailController = {
                     "email",
                     "role",
                   ],
-                  include: roleIsPartenaire(response[0].user.role),
                 },
               ],
               order: [["createdAt", "ASC"]],
@@ -456,51 +455,6 @@ const commandeDetailController = {
     }
   },
 
-
-
-  findCommandeBylibrairiee: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize } = req.query;
-    const offset = (page - 1) * pageSize;
-    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-
-    try {
-      const totalCount = await Model.commandeEnDetail.count({
-        where: {
-          labrcomdetfk: req.params.id,
-        },
-      });
-  
-      const commandes = Model.commandeEnDetail.findAll({
-        where: { labrcomdetfk: req.params.id },
-        include: [
-          { model: Model.user, attributes: ["fullname", "avatar"] },
-          { model: Model.produitlabrairie },
-        ],
-        order: order,
-        offset: offset
-      });
-     
-      if (commandes.length > 0) {
-        const totalPages = Math.ceil(totalCount / pageSize);
-        return res.status(200).json({
-          success: true,
-          commandes: commandes,
-          totalPages: totalPages ,
-        });
-      } else {
-        return res.status(400).json({
-          success: false,
-          commandes: commandes,
-          err: "Aucune commande trouvée",
-        });
-      }
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err,
-      });
-    }
-  },
   
 
   findCommandeBylibrairie: async (req, res) => {
@@ -528,21 +482,10 @@ const commandeDetailController = {
             exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
           },
           include: [
-            {
-              model: Model.labrairie,
-              attributes: ["id", "nameLibrairie", "imageStore"],
-            },
-            {
-              model: Model.produitlabrairie,
-              attributes: ["id", "titre", "prix"],
-              include: [
-                {
-                  model: Model.imageProduitLibrairie,
-                  attributes: ["name_Image"],
-                },
-              ],
-            },
+            { model: Model.user, attributes: ["fullname", "avatar"] },
+            { model: Model.produitlabrairie },
           ],
+         
         });
         if (commandes.length > 0) {
           const totalPages = Math.ceil(totalCounttout / pageSize);
@@ -616,17 +559,19 @@ const commandeDetailController = {
   },
 
   findSpecCommandeBylibrairie: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;  
+  
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     try {
       Model.commandeSpecial
         .findAll({
+          offset:offset,
+          order:order,
+          limit:+pageSize,
           where: { labrcomdespectfk: req.params.id },
-          attributes: ["id", "total_ttc", "etatVender", "createdAt"],
           include: [
             { model: Model.user, attributes: ["fullname", "avatar"] },
-
-            {
-              model: Model.produitlabrairie,
-            },
           ],
 
           order: [["createdAt", "ASC"]],
