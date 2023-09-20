@@ -638,6 +638,8 @@ const adminController = {
       });
     }
   },
+
+ 
   
   findCommandefiltre: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize } = req.query;
@@ -685,7 +687,9 @@ const adminController = {
     }
 
     if (filters.titre) {
-      whereClause.titre = filters.titre;
+      whereClause.titre = {
+        [sequelize.Op.like]:  `%${filters.titre}%`,
+      };
     }
 
     if (filters.prixMin && filters.prixMax) {
