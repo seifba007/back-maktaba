@@ -646,6 +646,7 @@ const adminController = {
 
     const filters = req.query;
     const whereClause = {
+      
       qte: {
         [sequelize.Op.gt]: 0, 
       },

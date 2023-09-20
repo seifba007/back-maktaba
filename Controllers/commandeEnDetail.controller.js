@@ -458,7 +458,7 @@ const commandeDetailController = {
 
 
 
-  findCommandeBylibrairie: async (req, res) => {
+  findCommandeBylibrairiee: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize } = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
@@ -472,7 +472,6 @@ const commandeDetailController = {
   
       const commandes = Model.commandeEnDetail.findAll({
         where: { labrcomdetfk: req.params.id },
-        attributes: ["id", "total_ttc", "etatVender", "createdAt"],
         include: [
           { model: Model.user, attributes: ["fullname", "avatar"] },
           { model: Model.produitlabrairie },
@@ -483,7 +482,6 @@ const commandeDetailController = {
      
       if (commandes.length > 0) {
         const totalPages = Math.ceil(totalCount / pageSize);
-     
         return res.status(200).json({
           success: true,
           commandes: commandes,
@@ -492,6 +490,7 @@ const commandeDetailController = {
       } else {
         return res.status(400).json({
           success: false,
+          commandes: commandes,
           err: "Aucune commande trouvée",
         });
       }
@@ -503,6 +502,118 @@ const commandeDetailController = {
     }
   },
   
+
+  findCommandeBylibrairie: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize,etatcommande } = req.query;  
+  
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    try {
+       
+      
+      if(etatcommande == 'tout'){
+       const totalCounttout = await Model.commandeEnDetail.count({
+          where: {
+            labrcomdetfk: req.params.id,
+          },
+        });
+        const commandes = await Model.commandeEnDetail.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            labrcomdetfk: req.params.id,
+          },
+          attributes: {
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+          },
+          include: [
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie", "imageStore"],
+            },
+            {
+              model: Model.produitlabrairie,
+              attributes: ["id", "titre", "prix"],
+              include: [
+                {
+                  model: Model.imageProduitLibrairie,
+                  attributes: ["name_Image"],
+                },
+              ],
+            },
+          ],
+        });
+        if (commandes.length > 0) {
+          const totalPages = Math.ceil(totalCounttout / pageSize);
+          return res.status(200).json({
+            success: true,
+            commandes: commandes,
+            totalPages: totalPages,
+          });
+          
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune commande trouvée pour cet librairie.",
+          });
+        }
+      }else{
+        const totalCount = await Model.commandeEnDetail.count({
+          where: {
+            labrcomdetfk: req.params.id,
+            etatClient: etatcommande
+          },
+        });
+        const commandes = await Model.commandeEnDetail.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {  
+            labrcomdetfk: req.params.id,
+            etatClient: etatcommande
+          },
+          attributes: {
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+          },
+          include: [
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie", "imageStore"],
+            },
+            {
+              model: Model.produitlabrairie,
+              attributes: ["id", "titre", "prix"],
+              include: [
+                {
+                  model: Model.imageProduitLibrairie,
+                  attributes: ["name_Image"],
+                },
+              ],
+            },
+          ],
+        });
+        if (commandes.length > 0) {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          return res.status(200).json({
+            success: true,
+            commandes: commandes,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune commande trouvée pour cet utilisateur.",
+          });
+        }
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
 
   findSpecCommandeBylibrairie: async (req, res) => {
     try {
