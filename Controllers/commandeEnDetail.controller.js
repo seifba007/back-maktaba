@@ -62,7 +62,7 @@ const commandeDetailController = {
     }
   },
 
-  addcommandespecial: async (req, res) => {
+  adddddcommandespecial: async (req, res) => {
     try {
       const {
         etatClient,
@@ -95,6 +95,41 @@ const commandeDetailController = {
         .json({ error: "Erreur lors de la création de la commande" });
     }
   },
+
+  addcommandespecial: async (req, res) => {
+    try {
+      if (req.files.length !== 0) {
+        req.body["Fichier"] = req.files[0].filename;
+      } else {
+        req.body["Fichier"] == null;
+      }
+      const {
+        etatClient,
+        Adresse,
+        Description,
+        Fichier,
+        usercommdespectfk,
+        labrcomdespectfk,
+      } = req.body;
+  
+
+      const commande = await Model.commandeSpecial.create({
+        etatClient: etatClient,
+        Adresse: Adresse,
+        Description: Description,
+        Fichier: Fichier, 
+        usercommdespectfk: usercommdespectfk,
+        labrcomdespectfk: labrcomdespectfk,
+      });
+  
+      res.status(200).json(commande);
+    } catch (error) {
+      console.error(error);
+      res.status(400).json({ error: "Erreur lors de la création de la commande" });
+    }
+  },
+  
+
 
   deleteCommandeSpec: async (req, res) => {
     const { ids } = req.body;

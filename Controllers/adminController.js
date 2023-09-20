@@ -195,34 +195,38 @@ const adminController = {
   },
 
   addcategory: async (req, res) => {
-    let imageUrl = ""
     //const { error } = addcategoryValidation(req.body);
     //if (error)return res.status(400).json({ success: false, err: error.details[0].message });
     try {
+
       req.files.forEach(async (file) => {
-        const result = await cloudinary.uploader.upload(file.path); 
-         imageUrl = result.secure_url;
-      });
-      const { subcategories } = req.body;
-      const data = {
-        name: req.body.name,
-        Description: req.body.Description,
-        image: imageUrl,
-      };
-      console.log(typeof subcategories)
-      const category = await Model.categorie.create(data);
-      const souscategories = [];
-      for (const subcateName of subcategories) {
-        const subcategory =  await Model.Souscategorie.create({
-          name: subcateName,
-          catagsouscatafk: category.id,
+        const result = await cloudinary.uploader.upload(file.path);
+        const imageUrl = result.secure_url
+        console.log(imageUrl)
+        const { subcategories } = req.body;
+        const data = {
+          name: req.body.name,
+          Description: req.body.Description,
+          image: imageUrl,
+        };
+        const category = await Model.categorie.create(data);
+        const souscategories = [];
+        for (const subcateName of subcategories) {
+          const subcategory =  await Model.Souscategorie.create({
+            name: subcateName,
+            catagsouscatafk: category.id,
+          });
+          souscategories.push(subcategory);
+        }
+        res.status(200).json({
+          success: true,
+          category:category,
+          souscategory: souscategories,
+          message: "category and subcategories added",
         });
-        souscategories.push(subcategory);
-      }
-      res.status(200).json({
-        success: true,
-        message: "category and subcategories added",
       });
+      
+      
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -738,6 +742,9 @@ const adminController = {
           {
             model: Model.imageProduitLibrairie,
             attributes: ["name_Image"],
+          },
+          {
+            model: Model.avisProduitlibraire,
           },
           {
             model: Model.labrairie,

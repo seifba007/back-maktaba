@@ -14,8 +14,8 @@ const adressesController = {
     } = req.body;
     
     try {
-      const { error } = addAdresseValidation(req.body);
-      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
+      //const { error } = addAdresseValidation(req.body);
+      //if (error) return res.status(400).json({ success: false, err: error.details[0].message });
       const data = {
         Nom_de_adresse: Nom_de_adresse,
         Adresse: Adresse,
@@ -92,8 +92,8 @@ const adressesController = {
     const { Nom_de_adresse, Adresse, Gouvernorat, Ville, Code_postal } =
       req.body;
     try {
-      const { error } = addAdresseValidation(req.body);
-      if (error) return res.status(400).json(error.details[0].message);
+      //const { error } = addAdresseValidation(req.body);
+      //if (error) return res.status(400).json(error.details[0].message);
       const data = {
         Nom_de_adresse: Nom_de_adresse,
         Adresse: Adresse,

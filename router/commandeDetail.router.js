@@ -6,7 +6,7 @@ const commandeDetailController = require("../Controllers/commandeEnDetail.contro
 const { AuthorizationUser } = require("../middleware/auth/auth");
 router.post("/add", AuthorizationUser, commandeDetailController.add);
 
-router.post("/addcommandespecial", upload.array("fichier",1), commandeDetailController.addcommandespecial);
+router.post("/addcommandespecial", upload.array("Fichier",1), commandeDetailController.addcommandespecial);
 
 router.get(
   "/findcommandebyuser/:id",
