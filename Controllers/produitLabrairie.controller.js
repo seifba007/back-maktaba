@@ -367,8 +367,11 @@ const produitController = {
             },
             {
               model: Model.imageProduitLibrairie,
-              attributes: ["name_Image"],
-              separate: true,
+              where:{
+                name_image :{
+                  [Sequelize.Op.ne]: "https://res.cloudinary.com/doytw80zj/image/upload/v1693689652/27002_omkvdd.jpg"
+                }
+              }
             },
             {
               model: Model.avisProduitlibraire,
