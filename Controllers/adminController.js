@@ -670,11 +670,20 @@ const adminController = {
     if (filters.qteMin && filters.qteMax) {
       whereClause.qte = {
         [sequelize.Op.between]: [filters.qteMin, filters.qteMax],
+        [sequelize.Op.gt]: 0
       };
     } else if (filters.qteMin) {
-      whereClause.qte = { [sequelize.Op.gte]: filters.qteMin };
+      whereClause.qte = { 
+        [sequelize.Op.gte]: filters.qteMin,
+        [sequelize.Op.gt]: 0
+      };
     } else if (filters.qteMax) {
-      whereClause.qte = { [sequelize.Op.lte]: filters.qteMax };
+      whereClause.qte = {
+         [sequelize.Op.lte]: filters.qteMax ,
+         [sequelize.Op.gt]: 0
+        };
+    }else {
+      whereClause.qte = { [sequelize.Op.gt]: 0 };
     }
   
     if (filters.etat) {
@@ -718,7 +727,7 @@ const adminController = {
           prix_en_solde: { [sequelize.Op.lte]: filters.prixMax },
         },
       ];
-    }
+    } 
   
     try {
       const totalCount = await Model.produitlabrairie.count({
@@ -783,8 +792,6 @@ const adminController = {
       });
     }
   },
-  
-
   
 
   findproduitbyname: async (req, res) => {

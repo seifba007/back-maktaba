@@ -365,52 +365,34 @@ const commandeDetailController = {
             {
               model: Model.user,
               attributes: ["fullname", "avatar", "telephone", "email", "role"],
+              include:[
+                {
+                  model: Model.client,
+                  include:[
+                    {
+                      model: Model.adresses,
+                      attributes: {
+                        exclude: ["partenaireaddressfk", "fournisseuraddressfk"]
+                      }
+                    }
+                  ]
+                }
+              ]
             },
           ],
-
-          order: [["createdAt", "ASC"]],
         })
         .then((response) => {
-          Model.commandeEnDetail
-            .findAll({
-              where: { id: req.params.id },
-
-              include: [
-                {
-                  model: Model.produitlabrairie,
-                  attributes: ["titre", "description", "prix", "prix_en_Solde"],
-                  include: [
-                    {
-                      model: Model.imageProduitLibrairie,
-                    },
-                  ],
-                },
-                {
-                  model: Model.user,
-                  attributes: [
-                    "fullname",
-                    "avatar",
-                    "telephone",
-                    "email",
-                    "role",
-                  ],
-                },
-              ],
-              order: [["createdAt", "ASC"]],
-            })
-            .then((response) => {
-              if (response !== null) {
-                return res.status(200).json({
-                  success: true,
-                  commandes: response,
-                });
-              } else {
-                return res.status(400).json({
-                  success: false,
-                  err: "zero commande trouve",
-                });
-              }
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              commandes: response,
             });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "zero commande trouve",
+            });
+          }
         });
     } catch (err) {
       return res.status(400).json({
@@ -626,9 +608,26 @@ const commandeDetailController = {
           order: order,
           limit: +pageSize,
           where: { labrcomdespectfk: req.params.id },
-          include: [{ model: Model.user, attributes: ["fullname", "avatar"] }],
+          include: [{ 
+            model: Model.user, 
+            attributes: ["fullname", "avatar", "telephone", "email", "role"],
+            include:[
+              {
+                model: Model.client,
+                include:[
+                  {
+                    model: Model.adresses,
+                    attributes: {
+                      exclude: ["partenaireaddressfk", "fournisseuraddressfk"]
+                    }
+                  }
+                ]
+              }
+            ]
+          
+          }],
 
-          order: [["createdAt", "ASC"]],
+          order: order,
         })
         .then((response) => {
           if (response.length != 0) {
