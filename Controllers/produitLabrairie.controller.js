@@ -257,8 +257,11 @@ const produitController = {
           },
           {
             model: Model.imageProduitLibrairie,
-            attributes: ["name_Image"],
-            separate: true,
+            where:{
+              name_image :{
+                [Sequelize.Op.ne]: "https://res.cloudinary.com/doytw80zj/image/upload/v1693689652/27002_omkvdd.jpg"
+              }
+            }
           },
           {
             model: Model.avisProduitlibraire,
@@ -308,6 +311,10 @@ const produitController = {
               attributes: ["id", "nameLibrairie", "imageStore"],
             },
             {
+              model: Model.categorie,
+              attributes: ["id", "name", "Description","image"],
+            },
+            {
               model: Model.imageProduitLibrairie,
               attributes: ["name_Image"],
               separate: true,
@@ -326,7 +333,7 @@ const produitController = {
           } else {
             return res.status(400).json({
               success: false,
-              err: " error produit ne exist pas ",
+              err: " produit ne exist pas ",
             });
           }
         });

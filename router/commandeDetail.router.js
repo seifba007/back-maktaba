@@ -23,6 +23,11 @@ router.get(
   "/findCommandeBylibrairie/:id",
   commandeDetailController.findCommandeBylibrairie
 );
+router.get(
+  "/findLivraisonBylibrairie/:id",
+  commandeDetailController.findLivraisonBylibrairie
+);
+
 
 router.get(
   "/findSpecCommandeBylibrairie/:id",

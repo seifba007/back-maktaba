@@ -198,11 +198,10 @@ const adminController = {
     //const { error } = addcategoryValidation(req.body);
     //if (error)return res.status(400).json({ success: false, err: error.details[0].message });
     try {
-
       req.files.forEach(async (file) => {
         const result = await cloudinary.uploader.upload(file.path);
-        const imageUrl = result.secure_url
-        console.log(imageUrl)
+        const imageUrl = result.secure_url;
+        console.log(imageUrl);
         const { subcategories } = req.body;
         const data = {
           name: req.body.name,
@@ -212,7 +211,7 @@ const adminController = {
         const category = await Model.categorie.create(data);
         const souscategories = [];
         for (const subcateName of subcategories) {
-          const subcategory =  await Model.Souscategorie.create({
+          const subcategory = await Model.Souscategorie.create({
             name: subcateName,
             catagsouscatafk: category.id,
           });
@@ -220,13 +219,11 @@ const adminController = {
         }
         res.status(200).json({
           success: true,
-          category:category,
+          category: category,
           souscategory: souscategories,
           message: "category and subcategories added",
         });
       });
-      
-      
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -300,17 +297,19 @@ const adminController = {
     }
   },
 
-
   findavisproduit: async (req, res) => {
     const produitid = req.params.id;
     try {
       Model.avisProduitlibraire
         .findOne({
-          attributes: ['nbStart', [sequelize.fn('COUNT', sequelize.col('nbStart')), 'nombre_avis']],
+          attributes: [
+            "nbStart",
+            [sequelize.fn("COUNT", sequelize.col("nbStart")), "nombre_avis"],
+          ],
           where: {
             prodavisproduitsfk: produitid,
           },
-          group: ['nbStart'],
+          group: ["nbStart"],
         })
         .then((response) => {
           try {
@@ -337,21 +336,21 @@ const adminController = {
 
   findNbreAvisProduit: async (req, res) => {
     const produitid = req.params.id;
-  
+
     try {
       const avisProduit = await Model.avisProduitlibraire.findAll({
         where: {
           prodavisproduitsfk: produitid,
         },
       });
-  
+
       if (avisProduit.length === 0) {
         return res.status(404).json({
           success: false,
           message: "Aucun avis trouvé pour ce produit.",
         });
       }
-  
+
       const etoileCounts = {
         5: 0,
         4: 0,
@@ -359,12 +358,12 @@ const adminController = {
         2: 0,
         1: 0,
       };
-  
+
       avisProduit.forEach((avis) => {
-        console.log(avis)
+        console.log(avis);
         etoileCounts[avis.dataValues.nbStart] += 1;
       });
-  
+
       const response = {
         success: true,
         avis: {
@@ -375,7 +374,7 @@ const adminController = {
           1: etoileCounts[1],
         },
       };
-  
+
       return res.status(200).json(response);
     } catch (err) {
       return res.status(500).json({
@@ -387,32 +386,32 @@ const adminController = {
 
   findTotalAvisProduit: async (req, res) => {
     const produitid = req.params.id;
-  
+
     try {
       const allAvis = await Model.avisProduitlibraire.findAll({
-        where:{
-          prodavisproduitsfk: produitid
-        }
+        where: {
+          prodavisproduitsfk: produitid,
+        },
       });
-  
+
       if (allAvis.length === 0) {
         return res.status(404).json({
           success: false,
           message: "Aucun avis trouvé pour ce produit.",
         });
       }
-  
+
       let totalStars = 0;
-  
+
       allAvis.forEach((avis) => {
         totalStars += avis.dataValues.nbStart;
       });
-  
+
       const response = {
         success: true,
         sommeStart: totalStars,
       };
-  
+
       return res.status(200).json(response);
     } catch (err) {
       return res.status(500).json({
@@ -425,44 +424,43 @@ const adminController = {
   findMoyeAvisProduit: async (req, res) => {
     const produitid = req.params.id;
 
-  try {
-    const avisProduit = await Model.avisProduitlibraire.findAll({
-      where: {
-        prodavisproduitsfk: produitid,
-      },
-    });
+    try {
+      const avisProduit = await Model.avisProduitlibraire.findAll({
+        where: {
+          prodavisproduitsfk: produitid,
+        },
+      });
 
-    if (avisProduit.length === 0) {
-      return res.status(404).json({
+      if (avisProduit.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Aucun avis trouvé pour ce produit.",
+        });
+      }
+
+      let totalStars = 0;
+
+      const totalAvis = avisProduit.length;
+
+      avisProduit.forEach((avis) => {
+        totalStars += avis.dataValues.nbStart;
+      });
+
+      const moyenne = totalStars / totalAvis;
+
+      const response = {
+        success: true,
+        moyenneAvis: moyenne,
+      };
+
+      return res.status(200).json(response);
+    } catch (err) {
+      return res.status(500).json({
         success: false,
-        message: "Aucun avis trouvé pour ce produit.",
+        error: err.message,
       });
     }
-
-    let totalStars = 0;
-
-    const totalAvis = avisProduit.length;
-
-    avisProduit.forEach((avis) => {
-      totalStars += avis.dataValues.nbStart;
-    });
-
-    const moyenne = totalStars / totalAvis;
-
-    const response = {
-      success: true,
-      moyenneAvis: moyenne,
-    };
-
-    return res.status(200).json(response);
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      error: err.message,
-    });
-  }
   },
-  
 
   findavgavis: async (req, res) => {
     const clientavisprodfk = req.params.id;
@@ -639,21 +637,18 @@ const adminController = {
     }
   },
 
- 
-  
   findCommandefiltre: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize } = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-
+  
     const filters = req.query;
     const whereClause = {
-      
       qte: {
-        [sequelize.Op.gt]: 0, 
+        [sequelize.Op.gt]: 0,
       },
     };
-
+  
     if (filters.categprodlabfk) {
       if (typeof filters.categprodlabfk === "string") {
         filters.categprodlabfk = filters.categprodlabfk
@@ -662,16 +657,16 @@ const adminController = {
       }
       whereClause.categprodlabfk = filters.categprodlabfk;
     }
-
+  
     if (filters.souscatprodfk) {
       if (typeof filters.souscatprodfk === "string") {
-        filters.souscatprodfk = filters.souscatprodfk.split(",").map((id) =>
-          parseInt(id, 10)
-        );
+        filters.souscatprodfk = filters.souscatprodfk
+          .split(",")
+          .map((id) => parseInt(id, 10));
       }
       whereClause.souscatprodfk = filters.souscatprodfk;
     }
-
+  
     if (filters.qteMin && filters.qteMax) {
       whereClause.qte = {
         [sequelize.Op.between]: [filters.qteMin, filters.qteMax],
@@ -681,17 +676,17 @@ const adminController = {
     } else if (filters.qteMax) {
       whereClause.qte = { [sequelize.Op.lte]: filters.qteMax };
     }
-
+  
     if (filters.etat) {
       whereClause.etat = filters.etat;
     }
-
+  
     if (filters.titre) {
       whereClause.titre = {
-        [sequelize.Op.like]:  `%${filters.titre}%`,
+        [sequelize.Op.like]: `%${filters.titre}%`,
       };
     }
-
+  
     if (filters.prixMin && filters.prixMax) {
       whereClause[sequelize.Op.or] = [
         {
@@ -724,12 +719,12 @@ const adminController = {
         },
       ];
     }
-
+  
     try {
       const totalCount = await Model.produitlabrairie.count({
         where: whereClause,
       });
-
+  console.log(totalCount)
       const produits = await Model.produitlabrairie.findAll({
         offset: offset,
         order: order,
@@ -746,11 +741,7 @@ const adminController = {
           },
           {
             model: Model.imageProduitLibrairie,
-            where:{
-              name_image :{
-                [sequelize.Op.ne]: "https://res.cloudinary.com/doytw80zj/image/upload/v1693689652/27002_omkvdd.jpg"
-              }
-            }
+            
           },
           {
             model: Model.avisProduitlibraire,
@@ -770,9 +761,10 @@ const adminController = {
           },
         ],
       });
-
+  
       if (produits.length > 0) {
         const totalPages = Math.ceil(totalCount / pageSize);
+  
         return res.status(200).json({
           success: true,
           produits: produits,
@@ -781,7 +773,7 @@ const adminController = {
       } else {
         return res.status(200).json({
           success: true,
-          message: "Aucun produit trouv� avec ces filtres.",
+          message: "Aucun produit trouvé avec ces filtres.",
         });
       }
     } catch (err) {
@@ -791,6 +783,9 @@ const adminController = {
       });
     }
   },
+  
+
+  
 
   findproduitbyname: async (req, res) => {
     const { name } = req.query;
