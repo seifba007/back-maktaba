@@ -2,6 +2,7 @@ const { response } = require("express");
 const Model = require("../Models/index");
 const cloudinary = require("../middleware/cloudinary");
 const { Sequelize, where, Op, or } = require("sequelize");
+const sendMail = require("../config/Noemailer.config");
 const serviceInformatiqueController = {
   addServiceInfo: async (req, res) => {
     try {
@@ -11,8 +12,8 @@ const serviceInformatiqueController = {
         email,
         Type_service,
         Description,
-        userservInfofk,
-        labrservInfofk,
+        adminservInfofk,
+ 
       } = req.body;
 
       let imageUrl = "";
@@ -27,8 +28,8 @@ const serviceInformatiqueController = {
           Type_service: Type_service,
           Fichier: imageUrl,
           Description: Description,
-          userservInfofk: userservInfofk,
-          labrservInfofk: labrservInfofk,
+          Etat: "En attente",
+          adminservInfofk: adminservInfofk,
         });
         res.status(200).json(serviceInformatique);
       });
@@ -40,107 +41,67 @@ const serviceInformatiqueController = {
     }
   },
 
-  findServiceByuser: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize } = req.query;
-
-    const offset = (page - 1) * pageSize;
-    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+  Accepter: async (req, res) => {
     try {
-    
-        const totalCounttout = await Model.serviceInformatique.count({
-          where: {
-            userservInfofk: req.params.id,
-          },
+      const type = await Model.serviceInformatique.findAll( {
+        where: { id: req.params.id }
+      })
+      Model.serviceInformatique
+        .update(
+          { Etat: "Résolu" },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+           
+            sendMail.sendAccepterService(req.body.email,type[0].dataValues.Type_service)
+            return res.status(200).json({
+              success: true,
+              message: "Service accepte",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error accepte service ",
+            });
+          }
         });
-        const services = await Model.serviceInformatique.findAll({
-          offset: offset,
-          order: order,
-          limit: +pageSize,
-          where: {
-            userservInfofk: req.params.id,
-          },
-          attributes: {
-            exclude: ["updatedAt", "userservInfofk", "labrcomdetfk"],
-          },
-          include: [
-            {
-              model: Model.labrairie,
-              attributes: ["id", "nameLibrairie", "imageStore"],
-            },
-          ],
-        });
-        if (services.length > 0) {
-          const totalPages = Math.ceil(totalCounttout / pageSize);
-          return res.status(200).json({
-            success: true,
-            services: services,
-            totalPages: totalPages,
-          });
-        } else {
-          return res.status(400).json({
-            success: false,
-            err: "Aucune service trouvée pour cet utilisateur.",
-          });
-        
-      }
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err.message,
+        error: err,
       });
     }
   },
 
-  findServiceByLibrairie: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize } = req.query;
-
-    const offset = (page - 1) * pageSize;
-    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+  Annuler: async (req, res) => {
     try {
-    
-        const totalCounttout = await Model.serviceInformatique.count({
-          where: {
-            labrservInfofk: req.params.id,
-          },
+      const type = await Model.serviceInformatique.findAll( {
+        where: { id: req.params.id }
+      })
+      Model.serviceInformatique
+        .update(
+          { Etat: "Annuler" },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            sendMail.sendAnnulerService(req.body.email,type[0].dataValues.Type_service)
+            return res.status(200).json({
+              success: true,
+              message: "Service Annulée",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error annulation service ",
+            });
+          }
         });
-        const services = await Model.serviceInformatique.findAll({
-          offset: offset,
-          order: order,
-          limit: +pageSize,
-          where: {
-            labrservInfofk: req.params.id,
-          },
-          attributes: {
-            exclude: ["updatedAt"],
-          },
-          include: [
-            {
-              model: Model.user,  
-       
-              attributes: {
-                exclude: ["password","email_verifie","Date_de_naissance","point","etatCompte"],
-              },
-            },
-          ],
-        });
-        if (services.length > 0) {
-          const totalPages = Math.ceil(totalCounttout / pageSize);
-          return res.status(200).json({
-            success: true,
-            services: services,
-            totalPages: totalPages,
-          });
-        } else {
-          return res.status(400).json({
-            success: false,
-            err: "Aucune service trouvée pour cette librairie.",
-          });
-        
-      }
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err.message,
+        error: err,
       });
     }
   },

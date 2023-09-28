@@ -6,14 +6,14 @@ const serviceInformatiqueController = require("../Controllers/serviceInformatiqu
 const { AuthorizationUser } = require("../middleware/auth/auth");
 
 router.post("/addServiceInfo", upload.array("Fichier",1), serviceInformatiqueController.addServiceInfo);
-router.get(
-    "/findServiceInfobyuser/:id",
-    serviceInformatiqueController.findServiceByuser
+router.put(
+    "/accepterServiceInfo/:id",
+    serviceInformatiqueController.Accepter
   );
 
-  router.get(
-    "/findServiceInfobylibrairie/:id",
-    serviceInformatiqueController.findServiceByLibrairie
+  router.put(
+    "/annulerServiceInfo/:id",
+    serviceInformatiqueController.Annuler
   );
 
   router.get(

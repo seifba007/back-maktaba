@@ -350,3 +350,21 @@ module.exports.sendSignaleProduitEmail = (email,message,productname)=>{
     text : `Le produit ${productname} a été signalé pour la raison suivante : ${message}`
   }).catch((err)=>console.log(err))
 }
+module.exports.sendAccepterService = (email,servicename)=>{
+  transport
+  .sendMail({
+    sender : "maktba.tn01@gmail.com",
+    to : email,
+    subject : `Acceptation de votre Service`,
+    text : `Votre Service ${servicename} a été acceptée.`
+  }).catch((err)=>console.log(err))
+}
+module.exports.sendAnnulerService = (email,servicename)=>{
+  transport
+  .sendMail({
+    sender : "maktba.tn01@gmail.com",
+    to : email,
+    subject : `Annulation de votre Service`,
+    text : `Votre Service ${servicename} a été annulée.`
+  }).catch((err)=>console.log(err))
+}

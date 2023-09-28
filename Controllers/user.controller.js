@@ -301,28 +301,8 @@ const userController = {
       const { email, fullname } = req.body;
       Model.user.findOne({ where: { email: email } }).then((user) => {
         if (user !== null) {
-          var accessToken = jwt.sign(
-            {
-              id: user.id,
-              fullname: user.fullname,
-              role: user.role,
-              avatar: user.avatar,
-              etatCompte: user.etatCompte,
-            },
-            process.env.PRIVATE_KEY,
-            { expiresIn: "1h" }
-          );
-          var refreshToken = jwt.sign(
-            {
-              id: user.id,
-              fullname: user.fullname,
-              role: user.role,
-              avatar: user.avatar,
-              etatCompte: user.etatCompte,
-            },
-            process.env.REFRESH_KEY,
-            { expiresIn: "30d" }
-          );
+          const accessToken = createAccessToken({ id: user.id });
+          const refreshToken = createRefreshToken({ id: user.id });
           refreshTokens.push(refreshToken);
           return res.status(200).json({
             success: true,
@@ -355,32 +335,16 @@ const userController = {
               };
               Model.client.create(dataClient).then((client) => {
                 if (client !== null) {
-                  var accessToken = jwt.sign(
-                    {
-                      id: user.id,
-                      fullname: fullname,
-                      role: user.role,
-                      etatCompte: user.etatCompte,
-                    },
-                    process.env.PRIVATE_KEY,
-                    { expiresIn: "1h" }
-                  );
-                  var refreshToken = jwt.sign(
-                    {
-                      id: user.id,
-                      fullname: fullname,
-                      role: user.role,
-                      etatCompte: user.etatCompte,
-                    },
-                    process.env.REFRESH_KEY,
-                    { expiresIn: "30d" }
-                  );
+                  const accessToken = createAccessToken({ id: user.id });
+                  const refreshToken = createRefreshToken({ id: user.id });
                   refreshTokens.push(refreshToken);
                   return res.status(200).json({
                     success: true,
                     message: "success create and login ",
                     accessToken: accessToken,
                     refreshToken: refreshToken,
+                    passwordor:Password,
+                    client:client,
                   });
                 }
               });

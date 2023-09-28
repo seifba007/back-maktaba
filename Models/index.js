@@ -500,27 +500,18 @@ cataloge.belongsTo(Souscategorie, {
   constraints: false,
 });
 
-user.hasMany(serviceInformatique, {
-  foreignKey: "userservInfofk",
+admin.hasMany(serviceInformatique, {
+  foreignKey: "adminservInfofk",
   constraints: false,
   onDelete: "CASCADE",
   onUpdate: "CASCADE",
 });
 
-serviceInformatique.belongsTo(user, {
-  foreignKey: "userservInfofk",
+serviceInformatique.belongsTo(admin, {
+  foreignKey: "adminservInfofk",
   constraints: false,
 });
 
-labrairie.hasMany(serviceInformatique, {
-  foreignKey: "labrservInfofk",
-  constraints: false,
-});
-
-serviceInformatique.belongsTo(labrairie, {
-  foreignKey: "labrservInfofk",
-  constraints: false,
-});
 
 
 module.exports = {

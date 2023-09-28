@@ -6,6 +6,7 @@ module.exports = (db, DataTypes) => {
       email: {type : DataTypes.STRING},
       Type_service : {type : DataTypes.STRING},
       Fichier : {type : DataTypes.STRING},
-      Description : {type : DataTypes.STRING},      
+      Description : {type : DataTypes.STRING},   
+      Etat:  {type : DataTypes.STRING},   
     });
 }
