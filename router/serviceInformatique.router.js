@@ -5,19 +5,19 @@ const upload = require("../middleware/upload");
 const serviceInformatiqueController = require("../Controllers/serviceInformatique.controller");
 const { AuthorizationUser } = require("../middleware/auth/auth");
 
-router.post("/addServiceInfo", AuthorizationUser,upload.array("Fichier",1), serviceInformatiqueController.addServiceInfo);
+router.post("/addServiceInfo", upload.array("Fichier",1), serviceInformatiqueController.addServiceInfo);
 router.get(
-    "/findServiceInfobyuser/:id",AuthorizationUser,
+    "/findServiceInfobyuser/:id",
     serviceInformatiqueController.findServiceByuser
   );
 
   router.get(
-    "/findServiceInfobylibrairie/:id",AuthorizationUser,
+    "/findServiceInfobylibrairie/:id",
     serviceInformatiqueController.findServiceByLibrairie
   );
 
   router.get(
-    "/findAllServiceInfo",AuthorizationUser,
+    "/findAllServiceInfo",
     serviceInformatiqueController.findAllServices
   );
 
