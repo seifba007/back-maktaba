@@ -98,6 +98,7 @@ const userController = {
             email_verifie: "non_verifie",
             role: "client",
             etatCompte: "active",
+            point:0
           };
           Model.user.create(datauser).then((user) => {
             if (user !== null) {

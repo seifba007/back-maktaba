@@ -40,6 +40,7 @@ const categorieRouter = require ("./router/categorie.router")
 const produitLabrairieRouter = require ("./router/produitLabrairie.router")
 const commandeEnGrosRouter = require("./router/commandeGros.router")
 const commandeEnDetail = require("./router/commandeDetail.router")
+const serviceInformatiqueRouter = require("./router/serviceInformatique.router")
 const codeClient = require("./router/codeClient.router")
 const avisProduitlibraire = require ("./router/avisProduitlibraire.router")
 const signalerProduitlibraire = require ("./router/signalerProduitlibraire.router")
@@ -59,8 +60,9 @@ app.use("/partenaire",partenaireRouter)
 app.use("/fournisseur",fournisseurRouter)
 app.use("/categorie",categorieRouter)
 app.use("/produitLabrairie",produitLabrairieRouter)
-app.use("/commandeengros",commandeEnGrosRouter)
 app.use("/commandeDetail",commandeEnDetail)
+app.use("/commandeengros",commandeEnGrosRouter)
+app.use("/serviceInformatique",serviceInformatiqueRouter)
 app.use("/codeClient",codeClient)
 app.use("/avisProduitlibraire",avisProduitlibraire)
 app.use("/signalerProduitlibraire",signalerProduitlibraire)
@@ -75,6 +77,7 @@ app.use("/suggestionProduit",suggestionProduit)
 /** connection avec DB */
 /** end  */
 /** connection avec DB */
+
 
 
 async function connectToDatabase() {

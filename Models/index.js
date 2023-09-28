@@ -26,6 +26,7 @@ const adminModel = require("./admin");
 const catalogeModel = require("./cataloge");
 const suggestionProduitModel = require("./suggestionProduit");
 const SouscategorieModel = require("./sousCategorie");
+const serviceInformatiqueModel = require("./serviceInformatique");
 const user = userModel(db, Sequelize);
 const client = clientModel(db, Sequelize);
 const fournisseur = fournisseurModel(db, Sequelize);
@@ -35,6 +36,7 @@ const codePromo = codePromoModel(db, Sequelize);
 const bonAchat = bonAchatModel(db, Sequelize);
 const categorie = categorieModel(db, Sequelize);
 const produitlabrairie = produitlabrairieModel(db, Sequelize);
+const serviceInformatique = serviceInformatiqueModel(db, Sequelize);
 const commandeEnGros = commandeEnGrosModel(db, Sequelize);
 const ProduitCommandeEnGros = ProduitCommandeEnGrosModel(db, Sequelize);
 const commandeEnDetail = commandeEnDetailModel(db, Sequelize);
@@ -498,6 +500,27 @@ cataloge.belongsTo(Souscategorie, {
   constraints: false,
 });
 
+user.hasMany(serviceInformatique, {
+  foreignKey: "userservInfofk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+serviceInformatique.belongsTo(user, {
+  foreignKey: "userservInfofk",
+  constraints: false,
+});
+
+labrairie.hasMany(serviceInformatique, {
+  foreignKey: "labrservInfofk",
+  constraints: false,
+});
+
+serviceInformatique.belongsTo(labrairie, {
+  foreignKey: "labrservInfofk",
+  constraints: false,
+});
 
 
 module.exports = {
@@ -510,6 +533,7 @@ module.exports = {
   bonAchat,
   categorie,
   produitlabrairie,
+  serviceInformatique,
   commandeEnGros,
   //ProduitCommandeEnGros,
   commandeEnDetail,
