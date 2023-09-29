@@ -27,7 +27,7 @@ const serviceInformatiqueController = {
           Type_service: Type_service,
           Fichier: imageUrl,
           Description: Description,
-          Etat: "En attente",
+          Etat: "En_attente",
           adminservInfofk: adminservInfofk,
         });
         res.status(200).json(serviceInformatique);

@@ -41,6 +41,7 @@ const produitLabrairieRouter = require ("./router/produitLabrairie.router")
 const commandeEnGrosRouter = require("./router/commandeGros.router")
 const commandeEnDetail = require("./router/commandeDetail.router")
 const serviceInformatiqueRouter = require("./router/serviceInformatique.router")
+const DonRouter = require("./router/don.router")
 const codeClient = require("./router/codeClient.router")
 const avisProduitlibraire = require ("./router/avisProduitlibraire.router")
 const signalerProduitlibraire = require ("./router/signalerProduitlibraire.router")
@@ -63,6 +64,7 @@ app.use("/produitLabrairie",produitLabrairieRouter)
 app.use("/commandeDetail",commandeEnDetail)
 app.use("/commandeengros",commandeEnGrosRouter)
 app.use("/serviceInformatique",serviceInformatiqueRouter)
+app.use("/don",DonRouter)
 app.use("/codeClient",codeClient)
 app.use("/avisProduitlibraire",avisProduitlibraire)
 app.use("/signalerProduitlibraire",signalerProduitlibraire)
@@ -79,7 +81,6 @@ app.use("/suggestionProduit",suggestionProduit)
 /** connection avec DB */
 
 
-
 async function connectToDatabase() {
   console.log("Trying to connect via sequelize");
   await db.sync();
@@ -87,4 +88,4 @@ async function connectToDatabase() {
   console.log("=> Created a new connection.");
 }
 connectToDatabase();
-app.listen(port, () => console.log(`server running on port ${port}`)) 
+app.listen(port, () => console.log(`server running on port ${port}`))
