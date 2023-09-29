@@ -27,6 +27,8 @@ const catalogeModel = require("./cataloge");
 const suggestionProduitModel = require("./suggestionProduit");
 const SouscategorieModel = require("./sousCategorie");
 const serviceInformatiqueModel = require("./serviceInformatique");
+const donModel = require("./don");
+const imageDonModel = require("./imagedon");
 const user = userModel(db, Sequelize);
 const client = clientModel(db, Sequelize);
 const fournisseur = fournisseurModel(db, Sequelize);
@@ -37,6 +39,8 @@ const bonAchat = bonAchatModel(db, Sequelize);
 const categorie = categorieModel(db, Sequelize);
 const produitlabrairie = produitlabrairieModel(db, Sequelize);
 const serviceInformatique = serviceInformatiqueModel(db, Sequelize);
+const don = donModel(db, Sequelize);
+const imageDon = imageDonModel(db, Sequelize);
 const commandeEnGros = commandeEnGrosModel(db, Sequelize);
 const ProduitCommandeEnGros = ProduitCommandeEnGrosModel(db, Sequelize);
 const commandeEnDetail = commandeEnDetailModel(db, Sequelize);
@@ -512,6 +516,28 @@ serviceInformatique.belongsTo(admin, {
   constraints: false,
 });
 
+don.hasMany(imageDon, {
+  foreignKey: "imagedonfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+imageDon.belongsTo(don, {
+  foreignKey: "imagedonfk",
+  constraints: false,
+});
+
+admin.hasMany(don, {
+  foreignKey: "admindonfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+don.belongsTo(admin, {
+  foreignKey: "admindonfk",
+  constraints: false,
+});
 
 
 module.exports = {
@@ -525,6 +551,8 @@ module.exports = {
   categorie,
   produitlabrairie,
   serviceInformatique,
+  don,
+  imageDon,
   commandeEnGros,
   //ProduitCommandeEnGros,
   commandeEnDetail,

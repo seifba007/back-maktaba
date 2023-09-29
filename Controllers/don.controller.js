@@ -2,66 +2,73 @@ const { response } = require("express");
 const Model = require("../Models/index");
 const cloudinary = require("../middleware/cloudinary");
 const sendMail = require("../config/Noemailer.config");
-const serviceInformatiqueController = {
-  addServiceInfo: async (req, res) => {
+const donController = {
+  addDon: async (req, res) => {
     try {
       const {
         fullname,
         telephone,
         email,
-        Type_service,
         Description,
-        adminservInfofk,
- 
+        category,
+        nbrelement,
+        disponibilite,
+        Etatelement,
+        admindonfk,
       } = req.body;
 
-      let imageUrl = "";
+      const don = await Model.don.create({
+        fullname: fullname,
+        telephone: telephone,
+        email: email,
+        Description: Description,
+        category: category,
+        nbrelement: nbrelement,
+        disponibilite: disponibilite,
+        Etatelement: Etatelement,
+        Etatdon: "En_attente",
+        admindonfk: admindonfk,
+      });
 
       req.files.forEach(async (file) => {
         const result = await cloudinary.uploader.upload(file.path);
-        imageUrl = result.secure_url;
-        const serviceInformatique = await Model.serviceInformatique.create({
-          fullname: fullname,
-          telephone: telephone,
-          email: email,
-          Type_service: Type_service,
-          Fichier: imageUrl,
-          Description: Description,
-          Etat: "En attente",
-          adminservInfofk: adminservInfofk,
+        const imageUrl = result.secure_url;
+        await Model.imageDon.create({
+          Image: imageUrl,
+          imagedonfk: don.id,
         });
-        res.status(200).json(serviceInformatique);
       });
+      res.status(201).json({ 
+        don: don,
+        message: "Don créé avec succès" 
+    });
     } catch (error) {
       console.error(error);
-      res
-        .status(400)
-        .json({ error: "Erreur lors de la création de ce service" });
+      res.status(400).json({ error: "Erreur lors de la création de ce don" });
     }
   },
 
   Accepter: async (req, res) => {
     try {
-      const type = await Model.serviceInformatique.findAll( {
-        where: { id: req.params.id }
-      })
-      Model.serviceInformatique
-        .update(
-          { Etat: "Résolu" },
-          { where: { id: req.params.id } }
-        )
+      const type = await Model.don.findAll({
+        where: { id: req.params.id },
+      });
+      Model.don
+        .update({ Etatdon: "Reçu" }, { where: { id: req.params.id } })
         .then((response) => {
           if (response !== 0) {
-           
-            sendMail.sendAccepterService(req.body.email,type[0].dataValues.Type_service)
+            sendMail.sendAccepterDon(
+              req.body.email,
+              type[0].dataValues.Description
+            );
             return res.status(200).json({
               success: true,
-              message: "Service accepte",
+              message: "Don accepte",
             });
           } else {
             return res.status(400).json({
               success: false,
-              message: "error accepte service ",
+              message: "error accepte don ",
             });
           }
         });
@@ -75,25 +82,25 @@ const serviceInformatiqueController = {
 
   Annuler: async (req, res) => {
     try {
-      const type = await Model.serviceInformatique.findAll( {
-        where: { id: req.params.id }
-      })
-      Model.serviceInformatique
-        .update(
-          { Etat: "Annuler" },
-          { where: { id: req.params.id } }
-        )
+      const type = await Model.don.findAll({
+        where: { id: req.params.id },
+      });
+      Model.don
+        .update({ Etatdon: "Annuler" }, { where: { id: req.params.id } })
         .then((response) => {
           if (response !== 0) {
-            sendMail.sendAnnulerService(req.body.email,type[0].dataValues.Type_service)
+            sendMail.sendAnnulerDon(
+              req.body.email,
+              type[0].dataValues.Description
+            );
             return res.status(200).json({
               success: true,
-              message: "Service Annulée",
+              message: "Don Annulée",
             });
           } else {
             return res.status(400).json({
               success: false,
-              message: "error annulation service ",
+              message: "error annulation don ",
             });
           }
         });
@@ -105,88 +112,97 @@ const serviceInformatiqueController = {
     }
   },
 
-  findAllServices: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize,etatservice } = req.query;
+  findAllDon: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatdon } = req.query;
 
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-    if(etatservice == 'tout'){
+    if (etatdon == "tout") {
       try {
-        const totalCounttout = await Model.serviceInformatique.count({});
-        const services = await Model.serviceInformatique.findAll({
+        const totalCounttout = await Model.don.count({});
+        const dons = await Model.don.findAll({
           offset: offset,
           order: order,
           limit: +pageSize,
+          include:[
+            {
+                model: Model.imageDon,
+                attributes: ["Image"],
+              },
+          ],
           attributes: {
             exclude: ["updatedAt"],
           },
         });
-        if (services.length > 0) {
+        if (dons.length > 0) {
           const totalPages = Math.ceil(totalCounttout / pageSize);
           return res.status(200).json({
             success: true,
-            services: services,
+            dons: dons,
             totalPages: totalPages,
           });
         } else {
           return res.status(400).json({
             success: false,
-            err: "Aucune service trouvée.",
+            err: "Aucune don trouvée.",
           });
-        
+        }
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
       }
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err.message,
-      });
-    }
-    }else{
+    } else {
       try {
-        const totalCounttout = await Model.serviceInformatique.count({
+        const totalCounttout = await Model.don.count({
           where: {
-            Etat: etatservice,
+            Etatdon: etatdon,
           },
         });
-        const services = await Model.serviceInformatique.findAll({
+        const dons = await Model.don.findAll({
           offset: offset,
           order: order,
           limit: +pageSize,
           where: {
-            Etat: etatservice,
+            Etatdon: etatdon,
           },
+          include:[
+            {
+                model: Model.imageDon,
+                attributes: ["Image"],
+              },
+          ],
           attributes: {
             exclude: ["updatedAt"],
           },
-        
         });
-        if (services.length > 0) {
+        if (dons.length > 0) {
           const totalPages = Math.ceil(totalCounttout / pageSize);
           return res.status(200).json({
             success: true,
-            services: services,
+            dons: dons,
             totalPages: totalPages,
           });
         } else {
           return res.status(400).json({
             success: false,
-            err: "Aucune service trouvée.",
+            err: "Aucune don trouvée.",
           });
-        
+        }
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
       }
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err.message,
-      });
-    }
     }
   },
 
-  deleteServiceInfo: async (req, res) => {
+  deleteDon: async (req, res) => {
     const { ids } = req.body;
     try {
-      Model.serviceInformatique
+      Model.don
         .destroy({
           where: {
             id: ids,
@@ -196,7 +212,7 @@ const serviceInformatiqueController = {
           if (response !== null) {
             return res.status(200).json({
               success: true,
-              message: "Services Deleted",
+              message: "Dons Deleted",
             });
           } else {
             return res.status(400).json({
@@ -214,4 +230,4 @@ const serviceInformatiqueController = {
   },
 };
 
-module.exports = serviceInformatiqueController;
+module.exports = donController;

@@ -356,7 +356,7 @@ module.exports.sendAccepterService = (email,servicename)=>{
     sender : "maktba.tn01@gmail.com",
     to : email,
     subject : `Acceptation de votre Service`,
-    text : `Votre Service ${servicename} a été acceptée.`
+    html : `Votre Service <strong> ${servicename} </strong> a été acceptée.`
   }).catch((err)=>console.log(err))
 }
 module.exports.sendAnnulerService = (email,servicename)=>{
@@ -365,6 +365,24 @@ module.exports.sendAnnulerService = (email,servicename)=>{
     sender : "maktba.tn01@gmail.com",
     to : email,
     subject : `Annulation de votre Service`,
-    text : `Votre Service ${servicename} a été annulée.`
+    html : `Votre Service <strong> ${servicename} </strong> a été annulée.`
+  }).catch((err)=>console.log(err))
+}
+module.exports.sendAccepterDon = (email,description)=>{
+  transport
+  .sendMail({
+    sender : "maktba.tn01@gmail.com",
+    to : email,
+    subject : `Acceptation de votre Don`,
+    html : `Votre Don <strong>${description}</strong> a été acceptée.`
+  }).catch((err)=>console.log(err))
+}
+module.exports.sendAnnulerDon = (email,description)=>{
+  transport
+  .sendMail({
+    sender : "maktba.tn01@gmail.com",
+    to : email,
+    subject : `Annulation de votre Don`,
+    html : `<p>Votre Don <strong>${description}</strong> a été annulé.</p>`
   }).catch((err)=>console.log(err))
 }
