@@ -49,7 +49,7 @@ const userController = {
                     message: "success",
                     accessToken: accessToken,
                     refreshToken: refreshToken,
-                    user: User 
+                    user: User,
                   });
                 }
               });
@@ -91,6 +91,7 @@ const userController = {
           });
         } else {
           const passwordHash = bcrypt.hashSync(password, 10);
+          const verificationToken = bcrypt.genSaltSync(20);
           const datauser = {
             fullname: fullname,
             email: email,
@@ -98,8 +99,10 @@ const userController = {
             email_verifie: "non_verifie",
             role: "client",
             etatCompte: "active",
-            point:0
+            point: 0,
+            verification_token: verificationToken,
           };
+
           Model.user.create(datauser).then((user) => {
             if (user !== null) {
               const dataClient = {
@@ -108,7 +111,7 @@ const userController = {
               };
               Model.client.create(dataClient).then((client) => {
                 if (client !== null) {
-                  let link = `${process.env.URL_BACK}/user/verif/${req.body.email}`;
+                  let link = `${process.env.URL_BACK}/user/verif/${verificationToken}`;
                   sendMail.sendEmailVerification(req.body.email, link);
                   res.status(200).json({
                     success: true,
@@ -127,11 +130,11 @@ const userController = {
       });
     }
   },
-  
+
   emailVerification: async (req, res) => {
     try {
       Model.user
-        .findOne({ where: { email: req.params.email } })
+        .findOne({ where: { verification_token: req.params.email } })
         .then(async (user) => {
           if (user !== null) {
             await Model.user
@@ -139,7 +142,7 @@ const userController = {
                 { email_verifie: "verifie" },
                 {
                   where: {
-                    email: req.params.email,
+                    verification_token: req.params.email,
                   },
                 }
               )
@@ -191,7 +194,7 @@ const userController = {
       });
     }
   },
-  
+
   sendMailforgotPassword: async (req, res) => {
     try {
       Model.user
@@ -343,8 +346,8 @@ const userController = {
                     message: "success create and login ",
                     accessToken: accessToken,
                     refreshToken: refreshToken,
-                    passwordor:Password,
-                    client:client,
+                    passwordor: Password,
+                    client: client,
                   });
                 }
               });

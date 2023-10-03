@@ -29,6 +29,10 @@ const SouscategorieModel = require("./sousCategorie");
 const serviceInformatiqueModel = require("./serviceInformatique");
 const donModel = require("./don");
 const imageDonModel = require("./imagedon");
+const echangeModel = require("./echange");
+const offreModel = require("./offre");
+const produitaechangeModel = require("./produitaechange");
+const produitechangeModel = require("./produitechange");
 const user = userModel(db, Sequelize);
 const client = clientModel(db, Sequelize);
 const fournisseur = fournisseurModel(db, Sequelize);
@@ -58,6 +62,10 @@ const BecomePartner = BecomePartnerModel(db, Sequelize);
 const cataloge = catalogeModel(db, Sequelize);
 const suggestionProduit = suggestionProduitModel(db, Sequelize);
 const Souscategorie = SouscategorieModel(db, Sequelize);
+const echange = echangeModel(db, Sequelize);
+const offre = offreModel(db, Sequelize);
+const produitaechange = produitaechangeModel(db, Sequelize);
+const produitechange = produitechangeModel(db, Sequelize);
 // define relationships
 user.hasOne(client, {
   foreignKey: "userclientfk",
@@ -539,6 +547,107 @@ don.belongsTo(admin, {
   constraints: false,
 });
 
+echange.hasMany(offre, {
+  foreignKey: "echangeofffk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+offre.belongsTo(echange, {
+  foreignKey: "echangeofffk",
+  constraints: false,
+});
+
+echange.hasMany(produitaechange, {
+  foreignKey: "echangeprodaechk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+produitaechange.belongsTo(echange, {
+  foreignKey: "echangeprodaechk",
+  constraints: false,
+});
+
+echange.hasMany(produitechange, {
+  foreignKey: "echangeprodechk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+produitechange.belongsTo(echange, {
+  foreignKey: "echangeprodechk",
+  constraints: false,
+});
+
+offre.hasMany(produitaechange, {
+  foreignKey: "offreprodaechk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+produitaechange.belongsTo(offre, {
+  foreignKey: "offreprodaechk",
+  constraints: false,
+});
+
+offre.hasMany(produitechange, {
+  foreignKey: "offreprodechk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+produitechange.belongsTo(offre, {
+  foreignKey: "offreprodechk",
+  constraints: false,
+});
+
+
+labrairie.hasMany(echange, {
+  foreignKey: "labechfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+echange.belongsTo(labrairie, {
+  foreignKey: "labechfk",
+  constraints: false,
+});
+
+
+
+labrairie.hasMany(offre, {
+  foreignKey: "labofffk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+offre.belongsTo(labrairie, {
+  foreignKey: "labofffk",
+  constraints: false,
+});
+
+client.hasMany(echange, {
+  foreignKey: "clientechfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+echange.belongsTo(client, {
+  foreignKey: "clientechfk",
+  constraints: false,
+});
+
+
+
 
 module.exports = {
   user,
@@ -554,6 +663,10 @@ module.exports = {
   don,
   imageDon,
   commandeEnGros,
+  echange,
+  offre,
+  produitaechange,
+  produitechange,
   //ProduitCommandeEnGros,
   commandeEnDetail,
   commandeSpecial,

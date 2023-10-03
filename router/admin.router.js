@@ -52,13 +52,21 @@ router.get(
 
 router.get(
   "/produitrech",
-
   adminController.findproduitbyname
 );
 
 router.get(
-  "/founisseurrech",
+  "/echangerechlab",
+  adminController.findAllEchangeLibrarie
+);
 
+router.get(
+  "/echangerechclient",
+  adminController.findAllEchangeClient
+);
+
+router.get(
+  "/founisseurrech",
   adminController.findfournissbyname
 );
 

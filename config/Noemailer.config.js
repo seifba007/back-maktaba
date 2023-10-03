@@ -284,7 +284,7 @@ module.exports.sendEmailVerification = (email, link) => {
     </body>
     
     </html>
-    `,
+`,
     })
     .catch((err) => console.log(err));
 };

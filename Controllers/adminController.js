@@ -3,7 +3,6 @@ const Model = require("../Models/index");
 const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
 const sequelize = require("sequelize");
-const sousCategorie = require("../Models/sousCategorie");
 const cloudinary = require("../middleware/cloudinary");
 
 const {
@@ -641,14 +640,14 @@ const adminController = {
     const { sortBy, sortOrder, page, pageSize } = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-  
+
     const filters = req.query;
     const whereClause = {
       qte: {
         [sequelize.Op.gt]: 0,
       },
     };
-  
+
     if (filters.categprodlabfk) {
       if (typeof filters.categprodlabfk === "string") {
         filters.categprodlabfk = filters.categprodlabfk
@@ -657,7 +656,7 @@ const adminController = {
       }
       whereClause.categprodlabfk = filters.categprodlabfk;
     }
-  
+
     if (filters.souscatprodfk) {
       if (typeof filters.souscatprodfk === "string") {
         filters.souscatprodfk = filters.souscatprodfk
@@ -666,36 +665,36 @@ const adminController = {
       }
       whereClause.souscatprodfk = filters.souscatprodfk;
     }
-  
+
     if (filters.qteMin && filters.qteMax) {
       whereClause.qte = {
         [sequelize.Op.between]: [filters.qteMin, filters.qteMax],
-        [sequelize.Op.gt]: 0
+        [sequelize.Op.gt]: 0,
       };
     } else if (filters.qteMin) {
-      whereClause.qte = { 
+      whereClause.qte = {
         [sequelize.Op.gte]: filters.qteMin,
-        [sequelize.Op.gt]: 0
+        [sequelize.Op.gt]: 0,
       };
     } else if (filters.qteMax) {
       whereClause.qte = {
-         [sequelize.Op.lte]: filters.qteMax ,
-         [sequelize.Op.gt]: 0
-        };
-    }else {
+        [sequelize.Op.lte]: filters.qteMax,
+        [sequelize.Op.gt]: 0,
+      };
+    } else {
       whereClause.qte = { [sequelize.Op.gt]: 0 };
     }
-  
+
     if (filters.etat) {
       whereClause.etat = filters.etat;
     }
-  
+
     if (filters.titre) {
       whereClause.titre = {
         [sequelize.Op.like]: `%${filters.titre}%`,
       };
     }
-  
+
     if (filters.prixMin && filters.prixMax) {
       whereClause[sequelize.Op.or] = [
         {
@@ -727,13 +726,13 @@ const adminController = {
           prix_en_solde: { [sequelize.Op.lte]: filters.prixMax },
         },
       ];
-    } 
-  
+    }
+
     try {
       const totalCount = await Model.produitlabrairie.count({
         where: whereClause,
       });
-  console.log(totalCount)
+      console.log(totalCount);
       const produits = await Model.produitlabrairie.findAll({
         offset: offset,
         order: order,
@@ -750,7 +749,6 @@ const adminController = {
           },
           {
             model: Model.imageProduitLibrairie,
-            
           },
           {
             model: Model.avisProduitlibraire,
@@ -770,10 +768,10 @@ const adminController = {
           },
         ],
       });
-  
+
       if (produits.length > 0) {
         const totalPages = Math.ceil(totalCount / pageSize);
-  
+
         return res.status(200).json({
           success: true,
           produits: produits,
@@ -792,7 +790,6 @@ const adminController = {
       });
     }
   },
-  
 
   findproduitbyname: async (req, res) => {
     const { name } = req.query;
@@ -823,6 +820,228 @@ const adminController = {
         success: false,
         error: err,
       });
+    }
+  },
+
+  findAllEchangeLibrarie: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatechange } = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const filters = req.query;
+    const whereClause = {};
+
+    if (filters.name) {
+      whereClause.nameLibrairie = {
+        [sequelize.Op.like]: `%${filters.name}%`,
+      };
+    }
+    
+    if (etatechange == "tout") {
+      try {
+        const echanges = await Model.echange.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          include: [
+            {
+              model: Model.produitaechange,
+            },
+            {
+              model: Model.produitechange,
+            },
+            {
+              model: Model.labrairie,
+              where: whereClause
+            },
+          ],
+          attributes: {
+            exclude: ["updatedAt"],
+          },
+        });
+        if (echanges.length > 0) {
+          const totalPages = Math.ceil(echanges.length / pageSize);
+          return res.status(200).json({
+            success: true,
+            echanges: echanges,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune echange trouvée pour cette laibrairie.",
+          });
+        }
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
+      }
+    } else {
+      try {
+        const echanges = await Model.echange.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where:{
+            Etat:etatechange,
+          },
+          include: [
+            {
+              model: Model.produitaechange,
+            },
+            {
+              model: Model.produitechange,
+            },
+            {
+              model: Model.labrairie,
+              where: whereClause
+            },
+          ],
+          attributes: {
+            exclude: ["updatedAt"],
+          },
+        });
+        if (echanges.length > 0) {
+          const totalPages = Math.ceil(echanges.length / pageSize);
+          return res.status(200).json({
+            success: true,
+            echanges: echanges,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune echange trouvée pour cette laibrairie.",
+          });
+        }
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
+      }
+    }
+  },
+
+  findAllEchangeClient: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatechange } = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const filters = req.query;
+    const whereClause = {};
+
+    if (filters.name) {
+      whereClause.fullname = {
+        [sequelize.Op.like]: `%${filters.name}%`,
+      };
+    }
+
+ 
+    if (etatechange == "tout") {
+      try {
+        const echanges = await Model.echange.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          include: [
+            {
+              model: Model.produitaechange,
+            },
+            {
+              model: Model.produitechange,
+            },
+            {
+              model: Model.client,
+              include: [
+                {
+                  model: Model.user,
+                  where:whereClause,
+                  attributes: {
+                    exclude: ["updatedAt"],
+                  },
+                },
+              ],
+            },
+          ],
+          attributes: {
+            exclude: ["updatedAt"],
+          },
+        });
+        if (echanges.length > 0) {
+          const totalPages = Math.ceil(echanges.length / pageSize);
+          return res.status(200).json({
+            success: true,
+            echanges: echanges,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune echange trouvée pour ce client.",
+          });
+        }
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
+      }
+    } else {
+      try {
+        const echanges = await Model.echange.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            Etat: etatechange
+          },
+          include: [
+           
+            {
+              model: Model.produitaechange,
+            },
+            {
+              model: Model.produitechange,
+            },
+            {
+              model: Model.client,
+              include: [
+                {
+                  model: Model.user,
+                  where:whereClause,
+                  attributes: {
+                    exclude: ["updatedAt"],
+                  },
+                },
+              ],
+            },
+          ],
+          attributes: {
+            exclude: ["updatedAt"],
+          },
+        });
+        if (echanges.length > 0) {
+          const totalPages = Math.ceil(echanges.length / pageSize);
+          return res.status(200).json({
+            success: true,
+            echanges: echanges,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune echange trouvée pour ce client.",
+          });
+        }
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
+      }
     }
   },
 
