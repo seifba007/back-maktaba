@@ -14,7 +14,10 @@ router.put(
   labriarieController.updateProfile
 );
 router.get("/findalllibrarie", labriarieController.findAlllibrarie);
-
+router.get("/findtopproduct/:id", labriarieController.findtopproduct);
+router.get("/gettop10prod/:id", labriarieController.gettop10prod);
+router.get("/findAllcommandebyetat/:id", labriarieController.findAllcommandebyetat);
+router.get("/findAllcommandebyetat/:id", labriarieController.findAllcommandebyetat);
 router.get(
   "/findallproductbyFiltre/:id",
   labriarieController.findAllproduitbyfiltre

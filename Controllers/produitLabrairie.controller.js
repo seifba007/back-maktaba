@@ -17,7 +17,6 @@ const updateProductNewState = async () => {
       product.etat = 'ancien';
       await product.save();
     }
-    //console.log('État des produits mis à jour.');
   } catch (err) {
     console.error('Erreur lors de la mise à jour de l\'état des produits :', err);
   }

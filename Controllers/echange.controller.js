@@ -31,13 +31,14 @@ const echangeController = {
 
       res.status(201).json({
         echange: echange,
-        message: "Echange créé avec succès",
+        message: "Echange crée avec succès",
       });
     } catch (error) {
       console.error(error);
+      console.log(error)
       res
         .status(400)
-        .json({ error: "Erreur lors de la création de cet échange" });
+        .json({ error: error.message });
     }
   },
   Accepter: async (req, res) => {

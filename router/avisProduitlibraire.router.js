@@ -2,7 +2,7 @@ const express = require("express");
 const avisProduitlibraireController = require("../Controllers/avisProduitlibraire.controller");
 const router = express.Router();
 const { AuthorizationUser } = require("../middleware/auth/auth");
-router.post("/add", AuthorizationUser, avisProduitlibraireController.add);
+router.post("/add",  avisProduitlibraireController.add);
 router.put(
   "/update/:id",
   AuthorizationUser,
