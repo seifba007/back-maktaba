@@ -648,7 +648,6 @@ echange.belongsTo(client, {
 
 
 
-
 module.exports = {
   user,
   client,

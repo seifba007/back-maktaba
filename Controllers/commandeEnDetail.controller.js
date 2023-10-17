@@ -1622,6 +1622,8 @@ const commandeDetailController = {
       });
     }
   },
+
+
 };
 function roleIsPartenaire(role) {
   if (role === "partenaire") {

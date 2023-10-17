@@ -103,7 +103,6 @@ const userController = {
             return token;
           }          
           const verificationToken =  generateVerificationToken(32)
-          console.log(verificationToken)
           const datauser = {
             fullname: fullname,
             email: email,

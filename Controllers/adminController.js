@@ -732,7 +732,6 @@ const adminController = {
       const totalCount = await Model.produitlabrairie.count({
         where: whereClause,
       });
-      console.log(totalCount);
       const produits = await Model.produitlabrairie.findAll({
         offset: offset,
         order: order,

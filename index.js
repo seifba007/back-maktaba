@@ -86,6 +86,7 @@ app.use("/suggestionProduit",suggestionProduit)
 /** connection avec DB */
 
 
+
 async function connectToDatabase() {
   console.log("Trying to connect via sequelize");
   await db.sync();
