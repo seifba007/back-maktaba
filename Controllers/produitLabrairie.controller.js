@@ -235,14 +235,18 @@ const produitController = {
 
     try {
       const totalCount = await Model.produitlabrairie.count({
-        where: { labrprodfk: req.params.id },
+        where: { 
+          labrprodfk: req.params.id,
+          qte: {
+            [Sequelize.Op.gt]: 0, 
+          },
+        },
       });
 
       const products = await Model.produitlabrairie.findAll({
         order: order,
         limit: +pageSize,
         offset: offset,
-        
         where: {
            labrprodfk: req.params.id,
            qte: {
@@ -255,12 +259,11 @@ const produitController = {
             attributes: ["imageStore", "nameLibrairie"],
           },
           {
+            model: Model.categorie,
+            attributes: ["id","name", "Description","image"],
+          },
+          {
             model: Model.imageProduitLibrairie,
-            where:{
-              name_image :{
-                [Sequelize.Op.ne]: "https://res.cloudinary.com/doytw80zj/image/upload/v1693689652/27002_omkvdd.jpg"
-              }
-            }
           },
           {
             model: Model.avisProduitlibraire,

@@ -24,6 +24,9 @@ router.get("/findAllCommands/:id", labriarieController.findAllCommandsByState);
 router.get("/findAllLivraison/:id", labriarieController.findAllLivraison);
 router.put("/livrercommande/:id", labriarieController.livrecommande);
 router.put("/annulercommande/:id", labriarieController.annulercommande);
+router.get("/findAllCataloge", labriarieController.findAllCataloge);
+router.post("/addinventaire", labriarieController.addinventaire);
+router.get("/getinventaire/:id", labriarieController.findAllinventaire);
 router.get(
   "/findallproductbyFiltre/:id",
   labriarieController.findAllproduitbyfiltre

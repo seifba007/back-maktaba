@@ -461,6 +461,8 @@ const commandeDetailController = {
             exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
           },
           include: [
+            { model: Model.user, attributes: ["fullname", "avatar"] },
+            { model: Model.produitlabrairie },
             {
               model: Model.labrairie,
               attributes: ["id", "nameLibrairie", "imageStore"],

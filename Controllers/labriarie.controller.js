@@ -233,14 +233,14 @@ const LabriarieController = {
       console.error("Erreur lors de l'obtention de produit:", err);
     }
   },
- 
+
   gettop10prod: async (req, res) => {
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const topProducts = await Model.avisProduitlibraire.findAll({
         attributes: [
-          [Sequelize.fn('COUNT', Sequelize.col('nbStart')), 'totalAvis'],
+          [Sequelize.fn("COUNT", Sequelize.col("nbStart")), "totalAvis"],
           "prodavisproduitsfk",
         ],
         where: {
@@ -293,7 +293,7 @@ const LabriarieController = {
         where: {
           labrcomdetfk: req.params.id,
           createdAt: {
-            [Sequelize.gte]: thirtyDaysAgo,
+            [Sequelize.Op.gte]: thirtyDaysAgo,
           },
         },
         include: [{ model: Model.labrairie }],
@@ -331,17 +331,77 @@ const LabriarieController = {
       });
     }
   },
-  
+
   findCommandeinday: async (req, res) => {
     const { days } = req.query;
     try {
       const date = new Date();
       date.setDate(date.getDate() - days);
+  
       const commandes = await Model.commandeEnDetail.findAll({
         where: {
           labrcomdetfk: req.params.id,
           createdAt: {
             [Sequelize.Op.gte]: date,
+            //[Sequelize.Op.lt]: new Date(date.getTime() + 24 * 60 * 60 * 1000),
+          },
+        },
+        attributes: {
+          exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+        },
+        include: [
+          {
+            model: Model.labrairie,
+            attributes: ["id", "nameLibrairie", "imageStore"],
+          },
+          {
+            model: Model.produitlabrairie,
+            attributes: ["id", "titre", "prix"],
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
+        ],
+      });
+  
+      const countOnDate = {};
+      commandes.forEach((commande) => {
+        const commandDate = new Date(commande.createdAt);
+        const dateKey = `${commandDate.getMonth() + 1}-${commandDate.getDate()}`;
+        countOnDate[dateKey] = (countOnDate[dateKey] || 0) + 1;
+      });
+  
+      const formattedCommandes = Object.keys(countOnDate).map((date) => {
+        return { date: date, nbr: countOnDate[date] };
+      });
+  
+      return res.status(200).json({
+        success: true,
+        commandes: formattedCommandes,
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+  
+
+  findLatestCommandes: async (req, res) => {
+    try {
+      const date = new Date();
+      date.setDate(date.getDate() - 7);
+  
+      const latestCommandes = await Model.commandeEnDetail.findAll({
+        order: [["createdAt", "DESC"]],
+        where: {
+          labrcomdetfk: req.params.id,
+          createdAt: {
+            [Sequelize.Op.gte]: date, 
             [Sequelize.Op.lt]: new Date(date.getTime() + 24 * 60 * 60 * 1000),
           },
         },
@@ -365,55 +425,7 @@ const LabriarieController = {
           },
         ],
       });
-      const countOnDate = commandes.length;
-      const formattedCommandes = commandes.map((commande) => {
-        const commandDate = new Date(commande.createdAt);
-        return {
-          date: `${commandDate.getMonth() + 1}-${commandDate.getDate()}`,
-        };
-      });
-      return res.status(200).json({
-        success: true,
-        commandes: formattedCommandes,
-        countOnDate: countOnDate,
-      });
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err.message,
-      });
-    }
-  },
-
-  findLatestCommandes: async (req, res) => {
-    try {
-      const latestCommandes = await Model.commandeEnDetail.findAll({
-        limit: 10,
-        order: [["createdAt", "DESC"]],
-        where: {
-          labrcomdetfk: req.params.id,
-        },
-        attributes: {
-          exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
-        },
-        include: [
-          {
-            model: Model.labrairie,
-            attributes: ["id", "nameLibrairie", "imageStore"],
-          },
-          {
-            model: Model.produitlabrairie,
-            attributes: ["id", "titre", "prix"],
-            include: [
-              {
-                model: Model.imageProduitLibrairie,
-                attributes: ["name_Image"],
-              },
-            ],
-          },
-        ],
-      });
-
+  
       return res.status(200).json({
         success: true,
         latestCommandes: latestCommandes,
@@ -427,28 +439,28 @@ const LabriarieController = {
   },
 
   findAllproducts: async (req, res) => {
-    const { page, pageSize, sortBy, sortOrder, category, subcategory } =
+    const { page, pageSize, sortBy, sortOrder } =
       req.query;
     const offset = (page - 1) * pageSize;
+    const filters = req.query;
+    let whereClause = {};
+
 
     if (sortBy && sortOrder) {
       order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     }
 
     try {
-      const whereClause = {
+       whereClause = {
         labrprodfk: req.params.id,
-        qte: {
-          [Sequelize.Op.gt]: 0,
-        },
       };
 
-      if (category) {
-        whereClause.categprodlabfk = category;
+      if (filters.category) {
+        whereClause.categprodlabfk = filters.category;
       }
 
-      if (subcategory) {
-        whereClause.souscatprodfk = subcategory;
+      if (filters.subcategory) {
+        whereClause.souscatprodfk = filters.subcategory;
       }
 
       const totalCount = await Model.produitlabrairie.count({
@@ -603,35 +615,36 @@ const LabriarieController = {
   },
 
   findAllCommandsByState: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize, etat,username } = req.query;
+    const { sortBy, sortOrder, page, pageSize, etat, username } = req.query;
 
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-    const wherename = {} ;
+    const wherename = {};
     try {
       let whereClause = { labrcomdetfk: req.params.id };
       if (etat && etat !== "tout") {
-        whereClause.etatVender = etat
+        whereClause.etatVender = etat;
       }
 
       if (username) {
-        wherename.fullname ={
-          [Sequelize.Op.like]: `%${username}%`
-        } 
+        wherename.fullname = {
+          [Sequelize.Op.like]: `%${username}%`,
+        };
       }
 
       const count = await Model.commandeEnDetail.count({
         where: whereClause,
-      })
+      });
 
       const commandes = await Model.commandeEnDetail.findAll({
         offset: offset,
         order: order,
         limit: +pageSize,
         where: whereClause,
-        
+
         include: [
-          { model: Model.user,
+          {
+            model: Model.user,
             attributes: ["fullname", "avatar"],
             //where:wherename
           },
@@ -640,12 +653,12 @@ const LabriarieController = {
         ],
       });
 
-      if(commandes){
+      if (commandes) {
         const totalPages = Math.ceil(count / pageSize);
         return res.status(200).json({
           success: true,
           commandes: commandes,
-          totalPages:totalPages
+          totalPages: totalPages,
         });
       }
     } catch (err) {
@@ -657,35 +670,35 @@ const LabriarieController = {
   },
 
   findAllLivraison: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize, etat,username } = req.query;
+    const { sortBy, sortOrder, page, pageSize, etat, username } = req.query;
 
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-    const wherename = {} ;
+    const wherename = {};
     try {
       let whereClause = { labrcomdetfk: req.params.id };
       if (etat && etat !== "tout") {
-        whereClause.etatClient = etat
+        whereClause.etatVender = etat;
       }
 
       if (username) {
-        wherename.fullname ={
-          [Sequelize.Op.like]: `%${username}%`
-        } 
+        wherename.fullname = {
+          [Sequelize.Op.like]: `%${username}%`,
+        };
       }
 
       const count = await Model.commandeEnDetail.count({
         where: whereClause,
-      })
+      });
 
       const commandes = await Model.commandeEnDetail.findAll({
         offset: offset,
         order: order,
         limit: +pageSize,
         where: whereClause,
-    
         include: [
-          { model: Model.user,
+          {
+            model: Model.user,
             attributes: ["fullname", "avatar"],
             //where:wherename
           },
@@ -694,12 +707,12 @@ const LabriarieController = {
         ],
       });
 
-      if(commandes){
+      if (commandes) {
         const totalPages = Math.ceil(count / pageSize);
         return res.status(200).json({
           success: true,
           livraison: commandes,
-          totalPages:totalPages
+          totalPages: totalPages,
         });
       }
     } catch (err) {
@@ -713,7 +726,7 @@ const LabriarieController = {
   livrecommande: async (req, res) => {
     try {
       Model.commandeEnDetail
-        .update({etatClient: "livre"}, { where: { id: req.params.id } })
+        .update({ etatClient: "livre" }, { where: { id: req.params.id } })
         .then((response) => {
           if (response !== 0) {
             return res.status(200).json({
@@ -738,7 +751,7 @@ const LabriarieController = {
   annulercommande: async (req, res) => {
     try {
       Model.commandeEnDetail
-        .update({etatClient: "annuler"}, { where: { id: req.params.id } })
+        .update({ etatClient: "annuler" }, { where: { id: req.params.id } })
         .then((response) => {
           if (response !== 0) {
             return res.status(200).json({
@@ -756,6 +769,153 @@ const LabriarieController = {
       return res.status(400).json({
         success: false,
         error: err,
+      });
+    }
+  },
+
+  findAllCataloge: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+
+    const offset = (page - 1) * pageSize;
+
+    if ((sortBy, sortOrder)) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
+    try {
+      Model.cataloge
+        .findAll({
+          limit: +pageSize,
+          offset: offset,
+          order: order,
+          include: [
+            {
+              model: Model.produitlabrairie,
+              attributes: ["name_Image"],
+              include:[
+                {
+                  model: Model.imageProduitLibrairie,
+                  attributes: ["name_Image"],
+                },
+                {
+                  model: Model.labrairie,
+                  attributes: ["id", "imageStore", "nameLibrairie"],
+                },
+    
+                {
+                  model: Model.avisProduitlibraire,
+                },
+                { model: Model.categorie, attributes: ["id", "name"] },
+              ]
+            },
+           
+          ],
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              produit: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "zero produit dans le catalogue",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  addinventaire: async (req, res) => {
+    try {
+      const { labinvfk, prodlabinvfk } = req.body;
+
+      const data = {
+        labinvfk: labinvfk,
+        prodlabinvfk: prodlabinvfk,
+      };
+      Model.inventaire.create(data).then((response) => {
+        if (response !== null) {
+          return res.status(400).json({
+            success: true,
+            inventaire: response,
+            message: "produit ajouter à inventaire avec succes",
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: "erreur d'ajouter le produit à inventaire",
+          });
+        }
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findAllinventaire: async (req, res) => {
+    const { page, pageSize, sortBy, sortOrder } = req.query;
+    const offset = (page - 1) * pageSize;
+
+    if (sortBy && sortOrder) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
+
+    try {
+      const products = await Model.inventaire.findAll({
+        order: order,
+        limit: +pageSize,
+        offset: offset,
+        where: {
+          labinvfk: req.params.id,
+        },
+        include: [
+          {
+            model: Model.produitlabrairie,
+            //attributes: ["imageStore", "nameLibrairie"],
+            include:[
+              {
+                model: Model.imageProduitLibrairie,
+              },
+              {
+                model: Model.avisProduitlibraire,
+              },
+            ]
+          },
+          {
+            model: Model.labrairie,
+            attributes: ["imageStore", "nameLibrairie"],
+          },
+          
+          
+        ],
+      });
+
+      if (products.length > 0) {
+        const totalPages = Math.ceil(products.length  / pageSize);
+        return res.status(200).json({
+          success: true,
+          produit: products,
+          totalPages: totalPages,
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "cette libraririe n'a pas des produits",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
       });
     }
   },

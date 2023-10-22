@@ -5,7 +5,6 @@ const CatalogeController = require("../Controllers/catalogeController");
 const { AuthorizationUser } = require("../middleware/auth/auth");
 router.post(
   "/add",
-  AuthorizationUser,
   upload.array("image", 3),
   CatalogeController.add
 );

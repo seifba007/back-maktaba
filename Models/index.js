@@ -33,6 +33,7 @@ const echangeModel = require("./echange");
 const offreModel = require("./offre");
 const produitaechangeModel = require("./produitaechange");
 const produitechangeModel = require("./produitechange");
+const inventaireModel = require("./inventaire");
 const user = userModel(db, Sequelize);
 const client = clientModel(db, Sequelize);
 const fournisseur = fournisseurModel(db, Sequelize);
@@ -66,6 +67,7 @@ const echange = echangeModel(db, Sequelize);
 const offre = offreModel(db, Sequelize);
 const produitaechange = produitaechangeModel(db, Sequelize);
 const produitechange = produitechangeModel(db, Sequelize);
+const inventaire = inventaireModel(db, Sequelize);
 // define relationships
 user.hasOne(client, {
   foreignKey: "userclientfk",
@@ -647,6 +649,30 @@ echange.belongsTo(client, {
 });
 
 
+labrairie.hasMany(inventaire, {
+  foreignKey: "labinvfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+inventaire.belongsTo(labrairie, {
+  foreignKey: "labinvfk",
+  constraints: false,
+});
+
+
+produitlabrairie.hasMany(inventaire, {
+  foreignKey: "prodlabinvfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+inventaire.belongsTo(produitlabrairie, {
+  foreignKey: "prodlabinvfk",
+  constraints: false,
+});
 
 module.exports = {
   user,
@@ -682,4 +708,5 @@ module.exports = {
   imageCataloge,
   suggestionProduit,
   Souscategorie,
+  inventaire
 };

@@ -1,6 +1,7 @@
 const { response } = require("express");
 const Model = require("../Models/index");
 const { catalogeValidation } = require("../middleware/auth/validationSchema");
+const { Sequelize } = require("sequelize");
 const CatalogeController = {
   add: async (req, res) => {
     try {
@@ -54,9 +55,42 @@ const CatalogeController = {
   },
 
   findAll: async (req, res) => {
+    const { page, pageSize, sortBy, sortOrder } = req.query;
+    const offset = (page - 1) * pageSize;
+    const filters = req.query;
+    let whereClause = {};
+
+
+    if (sortBy && sortOrder) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
+    
+
+      if (filters.category) {
+        whereClause.categoriecatalogefk = filters.category;
+      }
+
+      if (filters.subcategory) {
+        whereClause.souscatalogefk = filters.subcategory;
+      }
+
+      if (filters.titre) {
+        whereClause.titre = {
+          [Sequelize.Op.like]: `%${filters.titre}%`,
+        };
+      }
+
+      const totalCount = await Model.cataloge.count({
+        where: whereClause,
+      });
+    
     try {
-      Model.cataloge
+      const catalogue = await Model.cataloge
         .findAll({
+          order: order,
+          limit: +pageSize,
+          offset: offset,
+          where: whereClause,
           attributes: {
             exclude: ["updatedAt", "admincatalogefk","categoriecatalogefk"],
           },
@@ -64,20 +98,22 @@ const CatalogeController = {
             { model: Model.imageCataloge, attributes: ["id","name_Image"]},
             { model: Model.categorie, attributes: ["id", "name"]},
           ],
-        })
-        .then((response) => {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              produits: response,
-            });
-          } else {
-            return res.status(200).json({
-              success: false,
-              produits: [],
-            });
-          }
         });
+        
+        if (catalogue.length > 0) {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          return res.status(200).json({
+            success: true,
+            catalogue: catalogue,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "il n y 'a pas des catalogues",
+          });
+        }
+        
     } catch (err) {
       return res.status(400).json({
         success: false,

@@ -3,6 +3,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const sendMail = require("../config/Noemailer.config");
 const { response } = require("express");
+const cloudinary = require("../middleware/cloudinary");
+
 const { where } = require("sequelize");
 const { createAccessToken, createRefreshToken } = require("../services/jwt");
 const {
@@ -92,17 +94,18 @@ const userController = {
         } else {
           const passwordHash = bcrypt.hashSync(password, 10);
           function generateVerificationToken(length) {
-            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-            let token = '';
-          
+            const characters =
+              "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            let token = "";
+
             for (let i = 0; i < length; i++) {
               const randomIndex = Math.floor(Math.random() * characters.length);
               token += characters.charAt(randomIndex);
             }
-          
+
             return token;
-          }          
-          const verificationToken =  generateVerificationToken(32)
+          }
+          const verificationToken = generateVerificationToken(32);
           const datauser = {
             fullname: fullname,
             email: email,
@@ -417,37 +420,34 @@ const userController = {
   },
   updateIdentite: async (req, res) => {
     try {
-      if (req.files.length !== 0) {
-        req.body["image"] = req.files[0].filename;
-      } else {
-        req.body["image"] == null;
-      }
-
-      const { Date_de_naissance, image, telephone, fullname, email } = req.body;
-      const data = {
-        Date_de_naissance:
-          Date_de_naissance === "0000-00-00" ? null : Date_de_naissance,
-        avatar: image,
-        telephone: telephone,
-        fullname: fullname,
-        email: email,
-      };
-
-      Model.user
-        .update(data, { where: { id: req.params.id } })
-        .then((response) => {
-          if (response !== 0) {
-            return res.status(200).json({
-              success: true,
-              message: "update indentite Done !!! ",
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              message: "error update identite",
-            });
-          }
-        });
+      const { Date_de_naissance, telephone, fullname, email } = req.body;
+      req.files.forEach(async (file) => {
+        const result = await cloudinary.uploader.upload(file.path);
+        const imageUrl = result.secure_url;
+        const data = {
+          Date_de_naissance:
+            Date_de_naissance === "0000-00-00" ? null : Date_de_naissance,
+          avatar: imageUrl,
+          telephone: telephone,
+          fullname: fullname,
+          email: email,
+        };
+        Model.user
+          .update(data, { where: { id: req.params.id } })
+          .then((response) => {
+            if (response !== 0) {
+              return res.status(200).json({
+                success: true,
+                message: "update indentite Done !!! ",
+              });
+            } else {
+              return res.status(400).json({
+                success: false,
+                message: "error update identite",
+              });
+            }
+          });
+      });
     } catch (err) {
       return res.status(400).json({
         success: false,
