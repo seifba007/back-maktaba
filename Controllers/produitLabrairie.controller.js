@@ -228,6 +228,20 @@ const produitController = {
   findAllProduitByLabrairie: async (req, res) => {
     const { page, pageSize, sortBy, sortOrder } = req.query;
     const offset = (page - 1) * pageSize;
+    const filters = req.query;
+    let whereClause = {};
+
+    whereClause = {
+      labrprodfk: req.params.id,
+      qte: {
+        [Sequelize.Op.gt]: 0, 
+      },
+    };
+    if (filters.titre) {
+      whereClause.titre = {
+        [Sequelize.Op.like]: `%${filters.titre}%`,
+      };
+    }
 
     if (sortBy && sortOrder) {
       order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
@@ -235,24 +249,14 @@ const produitController = {
 
     try {
       const totalCount = await Model.produitlabrairie.count({
-        where: { 
-          labrprodfk: req.params.id,
-          qte: {
-            [Sequelize.Op.gt]: 0, 
-          },
-        },
+        where: whereClause
       });
 
       const products = await Model.produitlabrairie.findAll({
         order: order,
         limit: +pageSize,
         offset: offset,
-        where: {
-           labrprodfk: req.params.id,
-           qte: {
-            [Sequelize.Op.gt]: 0, 
-          },
-          },
+        where: whereClause,
         include: [
           {
             model: Model.labrairie,

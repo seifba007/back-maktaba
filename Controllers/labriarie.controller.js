@@ -234,13 +234,13 @@ const LabriarieController = {
     }
   },
 
-  gettop10prod: async (req, res) => {
+  gettop5prod: async (req, res) => {
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const topProducts = await Model.avisProduitlibraire.findAll({
         attributes: [
-          [Sequelize.fn("COUNT", Sequelize.col("nbStart")), "totalAvis"],
+          [Sequelize.fn("SUM", Sequelize.col("nbStart")), "totalAvis"],
           "prodavisproduitsfk",
         ],
         where: {
@@ -248,17 +248,16 @@ const LabriarieController = {
             [Sequelize.gte]: thirtyDaysAgo,
           },
         },
+        
         group: ["prodavisproduitsfk"],
         order: [[Sequelize.literal("totalAvis"), "DESC"]],
         limit: 5,
-        raw: true,
         include: [
           {
             model: Model.produitlabrairie,
             where: {
-              labrprodfk: req.params.id,
+              labrprodfk: req.params.id
             },
-
             include: [
               {
                 model: Model.imageProduitLibrairie,
@@ -333,10 +332,9 @@ const LabriarieController = {
   },
 
   findCommandeinday: async (req, res) => {
-    const { days } = req.query;
     try {
       const date = new Date();
-      date.setDate(date.getDate() - days);
+      date.setDate(date.getDate() - 7);
   
       const commandes = await Model.commandeEnDetail.findAll({
         where: {
@@ -402,7 +400,7 @@ const LabriarieController = {
           labrcomdetfk: req.params.id,
           createdAt: {
             [Sequelize.Op.gte]: date, 
-            [Sequelize.Op.lt]: new Date(date.getTime() + 24 * 60 * 60 * 1000),
+            //[Sequelize.Op.lt]: new Date(date.getTime() + 24 * 60 * 60 * 1000),
           },
         },
         attributes: {
@@ -901,6 +899,80 @@ const LabriarieController = {
 
       if (products.length > 0) {
         const totalPages = Math.ceil(products.length  / pageSize);
+        return res.status(200).json({
+          success: true,
+          produit: products,
+          totalPages: totalPages,
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "cette libraririe n'a pas des produits",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  allinventaire: async (req, res) => {
+    const { page, pageSize, sortBy, sortOrder } =
+      req.query;
+    const offset = (page - 1) * pageSize;
+    const filters = req.query;
+    let whereClause = {};
+
+
+    if (sortBy && sortOrder) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
+
+    try {
+       whereClause = {
+        labrprodfk: req.params.id,
+      };
+
+      if (filters.category) {
+        whereClause.categprodlabfk = filters.category;
+      }
+
+      if (filters.subcategory) {
+        whereClause.souscatprodfk = filters.subcategory;
+      }
+      if (filters.titre) {
+        whereClause.titre = {
+          [Sequelize.Op.like]: `%${filters.titre}%`,
+        };
+      }
+
+      const totalCount = await Model.produitlabrairie.count({
+        where: whereClause,
+      });
+
+      const products = await Model.produitlabrairie.findAll({
+        order: order,
+        limit: +pageSize,
+        offset: offset,
+        where: whereClause,
+        include: [
+          {
+            model: Model.labrairie,
+            attributes: ["imageStore", "nameLibrairie"],
+          },
+          {
+            model: Model.imageProduitLibrairie,
+          },
+          {
+            model: Model.avisProduitlibraire,
+          },
+        ],
+      });
+
+      if (products.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
         return res.status(200).json({
           success: true,
           produit: products,
