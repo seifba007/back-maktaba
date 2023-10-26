@@ -199,8 +199,10 @@ const LabriarieController = {
         },
       }).then((topProducts) => {
         topProducts.forEach((product) => {
+
           Model.produitlabrairie
             .findAll({
+              order : [["id", "DESC"]],
               where: {
                 id: product.prodlaibrcommdetfk,
                 labrprodfk: req.params.id,
@@ -234,52 +236,54 @@ const LabriarieController = {
     }
   },
 
-  gettop5prod: async (req, res) => {
+   getTop5Prod : async (req, res) => {
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
       const topProducts = await Model.avisProduitlibraire.findAll({
         attributes: [
-          [Sequelize.fn("SUM", Sequelize.col("nbStart")), "totalAvis"],
-          "prodavisproduitsfk",
+          [Sequelize.fn('SUM', Sequelize.col('nbStart')), 'totalAvis'],
+          'prodavisproduitsfk',
         ],
         where: {
           createdAt: {
-            [Sequelize.gte]: thirtyDaysAgo,
+            [Sequelize.Op.gte]: thirtyDaysAgo,
           },
         },
-        
-        group: ["prodavisproduitsfk"],
-        order: [[Sequelize.literal("totalAvis"), "DESC"]],
+        group: ['prodavisproduitsfk'],
+        order: [[Sequelize.literal('totalAvis'), 'DESC']],
         limit: 5,
         include: [
           {
             model: Model.produitlabrairie,
             where: {
-              labrprodfk: req.params.id
+              labrprodfk: req.params.id,
             },
             include: [
               {
                 model: Model.imageProduitLibrairie,
-                attributes: ["name_Image"],
+                attributes: ['name_Image'],
               },
             ],
           },
         ],
       });
-
+  
+      const formattedProducts = topProducts.map(item => ({
+        totalAvis: item.dataValues.totalAvis,
+        produitlabrairie: item.produitlabrairie,
+      }));
+  
       return res.status(200).json({
         success: true,
-        produit: topProducts.map((item) => ({
-          totalAvis: item.dataValues.totalAvis,
-          produitlabrairie: item.produitlabrairie,
-        })),
+        produit: formattedProducts,
       });
-    } catch (err) {
-      console.error(err);
+    } catch (error) {
+      console.error(error);
       return res.status(400).json({
         success: false,
-        error: err.message,
+        error: error.message,
       });
     }
   },
@@ -332,9 +336,16 @@ const LabriarieController = {
   },
 
   findCommandeinday: async (req, res) => {
+    let {days} = req.query
+    if(days > 7){
+      days = 7
+    }else{
+      days = days
+    }
+    console.log(days)
     try {
       const date = new Date();
-      date.setDate(date.getDate() - 7);
+      date.setDate(date.getDate() - days);
   
       const commandes = await Model.commandeEnDetail.findAll({
         where: {
@@ -675,7 +686,11 @@ const LabriarieController = {
     const wherename = {};
     try {
       let whereClause = { labrcomdetfk: req.params.id };
-      if (etat && etat !== "tout") {
+      if (etat && etat === "tout") {
+        whereClause.etatVender = {
+          [Sequelize.Op.or]: ["en_cours", "livre"],
+        };
+      } else if (etat && etat !== "tout") {
         whereClause.etatVender = etat;
       }
 

@@ -15,7 +15,7 @@ router.put(
 );
 router.get("/findalllibrarie", labriarieController.findAlllibrarie);
 router.get("/findtopproduct/:id", labriarieController.findtopproduct);
-router.get("/gettop10prod/:id", labriarieController.gettop5prod);
+router.get("/gettop10prod/:id", labriarieController.getTop5Prod);
 router.get("/findAllcommandebyetat/:id", labriarieController.findAllcommandebyetat);
 router.get("/findCommandeinday/:id", labriarieController.findCommandeinday);
 router.get("/findLatestCommandes/:id", labriarieController.findLatestCommandes);
