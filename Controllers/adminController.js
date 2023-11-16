@@ -139,6 +139,44 @@ const adminController = {
       });
     }
   },
+
+  findOnecategory: async (req, res) => {
+    try {
+      Model.categorie
+        .findAll({
+          where:{
+            id : req.params.id
+          },
+          attributes: {
+            include: ["id", "name"],
+          },
+          include: [
+            {
+              model: Model.Souscategorie,
+              attributes: ["id", "name","Description","createdAt"],
+            },
+          ],
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              categories: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "zero category",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
   findAllproduits: async (req, res) => {
     try {
       Model.produitlabrairie.findAll().then((response) => {
@@ -163,14 +201,10 @@ const adminController = {
       });
     }
   },
+
   deletecategory: async (req, res) => {
     const { ids } = req.body;
     try {
-      const { error } = deletecategoryValidation(req.body);
-      if (error)
-        return res
-          .status(400)
-          .json({ success: false, err: error.details[0].message });
       Model.categorie
         .destroy({
           where: {
@@ -181,7 +215,7 @@ const adminController = {
           if (reponse !== 0) {
             return res.status(200).json({
               success: true,
-              message: " category deleted",
+              message: " categories deleted",
             });
           }
         });
@@ -194,28 +228,33 @@ const adminController = {
   },
 
   addcategory: async (req, res) => {
-    //const { error } = addcategoryValidation(req.body);
-    //if (error)return res.status(400).json({ success: false, err: error.details[0].message });
     try {
       req.files.forEach(async (file) => {
         const result = await cloudinary.uploader.upload(file.path);
         const imageUrl = result.secure_url;
-        console.log(imageUrl);
         const { subcategories } = req.body;
+  
+        const subcategoriesArray = Array.isArray(subcategories)
+          ? subcategories
+          : [subcategories];
+  
         const data = {
           name: req.body.name,
           Description: req.body.Description,
           image: imageUrl,
         };
+  
         const category = await Model.categorie.create(data);
         const souscategories = [];
-        for (const subcateName of subcategories) {
+  
+        for (const subcateName of subcategoriesArray) {
           const subcategory = await Model.Souscategorie.create({
             name: subcateName,
             catagsouscatafk: category.id,
           });
           souscategories.push(subcategory);
         }
+  
         res.status(200).json({
           success: true,
           category: category,
@@ -230,6 +269,72 @@ const adminController = {
       });
     }
   },
+
+  editCategory: async (req, res) => {
+    try {
+      const categoryId = req.params.id;
+      const { name, Description, subcategories } = req.body;
+  
+      const existingCategory = await Model.categorie.findByPk(categoryId, {
+        include: [
+          {
+           model: Model.Souscategorie,
+           attributes: ["name","Description"]
+          }
+        ],
+      });
+
+      if (!existingCategory) {
+        return res.status(404).json({
+          success: false,
+          message: "Category not found",
+        });
+      } else {
+        const data = {
+          name: name || existingCategory.name,
+          Description: Description || existingCategory.Description,
+        };
+  
+        await Model.categorie.update(data, { where: { id: req.params.id } });
+
+        const subcategoriesArray = Array.isArray(subcategories)
+        ? subcategories
+        : [subcategories];
+
+        const scategories = await Model.Souscategorie.findAll({
+          where:{
+            catagsouscatafk: req.params.id
+          }
+        })
+        const listsub = [];
+
+        for(ss of scategories){
+          listsub.push(ss.name)
+        }
+         console.log(listsub)
+
+        for(const news of subcategoriesArray){
+          listsub.push(news)
+        }
+         console.log(listsub)
+        res.status(200).json({
+          success: true,
+          category: existingCategory,
+          message: "Category updated successfully",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+  
+  
+  
+  
 
   deletesuggestion: async (req, res) => {
     const { ids } = req.body;

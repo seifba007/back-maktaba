@@ -1,4 +1,5 @@
 const Model = require("../Models/index");
+const { Sequelize } = require("sequelize");
 const { bonAchatValidation } = require("../middleware/auth/validationSchema");
 const bonAchatController = {
 
@@ -75,6 +76,7 @@ const bonAchatController = {
             return res.status(200).json({
               success: true,
               message: " update done ! ",
+              
             });
           } else {
             return res.status(400).json({
@@ -168,37 +170,50 @@ const bonAchatController = {
 
   findByuser: async (req, res) => {
 
-    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const { sortBy, sortOrder, page, pageSize , etat} = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-
+    let whereClause = { userbonachafk: req.params.id};
     try {
+
+      if (etat && etat === "tout") {
+        whereClause.etat = {
+          [Sequelize.Op.or]: ["Non_Valide", "Valide"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etat = etat;
+      }
+
+      const totalCount = await Model.bonAchat.count({
+        where: whereClause
+      }); 
+
       Model.bonAchat
         .findAll({
           offset:offset,
           order:order,
           limit: +pageSize,
-          where: {
-            userbonachafk: req.params.id,
-          },
+          where: whereClause,
           include: [
             {
               model: Model.partenaire,
               attributes: ["id", "nameetablissement"],
-              include: [{ model: Model.user, attributes: ["fullname"] }],
+              include: [{ model: Model.user, attributes: ["fullname","avatar"] }],
             },
             {
               model: Model.labrairie,
               attributes: ["id", "nameLibrairie"],
-              include: [{ model: Model.user, attributes: ["fullname"] }],
+              include: [{ model: Model.user, attributes: ["fullname","avatar"] }],
             },
           ],
         })
         .then((response) => {
+          const totalPages = Math.ceil(totalCount / pageSize);
           if (response !== null) {
             res.status(200).json({
               success: true,
               bonAchat: response,
+              totalPages:totalPages
             });
           }
         });
@@ -211,24 +226,42 @@ const bonAchatController = {
   },
   
   findBypartenaire: async (req, res) => {
+
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
     try {
+
+      const totalCount = await Model.bonAchat.count({
+        where: {
+          partbonachafk: req.params.id,
+        }
+      }); 
+
       Model.bonAchat
         .findAll({
+          order:order,
+          offset:offset,
+          limit:+pageSize,
           where: {
             partbonachafk: req.params.id,
           },
           include: [
             {
               model: Model.user,
+              attributes: ["fullname","avatar"] ,
               include: [Model.client, Model.fournisseur, Model.labrairie],
             },
           ],
         })
         .then((response) => {
+          const totalPages = Math.ceil(totalCount / pageSize);
           if (response !== null) {
             res.status(200).json({
               success: true,
               bonAchat: response,
+              totalPages:totalPages
             });
           }
         });

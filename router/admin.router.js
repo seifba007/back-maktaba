@@ -9,11 +9,12 @@ const router = express.Router();
 router.post("/add", AuthorizationUser, AuthorizationAdmin, adminController.add);
 router.get("/allusersrole", adminController.findAllusersrole);
 router.get("/allcategories", adminController.findAllcategories);
+router.get("/onecategory/:id", adminController.findOnecategory);
 router.get("/allproduits", adminController.findAllproduits);
+
 router.delete(
   "/deletecategory",
   AuthorizationUser,
-  AuthorizationAdmin,
   adminController.deletecategory
 );
 
@@ -22,6 +23,12 @@ router.post(
   AuthorizationUser,
   upload.array("image", 1),
   adminController.addcategory
+);
+
+router.put(
+  "/editcategory/:id",
+  AuthorizationUser,
+  adminController.editCategory
 );
 
 router.delete(

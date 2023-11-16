@@ -96,7 +96,7 @@ const CatalogeController = {
           },
           include: [
             { model: Model.imageCataloge, attributes: ["id","name_Image"]},
-            { model: Model.categorie, attributes: ["id", "name"]},
+            { model: Model.categorie,},
           ],
         });
         
@@ -254,7 +254,12 @@ const CatalogeController = {
       });
     }
   },
+
+
+
 };
+
+
 module.exports = CatalogeController;
 
 

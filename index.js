@@ -54,7 +54,6 @@ const BecomePartner = require ("./router/becomePartner.router")
 const Cataloge=require("./router/cataloge.router")
 const sousCategorie = require("./router/sousCategorie.router")
 const suggestionProduit = require("./router/suggestionProduit.router");
-const echange = require('./Models/echange');
 app.use("/user",userRouter)
 app.use("/client",clientRouter)
 app.use("/codePromo",codePromoRouter)
@@ -80,18 +79,20 @@ app.use("/BecomePartner",BecomePartner)
 app.use("/cataloge",Cataloge)
 app.use("/sousCategorie",sousCategorie)
 app.use("/suggestionProduit",suggestionProduit)
+
+
+
+
 /** end  */
 /** connection avec DB */
 /** end  */
 /** connection avec DB */
 
-
-
-async function connectToDatabase() {
-  console.log("Trying to connect via sequelize");
-  await db.sync();
-  await db.authenticate();
-  console.log("=> Created a new connection.");
-}
-connectToDatabase();
+db.authenticate().then(() => {
+  console.log("Connection has been established successfully.")
+})
+.catch(err => {
+  console.error("Unable to connect to the database:", err)
+})
+/**end  */  
 app.listen(port, () => console.log(`server running on port ${port}`)) 
