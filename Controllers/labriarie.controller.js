@@ -289,6 +289,7 @@ const LabriarieController = {
   },
 
   findAllcommandebyetat: async (req, res) => {
+
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -401,17 +402,31 @@ const LabriarieController = {
   
 
   findLatestCommandes: async (req, res) => {
+
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];  
     try {
       const date = new Date();
       date.setDate(date.getDate() - 7);
-  
-      const latestCommandes = await Model.commandeEnDetail.findAll({
-        order: [["createdAt", "DESC"]],
+
+      const totalCount = await Model.commandeEnDetail.count({
         where: {
           labrcomdetfk: req.params.id,
           createdAt: {
             [Sequelize.Op.gte]: date, 
-            //[Sequelize.Op.lt]: new Date(date.getTime() + 24 * 60 * 60 * 1000),
+          },
+        },
+      });
+  
+      const latestCommandes = await Model.commandeEnDetail.findAll({
+        limit:+pageSize,
+        order: order,
+        offset:offset,
+        where: {
+          labrcomdetfk: req.params.id,
+          createdAt: {
+            [Sequelize.Op.gte]: date, 
           },
         },
         attributes: {
@@ -432,13 +447,27 @@ const LabriarieController = {
               },
             ],
           },
+          {
+            model: Model.user,
+            attributes: ["fullname", "avatar"],
+          },
         ],
       });
-  
-      return res.status(200).json({
-        success: true,
-        latestCommandes: latestCommandes,
-      });
+      if (latestCommandes.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+
+        return res.status(200).json({
+          success: true,
+          latestCommandes: latestCommandes,
+          totalPages: totalPages,
+        });
+      } else {
+        return res.status(200).json({
+          success: true,
+          message: "Aucun commandes trouvé avec ces filtres.",
+        });
+      }
+     
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -680,12 +709,13 @@ const LabriarieController = {
 
   findAllLivraison: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize, etat, username } = req.query;
-
+  
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     const wherename = {};
     try {
       let whereClause = { labrcomdetfk: req.params.id };
+  
       if (etat && etat === "tout") {
         whereClause.etatVender = {
           [Sequelize.Op.or]: ["en_cours", "livre"],
@@ -693,17 +723,26 @@ const LabriarieController = {
       } else if (etat && etat !== "tout") {
         whereClause.etatVender = etat;
       }
-
+  
       if (username) {
         wherename.fullname = {
           [Sequelize.Op.like]: `%${username}%`,
         };
+  
+        whereClause = { ...whereClause, '$user.fullname$': wherename.fullname };
       }
-
+  
       const count = await Model.commandeEnDetail.count({
         where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            attributes: [],
+            where: wherename, 
+          },
+        ],
       });
-
+  
       const commandes = await Model.commandeEnDetail.findAll({
         offset: offset,
         order: order,
@@ -713,13 +752,13 @@ const LabriarieController = {
           {
             model: Model.user,
             attributes: ["fullname", "avatar"],
-            //where:wherename
+            where: wherename, 
           },
           { model: Model.labrairie, attributes: ["nameLibrairie"] },
           { model: Model.produitlabrairie },
         ],
       });
-
+  
       if (commandes) {
         const totalPages = Math.ceil(count / pageSize);
         return res.status(200).json({
@@ -735,6 +774,8 @@ const LabriarieController = {
       });
     }
   },
+  
+  
 
   livrecommande: async (req, res) => {
     try {
