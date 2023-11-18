@@ -6,8 +6,7 @@ const bonAchatController = {
   add: async (req, res) => {
     const { solde, userbonachafk, partbonachafk, nbpoint, fourbonachafk, labbonachafk } = req.body;
     try {
-      //const { error } = bonAchatValidation(req.body);
-      //if (error) return res.status(400).json({ success: false, err: error.details[0].message });
+    
   
       const user = await Model.user.findByPk(userbonachafk);
       if (!user || user.point < nbpoint) {
@@ -33,6 +32,7 @@ const bonAchatController = {
       const data = {
         solde: solde,
         etat: "Valide",
+        nbpoint: nbpoint,
         code: generateRandomCode(),
         userbonachafk: userbonachafk,
         partbonachafk: partbonachafk,
@@ -94,11 +94,12 @@ const bonAchatController = {
   },
 
   delete: async (req, res) => {
+    const {idd} = req.body;
     try {
       Model.bonAchat
         .destroy({
           where: {
-            id: req.params.id,
+            id: idd,
           },
         })
         .then((reponse) => {
@@ -252,6 +253,54 @@ const bonAchatController = {
               model: Model.user,
               attributes: ["fullname","avatar"] ,
               include: [Model.client, Model.fournisseur, Model.labrairie],
+            },
+          ],
+        })
+        .then((response) => {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          if (response !== null) {
+            res.status(200).json({
+              success: true,
+              bonAchat: response,
+              totalPages:totalPages
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findBylibrairie: async (req, res) => {
+
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    try {
+
+      const totalCount = await Model.bonAchat.count({
+        where: {
+          labbonachafk: req.params.id,
+        }
+      }); 
+
+      Model.bonAchat
+        .findAll({
+          order:order,
+          offset:offset,
+          limit:+pageSize,
+          where: {
+            labbonachafk: req.params.id,
+          },
+          include: [
+            {
+              model: Model.user,
+              attributes: ["fullname","avatar"] ,
+              include: [Model.labrairie],
             },
           ],
         })

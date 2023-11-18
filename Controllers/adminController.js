@@ -272,65 +272,60 @@ const adminController = {
 
   editCategory: async (req, res) => {
     try {
-      const categoryId = req.params.id;
-      const { name, Description, subcategories } = req.body;
+      const { name, description, subcategories } = req.body;
   
-      const existingCategory = await Model.categorie.findByPk(categoryId, {
+      const existingCategory = await Model.categorie.findOne({
+        where: {
+          id: req.params.id,
+        },
         include: [
           {
-           model: Model.Souscategorie,
-           attributes: ["name","Description"]
-          }
+            model: Model.Souscategorie,
+            attributes: ["name", "description"],
+          },
         ],
       });
-
+  
       if (!existingCategory) {
         return res.status(404).json({
           success: false,
-          message: "Category not found",
-        });
-      } else {
-        const data = {
-          name: name || existingCategory.name,
-          Description: Description || existingCategory.Description,
-        };
-  
-        await Model.categorie.update(data, { where: { id: req.params.id } });
-
-        const subcategoriesArray = Array.isArray(subcategories)
-        ? subcategories
-        : [subcategories];
-
-        const scategories = await Model.Souscategorie.findAll({
-          where:{
-            catagsouscatafk: req.params.id
-          }
-        })
-        const listsub = [];
-
-        for(ss of scategories){
-          listsub.push(ss.name)
-        }
-         console.log(listsub)
-
-        for(const news of subcategoriesArray){
-          listsub.push(news)
-        }
-         console.log(listsub)
-        res.status(200).json({
-          success: true,
-          category: existingCategory,
-          message: "Category updated successfully",
+          error: "Category not found",
         });
       }
+  
+      if (name !== undefined) {
+        existingCategory.name = name;
+      }
+  
+      if (description !== undefined) {
+        existingCategory.Description = description;
+      }
+  
+      if (subcategories !== undefined) {
+        for(const subcat of subcategories){
+          await Model.Souscategorie.create({
+            name:subcat.name,
+            where:{
+              catagsouscatafk:req.params.id
+            }
+          })
+        }
+      }
+  
+      await existingCategory.save();
+  
+      return res.status(200).json({
+        success: true,
+        data: existingCategory,
+      });
     } catch (err) {
       return res.status(400).json({
-        
         success: false,
         error: err.message,
       });
     }
   },
+  
   
   
   

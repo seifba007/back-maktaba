@@ -756,7 +756,7 @@ const commandeDetailController = {
     try {
       Model.commandeEnDetail
         .update(
-          { data_acceptation: new Date(), etatVender: "En cours" },
+          { data_acceptation: new Date(), etatVender: "en_cours" },
           { where: { id: req.params.id } }
         )
         .then((response) => {
