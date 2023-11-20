@@ -77,5 +77,8 @@ router.get(
   adminController.findfournissbyname
 );
 
-router.get("/allavis", adminController.getAllAvis);
+router.get("/allavis", adminController.getAllAvis); 
+
+router.get("/findAllCommandes", adminController.findAllCommandes);
+router.get("/findAllLivraison", adminController.findAllLivraison);
 module.exports = router;

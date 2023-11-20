@@ -2,7 +2,7 @@ const categorie = require("../Models/categorie");
 const Model = require("../Models/index");
 const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
-const sequelize = require("sequelize");
+const Sequelize = require("sequelize");
 const cloudinary = require("../middleware/cloudinary");
 
 const {
@@ -144,8 +144,8 @@ const adminController = {
     try {
       Model.categorie
         .findAll({
-          where:{
-            id : req.params.id
+          where: {
+            id: req.params.id,
           },
           attributes: {
             include: ["id", "name"],
@@ -153,7 +153,7 @@ const adminController = {
           include: [
             {
               model: Model.Souscategorie,
-              attributes: ["id", "name","Description","createdAt"],
+              attributes: ["id", "name", "Description", "createdAt"],
             },
           ],
         })
@@ -233,20 +233,20 @@ const adminController = {
         const result = await cloudinary.uploader.upload(file.path);
         const imageUrl = result.secure_url;
         const { subcategories } = req.body;
-  
+
         const subcategoriesArray = Array.isArray(subcategories)
           ? subcategories
           : [subcategories];
-  
+
         const data = {
           name: req.body.name,
           Description: req.body.Description,
           image: imageUrl,
         };
-  
+
         const category = await Model.categorie.create(data);
         const souscategories = [];
-  
+
         for (const subcateName of subcategoriesArray) {
           const subcategory = await Model.Souscategorie.create({
             name: subcateName,
@@ -254,7 +254,7 @@ const adminController = {
           });
           souscategories.push(subcategory);
         }
-  
+
         res.status(200).json({
           success: true,
           category: category,
@@ -273,7 +273,7 @@ const adminController = {
   editCategory: async (req, res) => {
     try {
       const { name, description, subcategories } = req.body;
-  
+
       const existingCategory = await Model.categorie.findOne({
         where: {
           id: req.params.id,
@@ -285,38 +285,62 @@ const adminController = {
           },
         ],
       });
-  
+
       if (!existingCategory) {
         return res.status(404).json({
           success: false,
           error: "Category not found",
         });
       }
-  
+
       if (name !== undefined) {
         existingCategory.name = name;
       }
-  
+
       if (description !== undefined) {
         existingCategory.Description = description;
       }
-  
+
       if (subcategories !== undefined) {
-        for(const subcat of subcategories){
-          await Model.Souscategorie.create({
-            name:subcat.name,
-            where:{
-              catagsouscatafk:req.params.id
-            }
-          })
+        const subcategoriesArray = Array.isArray(subcategories)
+          ? subcategories
+          : [subcategories];
+
+        const souscategories = [];
+
+        Model.Souscategorie.destroy({
+          where: {
+            catagsouscatafk: req.params.id,
+          },
+        });
+
+        for (const subcateName of subcategoriesArray) {
+          const subcategory = await Model.Souscategorie.create({
+            name: subcateName.name,
+            Description: subcateName.description,
+            catagsouscatafk: req.params.id,
+          });
+          souscategories.push(subcategory);
         }
       }
-  
+
       await existingCategory.save();
-  
+
+      const newcateg = await Model.categorie.findOne({
+        where: {
+          id: req.params.id,
+        },
+        include: [
+          {
+            model: Model.Souscategorie,
+            attributes: ["name", "description"],
+          },
+        ],
+      });
+
       return res.status(200).json({
         success: true,
-        data: existingCategory,
+        data: newcateg,
       });
     } catch (err) {
       return res.status(400).json({
@@ -325,11 +349,6 @@ const adminController = {
       });
     }
   },
-  
-  
-  
-  
-  
 
   deletesuggestion: async (req, res) => {
     const { ids } = req.body;
@@ -935,7 +954,7 @@ const adminController = {
         [sequelize.Op.like]: `%${filters.name}%`,
       };
     }
-    
+
     if (etatechange == "tout") {
       try {
         const echanges = await Model.echange.findAll({
@@ -951,7 +970,7 @@ const adminController = {
             },
             {
               model: Model.labrairie,
-              where: whereClause
+              where: whereClause,
             },
           ],
           attributes: {
@@ -983,8 +1002,8 @@ const adminController = {
           offset: offset,
           order: order,
           limit: +pageSize,
-          where:{
-            Etat:etatechange,
+          where: {
+            Etat: etatechange,
           },
           include: [
             {
@@ -995,7 +1014,7 @@ const adminController = {
             },
             {
               model: Model.labrairie,
-              where: whereClause
+              where: whereClause,
             },
           ],
           attributes: {
@@ -1038,7 +1057,6 @@ const adminController = {
       };
     }
 
- 
     if (etatechange == "tout") {
       try {
         const echanges = await Model.echange.findAll({
@@ -1057,7 +1075,7 @@ const adminController = {
               include: [
                 {
                   model: Model.user,
-                  where:whereClause,
+                  where: whereClause,
                   attributes: {
                     exclude: ["updatedAt"],
                   },
@@ -1095,10 +1113,9 @@ const adminController = {
           order: order,
           limit: +pageSize,
           where: {
-            Etat: etatechange
+            Etat: etatechange,
           },
           include: [
-           
             {
               model: Model.produitaechange,
             },
@@ -1110,7 +1127,7 @@ const adminController = {
               include: [
                 {
                   model: Model.user,
-                  where:whereClause,
+                  where: whereClause,
                   attributes: {
                     exclude: ["updatedAt"],
                   },
@@ -1202,6 +1219,152 @@ const adminController = {
       return res.status(400).json({
         success: false,
         error: err,
+      });
+    }
+  },
+
+  findAllCommandes: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat, username } = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const wherename = {};
+    try {
+      let whereClause = {};
+
+      if (etat && etat === "tout") {
+        whereClause.etatVender = {
+          [Sequelize.Op.or]: ["en_cours", "livre", "Nouveau", "Rejeter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etatVender = etat;
+      }
+
+      if (username) {
+        wherename.fullname = {
+          [Sequelize.Op.like]: `%${username}%`,
+        };
+
+        whereClause = { ...whereClause, "$user.fullname$": wherename.fullname };
+      }
+
+      const count = await Model.commandeEnDetail.count({
+        where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            attributes: [],
+            where: wherename,
+          },
+        ],
+      });
+
+      const commandes = await Model.commandeEnDetail.findAll({
+        offset: offset,
+        order: order,
+        limit: +pageSize,
+        where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            attributes: ["fullname", "avatar"],
+            where: wherename,
+          },
+          { model: Model.labrairie, attributes: ["nameLibrairie"] },
+          { model: Model.produitlabrairie },
+        ],
+      });
+
+      if (commandes) {
+        const totalPages = Math.ceil(count / pageSize);
+        return res.status(200).json({
+          success: true,
+          commandes: commandes,
+          totalPages: totalPages,
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findAllLivraison: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat, username } = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const wherename = {};
+    try {
+      const whereClause = {};
+
+      if (etat && etat === "tout") {
+        whereClause.etatVender = {
+          [Sequelize.Op.or]: ["en_cours", "Compléter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etatVender = etat;
+      }
+
+      if (username) {
+        wherename.fullname = {
+          [Sequelize.Op.like]: `%${username}%`,
+        };
+
+        whereClause = { ...whereClause, "$user.fullname$": wherename.fullname };
+      }
+
+      const count = await Model.commandeEnDetail.count({
+        where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            attributes: [],
+            where: wherename,
+          },
+        ],
+      });
+
+      const commandes = await Model.commandeEnDetail.findAll({
+        offset: offset,
+        order: order,
+        limit: +pageSize,
+        where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            attributes: ["fullname", "avatar"],
+            where: wherename,
+          },
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie","userlabfk"],
+            include: [
+              {
+                model: Model.user,
+                attributes: ["fullname", "avatar"],
+                where: wherename,
+              },
+            ],
+          },
+          { model: Model.produitlabrairie },
+        ],
+      });
+
+      if (commandes) {
+        const totalPages = Math.ceil(count / pageSize);
+        return res.status(200).json({
+          success: true,
+          livraison: commandes,
+          totalPages: totalPages,
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
       });
     }
   },

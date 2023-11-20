@@ -718,7 +718,7 @@ const LabriarieController = {
   
       if (etat && etat === "tout") {
         whereClause.etatVender = {
-          [Sequelize.Op.or]: ["en_cours", "livre"],
+          [Sequelize.Op.or]: ["en_cours", "Compléter"],
         };
       } else if (etat && etat !== "tout") {
         whereClause.etatVender = etat;

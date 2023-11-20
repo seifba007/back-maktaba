@@ -2,20 +2,25 @@ const Model = require("../Models/index");
 const { Sequelize } = require("sequelize");
 const { bonAchatValidation } = require("../middleware/auth/validationSchema");
 const bonAchatController = {
-
   add: async (req, res) => {
-    const { solde, userbonachafk, partbonachafk, nbpoint, fourbonachafk, labbonachafk } = req.body;
+    const {
+      solde,
+      userbonachafk,
+      partbonachafk,
+      nbpoint,
+      fourbonachafk,
+      labbonachafk,
+    } = req.body;
     try {
-    
-  
       const user = await Model.user.findByPk(userbonachafk);
       if (!user || user.point < nbpoint) {
         return res.status(400).json({
           success: false,
-          message: "L'utilisateur n'a pas suffisamment de points pour créer ce bon d'achat",
+          message:
+            "L'utilisateur n'a pas suffisamment de points pour créer ce bon d'achat",
         });
       }
-  
+
       function generateRandomCode() {
         let code = "#";
         for (let i = 0; i < 7; i++) {
@@ -28,7 +33,7 @@ const bonAchatController = {
         }
         return code;
       }
-  
+
       const data = {
         solde: solde,
         etat: "Valide",
@@ -39,13 +44,15 @@ const bonAchatController = {
         fourbonachafk: fourbonachafk,
         labbonachafk: labbonachafk,
       };
-  
+
       const updatedPoint = Number(user.point) - Number(nbpoint);
-      await Model.user.update({ point: updatedPoint }, { where: { id: userbonachafk } });
-  
-      
+      await Model.user.update(
+        { point: updatedPoint },
+        { where: { id: userbonachafk } }
+      );
+
       const response = await Model.bonAchat.create(data);
-  
+
       return res.status(200).json({
         success: true,
         message: "Bon d'achat créé",
@@ -59,7 +66,7 @@ const bonAchatController = {
       });
     }
   },
-  
+
   update: async (req, res) => {
     try {
       Model.bonAchat
@@ -76,7 +83,6 @@ const bonAchatController = {
             return res.status(200).json({
               success: true,
               message: " update done ! ",
-              
             });
           } else {
             return res.status(400).json({
@@ -94,7 +100,7 @@ const bonAchatController = {
   },
 
   delete: async (req, res) => {
-    const {idd} = req.body;
+    const { idd } = req.body;
     try {
       Model.bonAchat
         .destroy({
@@ -118,15 +124,27 @@ const bonAchatController = {
     }
   },
   findAll: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     try {
-      Model.bonAchat.findAll().then((response) => {
-        if (response !== null) {
-          res.status(200).json({
-            success: true,
-            bonAchat: response,
-          });
-        }
-      });
+      const bonachatcount = await Model.bonAchat.count();
+      Model.bonAchat
+        .findAll({
+          limit: +pageSize,
+          offset: offset,
+          order: order,
+        })
+        .then((response) => {
+          if (response !== null) {
+            const totalPages = Math.ceil(bonachatcount / pageSize);
+            res.status(200).json({
+              success: true,
+              bonAchat: response,
+              totalPages: totalPages,
+            });
+          }
+        });
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -139,8 +157,8 @@ const bonAchatController = {
     try {
       Model.bonAchat
         .findOne({
-           where: { id: req.params.id },
-           include: [
+          where: { id: req.params.id },
+          include: [
             {
               model: Model.partenaire,
               attributes: ["id", "nameetablissement"],
@@ -152,7 +170,7 @@ const bonAchatController = {
               include: [{ model: Model.user, attributes: ["fullname"] }],
             },
           ],
-          })
+        })
         .then((response) => {
           if (response !== null) {
             res.status(200).json({
@@ -170,13 +188,11 @@ const bonAchatController = {
   },
 
   findByuser: async (req, res) => {
-
-    const { sortBy, sortOrder, page, pageSize , etat} = req.query;
+    const { sortBy, sortOrder, page, pageSize, etat } = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-    let whereClause = { userbonachafk: req.params.id};
+    let whereClause = { userbonachafk: req.params.id };
     try {
-
       if (etat && etat === "tout") {
         whereClause.etat = {
           [Sequelize.Op.or]: ["Non_Valide", "Valide"],
@@ -186,25 +202,29 @@ const bonAchatController = {
       }
 
       const totalCount = await Model.bonAchat.count({
-        where: whereClause
-      }); 
+        where: whereClause,
+      });
 
       Model.bonAchat
         .findAll({
-          offset:offset,
-          order:order,
+          offset: offset,
+          order: order,
           limit: +pageSize,
           where: whereClause,
           include: [
             {
               model: Model.partenaire,
               attributes: ["id", "nameetablissement"],
-              include: [{ model: Model.user, attributes: ["fullname","avatar"] }],
+              include: [
+                { model: Model.user, attributes: ["fullname", "avatar"] },
+              ],
             },
             {
               model: Model.labrairie,
               attributes: ["id", "nameLibrairie"],
-              include: [{ model: Model.user, attributes: ["fullname","avatar"] }],
+              include: [
+                { model: Model.user, attributes: ["fullname", "avatar"] },
+              ],
             },
           ],
         })
@@ -214,7 +234,7 @@ const bonAchatController = {
             res.status(200).json({
               success: true,
               bonAchat: response,
-              totalPages:totalPages
+              totalPages: totalPages,
             });
           }
         });
@@ -225,33 +245,31 @@ const bonAchatController = {
       });
     }
   },
-  
-  findBypartenaire: async (req, res) => {
 
+  findBypartenaire: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize } = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
     try {
-
       const totalCount = await Model.bonAchat.count({
         where: {
           partbonachafk: req.params.id,
-        }
-      }); 
+        },
+      });
 
       Model.bonAchat
         .findAll({
-          order:order,
-          offset:offset,
-          limit:+pageSize,
+          order: order,
+          offset: offset,
+          limit: +pageSize,
           where: {
             partbonachafk: req.params.id,
           },
           include: [
             {
               model: Model.user,
-              attributes: ["fullname","avatar"] ,
+              attributes: ["fullname", "avatar"],
               include: [Model.client, Model.fournisseur, Model.labrairie],
             },
           ],
@@ -262,7 +280,7 @@ const bonAchatController = {
             res.status(200).json({
               success: true,
               bonAchat: response,
-              totalPages:totalPages
+              totalPages: totalPages,
             });
           }
         });
@@ -275,31 +293,29 @@ const bonAchatController = {
   },
 
   findBylibrairie: async (req, res) => {
-
     const { sortBy, sortOrder, page, pageSize } = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
     try {
-
       const totalCount = await Model.bonAchat.count({
         where: {
           labbonachafk: req.params.id,
-        }
-      }); 
+        },
+      });
 
       Model.bonAchat
         .findAll({
-          order:order,
-          offset:offset,
-          limit:+pageSize,
+          order: order,
+          offset: offset,
+          limit: +pageSize,
           where: {
             labbonachafk: req.params.id,
           },
           include: [
             {
               model: Model.user,
-              attributes: ["fullname","avatar"] ,
+              attributes: ["fullname", "avatar"],
               include: [Model.labrairie],
             },
           ],
@@ -310,7 +326,7 @@ const bonAchatController = {
             res.status(200).json({
               success: true,
               bonAchat: response,
-              totalPages:totalPages
+              totalPages: totalPages,
             });
           }
         });
