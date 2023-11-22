@@ -763,7 +763,7 @@ const adminController = {
     const filters = req.query;
     const whereClause = {
       qte: {
-        [sequelize.Op.gt]: 0,
+        [Sequelize.Op.gt]: 0,
       },
     };
 
@@ -787,21 +787,21 @@ const adminController = {
 
     if (filters.qteMin && filters.qteMax) {
       whereClause.qte = {
-        [sequelize.Op.between]: [filters.qteMin, filters.qteMax],
-        [sequelize.Op.gt]: 0,
+        [Sequelize.Op.between]: [filters.qteMin, filters.qteMax],
+        [Sequelize.Op.gt]: 0,
       };
     } else if (filters.qteMin) {
       whereClause.qte = {
-        [sequelize.Op.gte]: filters.qteMin,
-        [sequelize.Op.gt]: 0,
+        [Sequelize.Op.gte]: filters.qteMin,
+        [Sequelize.Op.gt]: 0,
       };
     } else if (filters.qteMax) {
       whereClause.qte = {
-        [sequelize.Op.lte]: filters.qteMax,
-        [sequelize.Op.gt]: 0,
+        [Sequelize.Op.lte]: filters.qteMax,
+        [Sequelize.Op.gt]: 0,
       };
     } else {
-      whereClause.qte = { [sequelize.Op.gt]: 0 };
+      whereClause.qte = { [Sequelize.Op.gt]: 0 };
     }
 
     if (filters.etat) {
@@ -810,39 +810,39 @@ const adminController = {
 
     if (filters.titre) {
       whereClause.titre = {
-        [sequelize.Op.like]: `%${filters.titre}%`,
+        [Sequelize.Op.like]: `%${filters.titre}%`,
       };
     }
 
     if (filters.prixMin && filters.prixMax) {
-      whereClause[sequelize.Op.or] = [
+      whereClause[Sequelize.Op.or] = [
         {
           prix: {
-            [sequelize.Op.between]: [filters.prixMin, filters.prixMax],
+            [Sequelize.Op.between]: [filters.prixMin, filters.prixMax],
           },
         },
         {
           prix_en_solde: {
-            [sequelize.Op.between]: [filters.prixMin, filters.prixMax],
+            [Sequelize.Op.between]: [filters.prixMin, filters.prixMax],
           },
         },
       ];
     } else if (filters.prixMin) {
-      whereClause[sequelize.Op.or] = [
+      whereClause[Sequelize.Op.or] = [
         {
-          prix: { [sequelize.Op.gte]: filters.prixMin },
+          prix: { [Sequelize.Op.gte]: filters.prixMin },
         },
         {
-          prix_en_solde: { [sequelize.Op.gte]: filters.prixMin },
+          prix_en_solde: { [Sequelize.Op.gte]: filters.prixMin },
         },
       ];
     } else if (filters.prixMax) {
-      whereClause[sequelize.Op.or] = [
+      whereClause[Sequelize.Op.or] = [
         {
-          prix: { [sequelize.Op.lte]: filters.prixMax },
+          prix: { [Sequelize.Op.lte]: filters.prixMax },
         },
         {
-          prix_en_solde: { [sequelize.Op.lte]: filters.prixMax },
+          prix_en_solde: { [Sequelize.Op.lte]: filters.prixMax },
         },
       ];
     }
