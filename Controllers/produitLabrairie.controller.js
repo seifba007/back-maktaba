@@ -233,9 +233,9 @@ const produitController = {
 
     whereClause = {
       labrprodfk: req.params.id,
-      qte: {
-        [Sequelize.Op.gt]: 0, 
-      },
+      //qte: {
+       // [Sequelize.Op.gt]: 0, 
+      //},
     };
     if (filters.titre) {
       whereClause.titre = {

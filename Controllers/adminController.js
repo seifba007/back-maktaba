@@ -1291,6 +1291,56 @@ const adminController = {
     }
   },
 
+  findCommandes: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize} = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+   
+    try {
+    
+
+      const count = await Model.commandeEnDetail.count({
+        include: [
+          {
+            model: Model.user,
+            attributes: [],
+           
+          },
+        ],
+      });
+
+      const commandes = await Model.commandeEnDetail.findAll({
+        offset: offset,
+        order: order,
+        limit: +pageSize,
+        include: [
+          {
+            model: Model.user,
+            attributes: ["fullname", "avatar"],
+            
+          },
+          { model: Model.labrairie, attributes: ["nameLibrairie"] },
+          { model: Model.produitlabrairie },
+        ],
+      });
+
+      if (commandes) {
+        const totalPages = Math.ceil(count / pageSize);
+        return res.status(200).json({
+          success: true,
+          commandes: commandes,
+          totalPages: totalPages,
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
   findAllLivraison: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize, etat, username } = req.query;
 

@@ -1,7 +1,7 @@
 const { response } = require("express");
 const Model = require("../Models/index");
 const { catalogeValidation } = require("../middleware/auth/validationSchema");
-const { Sequelize } = require("sequelize");
+const { Sequelize, where } = require("sequelize");
 const cloudinary = require("../middleware/cloudinary");
 
 const CatalogeController = {
@@ -17,11 +17,6 @@ const CatalogeController = {
         souscatalogefk,
       } = req.body;
 
-      req.files.forEach(async (file) => {
-        const result = await cloudinary.uploader.upload(file.path);
-        const imageUrl = result.secure_url;
-      });
-
       const data = {
         titre: titre,
         description: description,
@@ -31,42 +26,43 @@ const CatalogeController = {
         categoriecatalogefk: categoriecatalogefk,
         souscatalogefk: souscatalogefk,
       };
-      const images = [];
-      const catalogues = await Model.cataloge.create(data);
-      if (catalogues != null) {
-        req.files.forEach(async (file) => {
-          const result = await cloudinary.uploader.upload(file.path);
-          const imageUrl = result.secure_url;
 
-          await Model.imageCataloge
-            .create({
-              name_Image: imageUrl,
-              imagecatalogefk: catalogues.id,
-            })
-            .then((response) => {
-              if (response !== null) {
-                return res.status(200).json({
-                  success: true,
-                  message: "Catlogue creer avec succes",
-                });
-              } else {
-                return res.status(400).json({
-                  success: false,
-                  error: "error",
-                });
-              }
+      const catalog = await Model.cataloge.create(data);
+
+      if (catalog != null) {
+        const uploadPromises = [];
+
+        req.files.forEach((file) => {
+          const uploadPromise = cloudinary.uploader
+            .upload(file.path)
+            .then((result) => {
+              const imageUrl = result.secure_url;
+
+              return Model.imageCataloge.create({
+                name_Image: imageUrl,
+                imagecatalogefk: catalog.id,
+              });
             });
+
+          uploadPromises.push(uploadPromise);
+        });
+
+        await Promise.all(uploadPromises);
+
+        return res.status(200).json({
+          success: true,
+          message: "Catalog created successfully",
         });
       } else {
         return res.status(400).json({
           success: false,
-          error: "erreur de creation de catalogue",
+          error: "Error creating catalog",
         });
       }
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message,
       });
     }
   },
@@ -219,57 +215,73 @@ const CatalogeController = {
   },
   update: async (req, res) => {
     try {
-      const { titre, description, etat, categoriecatalogefk, souscatalogefk } =
-        req.body;
+      const catalogId = req.params.id;
+      const {
+        titre,
+        description,
+        prix,
+        etat,
+        admincatalogefk,
+        categoriecatalogefk,
+        souscatalogefk,
+      } = req.body;
+
       const data = {
         titre: titre,
         description: description,
+        prix: prix,
+        etat: etat,
+        admincatalogefk: admincatalogefk,
         categoriecatalogefk: categoriecatalogefk,
         souscatalogefk: souscatalogefk,
-        etat: etat,
       };
-      Model.cataloge
-        .update(data, { where: { id: req.params.id } })
-        .then((response) => {
-          if (response !== 0) {
-            if (req.files.length !== 0) {
-              req.body["image"] = req.files[0].filename;
-              Model.imageCataloge
-                .update(
-                  { name_Image: req.body.image },
-                  { where: { catalogeId: req.params.id } }
-                )
-                .then((response) => {
-                  if (response !== 0) {
-                    return res.status(200).json({
-                      success: true,
-                      message: " update done ! ",
-                    });
-                  } else {
-                    return res.status(400).json({
-                      success: false,
-                      error: "error update ",
-                    });
-                  }
-                })
-                .catch((err) => {
-                  return res.status(400).json({
-                    success: false,
-                    error: err,
-                  });
-                });
-            } else {
-              return res.status(200).json({
-                success: true,
-                message: "update done",
-              });
-            }
-          }
+
+      const updatedCatalog = await Model.cataloge.update(data, {
+        where: { id: catalogId },
+      });
+
+      if (req.files.length > 0) {
+        Model.imageCataloge.destroy({
+          where: {
+            imagecatalogefk: catalogId,
+          },
         });
+      }
+
+      if (updatedCatalog != null) {
+        const uploadPromises = [];
+
+        req.files.forEach((file) => {
+          const uploadPromise = cloudinary.uploader
+            .upload(file.path)
+            .then((result) => {
+              const imageUrl = result.secure_url;
+
+              return Model.imageCataloge.create({
+                name_Image: imageUrl,
+                imagecatalogefk: catalogId,
+              });
+            });
+
+          uploadPromises.push(uploadPromise);
+        });
+
+        await Promise.all(uploadPromises);
+
+        return res.status(200).json({
+          success: true,
+          message: "Catalog updated successfully",
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message || "Unexpected error",
       });
     }
   },

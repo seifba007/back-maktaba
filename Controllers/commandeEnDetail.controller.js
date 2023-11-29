@@ -289,32 +289,51 @@ const commandeDetailController = {
   findOneCommande: async (req, res) => {
     try {
       const commandId = req.params.id;
-  
+
       const command = await Model.commandeEnDetail.findAll({
         where: {
-          id : commandId
+          id: commandId,
         },
 
         include: [
           {
             model: Model.user,
-            attributes: ["fullname", "avatar"],
+            attributes: ["fullname", "avatar", "telephone", "email"],
+            include: [
+              {
+                model: Model.client,
+                attributes: ["userclientfk"],
+                include: [
+                  {
+                    model: Model.adresses,
+                  },
+                ],
+              },
+            ],
           },
           {
             model: Model.labrairie,
             attributes: ["nameLibrairie", "userlabfk"],
           },
-          { model: Model.produitlabrairie },
+          {
+            model: Model.produitlabrairie,
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+                attributes: ["name_Image"]
+              },
+            ],
+          },
         ],
       });
-  
+
       if (!command) {
         return res.status(404).json({
           success: false,
-          error: 'Command not found',
+          error: "Command not found",
         });
       }
-  
+
       return res.status(200).json({
         success: true,
         commande: command,
@@ -322,12 +341,10 @@ const commandeDetailController = {
     } catch (err) {
       return res.status(500).json({
         success: false,
-        error: err,
+        error: err.message,
       });
     }
   },
-
-  
 
   findOneSpecCommande: async (req, res) => {
     try {

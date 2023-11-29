@@ -80,5 +80,6 @@ router.get(
 router.get("/allavis", adminController.getAllAvis); 
 
 router.get("/findAllCommandes", adminController.findAllCommandes);
+router.get("/findCommandes", adminController.findCommandes);
 router.get("/findAllLivraison", adminController.findAllLivraison);
 module.exports = router;

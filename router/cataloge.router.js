@@ -5,7 +5,7 @@ const CatalogeController = require("../Controllers/catalogeController");
 const { AuthorizationUser } = require("../middleware/auth/auth");
 router.post(
   "/add",
-  upload.array("image", 3),
+  upload.array("image", 4),
   CatalogeController.add
 );
 router.get("/findAll", CatalogeController.findAll);
@@ -18,8 +18,7 @@ router.put(
 );
 router.put(
   "/update/:id",
-  AuthorizationUser,
-  upload.array("image", 3),
+  upload.array("image", 4),
   CatalogeController.update
 );
 module.exports = router;
