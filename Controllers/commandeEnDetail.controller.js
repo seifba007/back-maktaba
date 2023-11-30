@@ -1408,7 +1408,18 @@ const commandeDetailController = {
                     "email",
                     "role",
                   ],
-                  //include: roleIsPartenaire(response[0].user.role),
+                  include: [
+                    {
+                      model: Model.client,
+                      attributes: ["userclientfk"],
+                      include: [
+                        {
+                          model: Model.adresses,
+                        },
+                      ],
+                    },
+                  ],
+                  
                 },
               ],
               order: [["createdAt", "ASC"]],

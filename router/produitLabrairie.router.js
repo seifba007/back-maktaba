@@ -25,7 +25,7 @@ router.get(
   "/findBylabrairie/:id",
   ProduitLabrairieController.findAllProduitByLabrairie
 );
-router.get("/findOneProduit/:id", ProduitLabrairieController.findOneProduit);
+router.get("/findOneProduit/:id", ProduitLabrairieController.findoneproduit);
 router.get(
   "/findProduitsBycategorie/:categprodlabfk",
   ProduitLabrairieController.findProduitsBycategorie

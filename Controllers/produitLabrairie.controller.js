@@ -9,83 +9,118 @@ const updateProductNewState = async () => {
   try {
     const products = await Model.produitlabrairie.findAll({
       where: {
-        etat: 'Nouveau',
-      }
+        etat: "Nouveau",
+      },
     });
 
     for (const product of products) {
-      product.etat = 'ancien';
+      product.etat = "ancien";
       await product.save();
     }
   } catch (err) {
-    console.error('Erreur lors de la mise à jour de l\'état des produits :', err);
+    console.error(
+      "Erreur lors de la mise à jour de l'état des produits :",
+      err
+    );
   }
 };
 const updateProductTopState = async () => {
   try {
     Model.ProduitCommandeEnDetail.findAll({
-      attributes: ['prodlaibrcommdetfk', [Sequelize.fn('COUNT', 'prodlaibrcommdetfk'), 'count']],
-      group: ['prodlaibrcommdetfk'],
-      order: [[Sequelize.literal('count'), 'DESC']],
-      limit: 3
-    }).then(topProducts => {
-      Model.produitlabrairie.update({ etat: 'ancien' }, { where: { etat: 'plus ventes' } })
-      topProducts.forEach(product => {
-        Model.produitlabrairie.update({ etat: 'plus ventes' }, { where: { id: product.prodlaibrcommdetfk } })
-          .then(() => {
-            console.log(`Produit ID: ${product.prodlaibrcommdetfk} mis à jour avec succès.`);
-          })
-          .catch(err => {
-            console.error(`Erreur lors de la mise à jour du produit ID ${product.prodlaibrcommdetfk} :`, err);
-          });
+      attributes: [
+        "prodlaibrcommdetfk",
+        [Sequelize.fn("COUNT", "prodlaibrcommdetfk"), "count"],
+      ],
+      group: ["prodlaibrcommdetfk"],
+      order: [[Sequelize.literal("count"), "DESC"]],
+      limit: 3,
+    })
+      .then((topProducts) => {
+        Model.produitlabrairie.update(
+          { etat: "ancien" },
+          { where: { etat: "plus ventes" } }
+        );
+        topProducts.forEach((product) => {
+          Model.produitlabrairie
+            .update(
+              { etat: "plus ventes" },
+              { where: { id: product.prodlaibrcommdetfk } }
+            )
+            .then(() => {
+              console.log(
+                `Produit ID: ${product.prodlaibrcommdetfk} mis à jour avec succès.`
+              );
+            })
+            .catch((err) => {
+              console.error(
+                `Erreur lors de la mise à jour du produit ID ${product.prodlaibrcommdetfk} :`,
+                err
+              );
+            });
+        });
+      })
+      .catch((err) => {
+        console.error("Erreur lors de la récupération des produits :", err);
       });
-    }).catch(err => {
-      console.error('Erreur lors de la récupération des produits :', err);
-    });
     //console.log('État des produits mis à jour.');
   } catch (err) {
-    console.error('Erreur lors de la mise à jour de l\'état des produits :', err);
+    console.error(
+      "Erreur lors de la mise à jour de l'état des produits :",
+      err
+    );
   }
 };
-const updateNewInterval = 24 * 60 * 60 * 1000; 
-const updateTopInterval =  72 * 60 * 60 * 1000;
+const updateNewInterval = 24 * 60 * 60 * 1000;
+const updateTopInterval = 72 * 60 * 60 * 1000;
 setInterval(updateProductNewState, updateNewInterval);
 setInterval(updateProductTopState, updateTopInterval);
 const produitController = {
-  
+
   add_produit: async (req, res) => {
-
     try {
-      const produit = await Model.produitlabrairie.create({
-        titre: req.body.titre,
-        description: req.body.description,
-        qte: req.body.qte,
-        prix: req.body.prix,
-        etat: "Nouveau",
-        labrprodfk: req.body.labrprodfk,
-        categprodlabfk: req.body.categprodlabfk,
-        souscatprodfk: req.body.souscatprodfk,
-      });
-      
-      req.files.forEach(async (file) => {
-       
-        const result = await cloudinary.uploader.upload(file.path); 
-        const imageUrl = result.secure_url;
+      const produits = []; 
+      const uploadPromises = []; 
+  
 
-        await Model.imageProduitLibrairie.create({
-          name_Image: imageUrl,
-          imageprodfk: produit.id,
+      const produitsarr= req.body.products;
+      for (const productData of produitsarr) {
+        const produit = await Model.produitlabrairie.create({
+          titre: productData.titre,
+          description: productData.description,
+          etat: "Nouveau",
+          labrprodfk: productData.labrprodfk,
+          categprodlabfk: productData.categprodlabfk,
+          souscatprodfk: productData.souscatprodfk,
         });
-      });
-
-      res.status(201).json({ message: "Produit créé avec succès" });
+  
+        produits.push(produit);
+  
+        req.files.forEach((file) => {
+          const uploadPromise = cloudinary.uploader
+            .upload(file.path)
+            .then((result) => {
+              const imageUrl = result.secure_url;
+  
+              return Model.imageProduitLibrairie.create({
+                name_Image: imageUrl,
+                imageprodfk: produit.id,
+              });
+            });
+  
+          uploadPromises.push(uploadPromise);
+        })
+      }
+  
+      await Promise.all(uploadPromises);
+  
+      res.status(201).json({ message: "Produits créés avec succès", produits });
     } catch (error) {
       console.error(error);
-      res
-        .status(500)
-        .json({ message: "Erreur lors de la création du produit" });
+      res.status(500).json({ message: "Erreur lors de la création des produits" });
     }
   },
+    
+
   update: async (req, res) => {
     try {
       const { qte, prix, prix_en_Solde, remise } = req.body;
@@ -185,7 +220,7 @@ const produitController = {
           order: order,
           where: {
             qte: {
-              [Sequelize.Op.gt]: 0, 
+              [Sequelize.Op.gt]: 0,
             },
           },
           include: [
@@ -234,7 +269,7 @@ const produitController = {
     whereClause = {
       labrprodfk: req.params.id,
       //qte: {
-       // [Sequelize.Op.gt]: 0, 
+      // [Sequelize.Op.gt]: 0,
       //},
     };
     if (filters.titre) {
@@ -249,7 +284,7 @@ const produitController = {
 
     try {
       const totalCount = await Model.produitlabrairie.count({
-        where: whereClause
+        where: whereClause,
       });
 
       const products = await Model.produitlabrairie.findAll({
@@ -264,7 +299,7 @@ const produitController = {
           },
           {
             model: Model.categorie,
-            attributes: ["id","name", "Description","image"],
+            attributes: ["id", "name", "Description", "image"],
           },
           {
             model: Model.imageProduitLibrairie,
@@ -297,15 +332,15 @@ const produitController = {
     }
   },
 
-  findOneProduit: async (req, res) => {
+  findoneproduit: async (req, res) => {
     try {
       const { id } = req.params;
       Model.produitlabrairie
         .findOne({
-          where: { 
+          where: {
             id: id,
             qte: {
-              [Sequelize.Op.gt]: 0, 
+              [Sequelize.Op.gt]: 0,
             },
           },
           attributes: {
@@ -318,7 +353,7 @@ const produitController = {
             },
             {
               model: Model.categorie,
-              attributes: ["id", "name", "Description","image"],
+              attributes: ["id", "name", "Description", "image"],
             },
             {
               model: Model.imageProduitLibrairie,
@@ -364,10 +399,10 @@ const produitController = {
           order: order,
           limit: +pageSize,
           offset: offset,
-          where: { 
-            categprodlabfk: req.params.categprodlabfk ,
+          where: {
+            categprodlabfk: req.params.categprodlabfk,
             qte: {
-              [Sequelize.Op.gt]: 0, 
+              [Sequelize.Op.gt]: 0,
             },
           },
           attributes: {
@@ -380,11 +415,12 @@ const produitController = {
             },
             {
               model: Model.imageProduitLibrairie,
-              where:{
-                name_image :{
-                  [Sequelize.Op.ne]: "https://res.cloudinary.com/doytw80zj/image/upload/v1693689652/27002_omkvdd.jpg"
-                }
-              }
+              where: {
+                name_image: {
+                  [Sequelize.Op.ne]:
+                    "https://res.cloudinary.com/doytw80zj/image/upload/v1693689652/27002_omkvdd.jpg",
+                },
+              },
             },
             {
               model: Model.avisProduitlibraire,
@@ -440,7 +476,7 @@ const produitController = {
           where: {
             labrprodfk: req.params.id,
             qte: {
-              [Sequelize.Op.gt]: 0, 
+              [Sequelize.Op.gt]: 0,
             },
           },
         })
@@ -481,7 +517,7 @@ const produitController = {
           where: {
             labrprodfk: req.params.id,
             qte: {
-              [Sequelize.Op.gt]: 0, 
+              [Sequelize.Op.gt]: 0,
             },
           },
           group: ["produitlabrairie.id", "produitlabrairie.titre"],
@@ -508,7 +544,7 @@ const produitController = {
     const offset = (page - 1) * pageSize;
     const wherec = {
       qte: {
-        [Sequelize.Op.gt]: 0, 
+        [Sequelize.Op.gt]: 0,
       },
     };
     order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];

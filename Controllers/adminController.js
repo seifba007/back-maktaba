@@ -1292,33 +1292,12 @@ const adminController = {
   },
 
   findCommandes: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize} = req.query;
-
-    const offset = (page - 1) * pageSize;
-    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-   
     try {
-    
-
-      const count = await Model.commandeEnDetail.count({
-        include: [
-          {
-            model: Model.user,
-            attributes: [],
-           
-          },
-        ],
-      });
-
       const commandes = await Model.commandeEnDetail.findAll({
-        offset: offset,
-        order: order,
-        limit: +pageSize,
         include: [
           {
             model: Model.user,
             attributes: ["fullname", "avatar"],
-            
           },
           { model: Model.labrairie, attributes: ["nameLibrairie"] },
           { model: Model.produitlabrairie },
@@ -1326,11 +1305,9 @@ const adminController = {
       });
 
       if (commandes) {
-        const totalPages = Math.ceil(count / pageSize);
         return res.status(200).json({
           success: true,
           commandes: commandes,
-          totalPages: totalPages,
         });
       }
     } catch (err) {
@@ -1390,7 +1367,7 @@ const adminController = {
           },
           {
             model: Model.labrairie,
-            attributes: ["nameLibrairie","userlabfk"],
+            attributes: ["nameLibrairie", "userlabfk"],
             include: [
               {
                 model: Model.user,
@@ -1409,6 +1386,82 @@ const adminController = {
           success: true,
           livraison: commandes,
           totalPages: totalPages,
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findLivraison: async (req, res) => {
+    try {
+      const commandes = await Model.commandeEnDetail.findAll({
+        where: {
+          etatVender: {
+            [Sequelize.Op.or]: ["en_cours", "Compléter"],
+          },
+        },
+        include: [
+          {
+            model: Model.user,
+            attributes: ["fullname", "avatar", "telephone", "email", "role"],
+            include: [
+              {
+                model: Model.client,
+                attributes: ["userclientfk"],
+                include: [
+                  {
+                    model: Model.adresses,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie", "userlabfk"],
+            include: [
+              {
+                model: Model.user,
+                attributes: [
+                  "fullname",
+                  "avatar",
+                  "telephone",
+                  "email",
+                  "role",
+                ],
+                include: [
+                  {
+                    model: Model.client,
+                    attributes: ["userclientfk"],
+                    include: [
+                      {
+                        model: Model.adresses,
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            model: Model.produitlabrairie,
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+              },
+            ],
+          },
+        ],
+      });
+
+      if (commandes) {
+        return res.status(200).json({
+          success: true,
+          livraison: commandes,
         });
       }
     } catch (err) {
