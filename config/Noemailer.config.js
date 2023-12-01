@@ -335,7 +335,7 @@ module.exports.DemendePartenariatRejected = (email) => {
       html: `
       <div>
       <h1> bienvenue chez maktba.tn </h1>
-      <p> votre email deja exist verifie votre demende </p>
+      <p> votre email deja exist verifie votre demande </p>
 
         </div>`,
     })
@@ -384,5 +384,15 @@ module.exports.sendAnnulerDon = (email,description)=>{
     to : email,
     subject : `Annulation de votre Don`,
     html : `<p>Votre Don <strong>${description}</strong> a été annulé.</p>`
+  }).catch((err)=>console.log(err))
+}
+
+module.exports.sendSuggestionProduitEmail = (email,Description,Titre)=>{
+  transport
+  .sendMail({
+    sender : email,
+    to : "maktba.tn01@gmail.com",
+    subject : `Nouveau suggestion de produit  ${Titre}  par l'utilisateur: ${email}`,
+    text : `Suggestion: ${Description}`
   }).catch((err)=>console.log(err))
 }

@@ -106,36 +106,54 @@ const adminController = {
     }
   },
   findAllcategories: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const filters = req.query;
+    const whereClause = {};
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    if (filters.name) {
+      whereClause.name = {
+        [Sequelize.Op.like]: `%${filters.name}%`,
+      };
+    }
     try {
-      Model.categorie
+      const catcount = await Model.categorie.count({
+        where: whereClause
+      })
+
+      const cat = await Model.categorie
         .findAll({
+          offset: offset,
+          limit: +pageSize,
+          order: order,
           attributes: {
             include: ["id", "name"],
           },
+          where: whereClause,
           include: [
             {
               model: Model.Souscategorie,
               attributes: ["id", "name"],
             },
           ],
-        })
-        .then((response) => {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              categories: response,
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              err: " zero category",
-            });
-          }
         });
+        if (cat.length > 0) {
+          const totalPages = Math.ceil(catcount / pageSize);
+          return res.status(200).json({
+            success: true,
+            categories: cat,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "zero category",
+          });
+        }
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message,
       });
     }
   },

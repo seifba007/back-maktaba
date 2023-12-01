@@ -107,6 +107,8 @@ const CatalogeController = {
         include: [
           { model: Model.imageCataloge, attributes: ["id", "name_Image"] },
           { model: Model.categorie },
+          { model: Model.Souscategorie },
+
         ],
       });
 

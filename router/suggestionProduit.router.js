@@ -9,4 +9,5 @@ router.post(
   suggestionProduitController.add
 );
 router.get("/findAll", suggestionProduitController.find);
+router.delete("/deletesuggestion", suggestionProduitController.deletesuggestion);
 module.exports = router;

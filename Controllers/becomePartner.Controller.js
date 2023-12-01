@@ -4,6 +4,7 @@ const Model = require("../Models/index");
 const bcrypt = require("bcrypt");
 const sendMail = require("../config/Noemailer.config");
 const cloudinary = require("../middleware/cloudinary");
+const { Sequelize, where } = require("sequelize");
 
 const fournisseur = require("../Models/fournisseur");
 const {
@@ -24,19 +25,29 @@ const BecomePartnerController = {
       adminpartfk,
     } = req.body;
 
-
     if (!fullname || !email || !phone) {
       return res.status(400).json({
         success: false,
-        message: "fullname, email, and phone are required fields",
+        message: "Fullname, email, and phone are required fields.",
       });
     }
-  
-    let result = ""; 
 
     try {
+      const existingEmail = await Model.BecomePartner.findOne({
+        where: { email: email },
+      });
+
+      if (existingEmail) {
+        return res.status(400).json({
+          success: false,
+          message: "Email already exists. Please use a different email.",
+        });
+      }
+
+      let result = "";
+
       req.files.forEach(async (file) => {
-        result = file.filename; 
+        result = file.filename;
       });
 
       const data = {
@@ -53,40 +64,61 @@ const BecomePartnerController = {
         adminpartfk: adminpartfk,
       };
 
-      Model.BecomePartner.create(data).then((response) => {
-        if (response !== undefined) {
-          return res.status(200).json({
-            success: true,
-            message: "Votre demande a bien été reçue",
-          });
-        } else {
-          return res.status(200).json({
-            success: true,
-            message: "Votre demande a bien été reçue",
-          });
-        }
-      });
+      const response = await Model.BecomePartner.create(data);
+
+      if (response) {
+        return res.status(200).json({
+          success: true,
+          message: "Votre demande a bien été reçue",
+        });
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: "Error creating demand. Please try again.",
+        });
+      }
     } catch (err) {
-      res.status(400).json({
+      res.status(500).json({
         success: false,
-        error: err,
+        error: err.message,
       });
     }
   },
-  
 
   findAll: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, titre } = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const whereClause = {};
+
+   
+
     try {
-      Model.BecomePartner.findAll({
+      const demandecount = await Model.BecomePartner.count({
+        //where: whereClause,
+      });
+      const demandes = await Model.BecomePartner.findAll({
+        offset: offset,
+        limit: +pageSize,
+        order: order,
+        where: {
+          fullname:{
+            [Sequelize.Op.like]: `%${titre}%`,
+          }
+        },
         attributes: {
           exclude: ["adminpartfk", "updatedAt"],
         },
-      }).then((response) => {
+      });
+      if (demandes.length > 0) {
+        const totalPages = Math.ceil(demandecount / pageSize);
         return res.status(200).json({
           success: true,
-          demende: response,
+          demande: demandes,
+          totalPages: totalPages,
         });
-      });
+      }
     } catch (error) {
       res.status(400).json({
         success: false,
@@ -94,6 +126,7 @@ const BecomePartnerController = {
       });
     }
   },
+
   accepte: async (req, res) => {
     try {
       const { Role, username, email } = req.body;
@@ -109,7 +142,7 @@ const BecomePartnerController = {
       );
       const passwordHash = bcrypt.hashSync(Password, 10);
       switch (Role) {
-        case "Librairie":
+        case "labrairie":
           const datauser = {
             email: email,
             fullname: username,
@@ -146,7 +179,7 @@ const BecomePartnerController = {
             }
           });
           break;
-        case "Fournisseur":
+        case "fournisseur":
           const datauser1 = {
             email: email,
             fullname: username,
