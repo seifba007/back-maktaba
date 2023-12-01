@@ -1269,6 +1269,17 @@ const adminController = {
             model: Model.user,
             attributes: ["fullname", "avatar"],
             where: wherename,
+            include: [
+              {
+                model: Model.client,
+                attributes: ["userclientfk"],
+                include: [
+                  {
+                    model: Model.adresses,
+                  },
+                ],
+              },
+            ],
           },
           { model: Model.labrairie, attributes: ["nameLibrairie"] },
           { model: Model.produitlabrairie },
@@ -1364,6 +1375,17 @@ const adminController = {
             model: Model.user,
             attributes: ["fullname", "avatar"],
             where: wherename,
+            include: [
+              {
+                model: Model.client,
+                attributes: ["userclientfk"],
+                include: [
+                  {
+                    model: Model.adresses,
+                  },
+                ],
+              },
+            ],
           },
           {
             model: Model.labrairie,

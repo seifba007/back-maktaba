@@ -75,14 +75,12 @@ const updateTopInterval = 72 * 60 * 60 * 1000;
 setInterval(updateProductNewState, updateNewInterval);
 setInterval(updateProductTopState, updateTopInterval);
 const produitController = {
-
   add_produit: async (req, res) => {
     try {
-      const produits = []; 
-      const uploadPromises = []; 
-  
+      const produits = [];
+      const uploadPromises = [];
 
-      const produitsarr= req.body.products;
+      const produitsarr = req.body.products;
       for (const productData of produitsarr) {
         const produit = await Model.produitlabrairie.create({
           titre: productData.titre,
@@ -92,34 +90,18 @@ const produitController = {
           categprodlabfk: productData.categprodlabfk,
           souscatprodfk: productData.souscatprodfk,
         });
-  
+
         produits.push(produit);
-  
-        req.files.forEach((file) => {
-          const uploadPromise = cloudinary.uploader
-            .upload(file.path)
-            .then((result) => {
-              const imageUrl = result.secure_url;
-  
-              return Model.imageProduitLibrairie.create({
-                name_Image: imageUrl,
-                imageprodfk: produit.id,
-              });
-            });
-  
-          uploadPromises.push(uploadPromise);
-        })
       }
-  
-      await Promise.all(uploadPromises);
-  
+
       res.status(201).json({ message: "Produits créés avec succès", produits });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ message: "Erreur lors de la création des produits" });
+      res
+        .status(500)
+        .json({ message: "Erreur lors de la création des produits" });
     }
   },
-    
 
   update: async (req, res) => {
     try {

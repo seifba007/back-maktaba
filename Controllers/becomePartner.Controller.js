@@ -23,6 +23,14 @@ const BecomePartnerController = {
       pack,
       adminpartfk,
     } = req.body;
+
+
+    if (!fullname || !email || !phone) {
+      return res.status(400).json({
+        success: false,
+        message: "fullname, email, and phone are required fields",
+      });
+    }
   
     let result = ""; 
 
