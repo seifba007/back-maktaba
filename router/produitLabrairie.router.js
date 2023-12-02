@@ -13,7 +13,6 @@ router.post(
 router.put(
   "/update/:id",
   AuthorizationUser,
-  upload.array("image", 3),
   ProduitLabrairieController.update
 );
 router.delete(

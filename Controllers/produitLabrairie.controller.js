@@ -78,9 +78,9 @@ const produitController = {
   add_produit: async (req, res) => {
     try {
       const produits = [];
-  
+
       const produitsarr = req.body.products;
-  
+
       for (const productData of produitsarr) {
         const produit = await Model.produitlabrairie.create({
           titre: productData.titre,
@@ -90,25 +90,26 @@ const produitController = {
           categprodlabfk: productData.categprodlabfk,
           souscatprodfk: productData.souscatprodfk,
         });
-  
+
         const image = await Model.imageProduitLibrairie.create({
           name_Image: productData.image,
-          imageprodfk: produit.id, 
+          imageprodfk: produit.id,
         });
-  
+
         produits.push({
           produit: produit,
           image: image,
         });
       }
-  
-      res.status(201).json({ message: "Products created successfully", produits });
+
+      res
+        .status(201)
+        .json({ message: "Products created successfully", produits });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: "Error creating products" });
     }
   },
-  
 
   update: async (req, res) => {
     try {
@@ -133,32 +134,10 @@ const produitController = {
         .update(produitData, { where: { id: req.params.id } })
         .then((response) => {
           if (response !== 0) {
-            if (req.files.length !== 0) {
-              req.body["image"] = req.files[0].filename;
-              Model.imageProduitLibrairie
-                .update(
-                  { name_Image: req.body.image },
-                  { where: { produitlabrprodfk: req.params.id } }
-                )
-                .then((response) => {
-                  if (response !== 0) {
-                    return res.status(200).json({
-                      success: true,
-                      message: " update done ! ",
-                    });
-                  } else {
-                    return res.status(400).json({
-                      success: false,
-                      error: "error update ",
-                    });
-                  }
-                });
-            } else {
-              return res.status(200).json({
-                success: true,
-                message: "update done",
-              });
-            }
+            return res.status(200).json({
+              success: true,
+              message: "update done",
+            });
           }
         });
     } catch (err) {
