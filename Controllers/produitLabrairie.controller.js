@@ -78,9 +78,9 @@ const produitController = {
   add_produit: async (req, res) => {
     try {
       const produits = [];
-      const uploadPromises = [];
-
+  
       const produitsarr = req.body.products;
+  
       for (const productData of produitsarr) {
         const produit = await Model.produitlabrairie.create({
           titre: productData.titre,
@@ -90,18 +90,25 @@ const produitController = {
           categprodlabfk: productData.categprodlabfk,
           souscatprodfk: productData.souscatprodfk,
         });
-
-        produits.push(produit);
+  
+        const image = await Model.imageProduitLibrairie.create({
+          name_Image: productData.image,
+          imageprodfk: produit.id, 
+        });
+  
+        produits.push({
+          produit: produit,
+          image: image,
+        });
       }
-
-      res.status(201).json({ message: "Produits créés avec succès", produits });
+  
+      res.status(201).json({ message: "Products created successfully", produits });
     } catch (error) {
       console.error(error);
-      res
-        .status(500)
-        .json({ message: "Erreur lors de la création des produits" });
+      res.status(500).json({ message: "Error creating products" });
     }
   },
+  
 
   update: async (req, res) => {
     try {

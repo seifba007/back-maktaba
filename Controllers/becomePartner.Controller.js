@@ -87,30 +87,30 @@ const BecomePartnerController = {
 
   findAll: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize, titre } = req.query;
-
+  
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     const whereClause = {};
-
-   
-
+  
+    if (titre) {
+      whereClause.fullname = { [Sequelize.Op.like]: `%${titre}%` };
+    }
+  
     try {
       const demandecount = await Model.BecomePartner.count({
-        //where: whereClause,
+        where: whereClause,
       });
+  
       const demandes = await Model.BecomePartner.findAll({
         offset: offset,
         limit: +pageSize,
         order: order,
-        where: {
-          fullname:{
-            [Sequelize.Op.like]: `%${titre}%`,
-          }
-        },
+        where: whereClause,
         attributes: {
           exclude: ["adminpartfk", "updatedAt"],
         },
       });
+  
       if (demandes.length > 0) {
         const totalPages = Math.ceil(demandecount / pageSize);
         return res.status(200).json({
@@ -118,14 +118,20 @@ const BecomePartnerController = {
           demande: demandes,
           totalPages: totalPages,
         });
+      } else {
+        return res.status(200).json({
+          success: true,
+          message: "No demande find.",
+        });
       }
     } catch (error) {
       res.status(400).json({
         success: false,
-        error: err,
+        error: error.message,
       });
     }
   },
+  
 
   accepte: async (req, res) => {
     try {

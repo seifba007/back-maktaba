@@ -110,19 +110,26 @@ const adminController = {
     const filters = req.query;
     const whereClause = {};
     const offset = (page - 1) * pageSize;
-    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const order = sortBy
+      ? [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]]
+      : [];
+
     if (filters.name) {
       whereClause.name = {
         [Sequelize.Op.like]: `%${filters.name}%`,
       };
     }
-    try {
-      const catcount = await Model.categorie.count({
-        where: whereClause
-      })
 
-      const cat = await Model.categorie
-        .findAll({
+    try {
+      let cat;
+      let catcount;
+
+      if (page && pageSize && order && offset) {
+        catcount = await Model.categorie.count({
+          where: whereClause,
+        });
+
+        cat = await Model.categorie.findAll({
           offset: offset,
           limit: +pageSize,
           order: order,
@@ -137,19 +144,36 @@ const adminController = {
             },
           ],
         });
-        if (cat.length > 0) {
-          const totalPages = Math.ceil(catcount / pageSize);
-          return res.status(200).json({
-            success: true,
-            categories: cat,
-            totalPages: totalPages,
-          });
-        } else {
-          return res.status(400).json({
-            success: false,
-            err: "zero category",
-          });
-        }
+      } else {
+        cat = await Model.categorie.findAll({
+          attributes: {
+            include: ["id", "name"],
+          },
+          where: whereClause,
+          include: [
+            {
+              model: Model.Souscategorie,
+              attributes: ["id", "name"],
+            },
+          ],
+        });
+
+        catcount = cat.length;
+      }
+
+      if (cat.length > 0) {
+        const totalPages = Math.ceil(catcount / pageSize);
+        return res.status(200).json({
+          success: true,
+          categories: cat,
+          totalPages: totalPages,
+        });
+      } else {
+        return res.status(400).json({
+          success: true,
+          err: "No categories founds",
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
