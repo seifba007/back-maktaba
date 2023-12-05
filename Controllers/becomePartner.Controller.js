@@ -86,10 +86,7 @@ const BecomePartnerController = {
   },
 
   findAll: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize, titre } = req.query;
-  
-    const offset = (page - 1) * pageSize;
-    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const {titre} = req.query
     const whereClause = {};
   
     if (titre) {
@@ -97,14 +94,9 @@ const BecomePartnerController = {
     }
   
     try {
-      const demandecount = await Model.BecomePartner.count({
-        where: whereClause,
-      });
+
   
       const demandes = await Model.BecomePartner.findAll({
-        offset: offset,
-        limit: +pageSize,
-        order: order,
         where: whereClause,
         attributes: {
           exclude: ["adminpartfk", "updatedAt"],
@@ -112,11 +104,9 @@ const BecomePartnerController = {
       });
   
       if (demandes.length > 0) {
-        const totalPages = Math.ceil(demandecount / pageSize);
         return res.status(200).json({
           success: true,
           demande: demandes,
-          totalPages: totalPages,
         });
       } else {
         return res.status(200).json({

@@ -134,9 +134,41 @@ const produitController = {
         .update(produitData, { where: { id: req.params.id } })
         .then((response) => {
           if (response !== 0) {
+            if (req.files.length > 0) {
+              Model.imageProduitLibrairie.destroy({
+                where: {
+                  imageprodfk: req.params.id,
+                },
+              });
+            }
+
+            const uploadPromises = [];
+
+            req.files.forEach((file) => {
+              const uploadPromise = cloudinary.uploader
+                .upload(file.path)
+                .then((result) => {
+                  const imageUrl = result.secure_url;
+
+                  return Model.imageProduitLibrairie.create({
+                    name_Image: imageUrl,
+                    imageprodfk: req.params.id,
+                  });
+                });
+
+              uploadPromises.push(uploadPromise);
+            });
+
+            Promise.all(uploadPromises);
+
             return res.status(200).json({
               success: true,
-              message: "update done",
+              message: "produit updated successfully",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              error: err.message,
             });
           }
         });
