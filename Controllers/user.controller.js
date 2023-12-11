@@ -420,65 +420,71 @@ const userController = {
   },
   updateIdentite: async (req, res) => {
     try {
-        const { Date_de_naissance, telephone, fullname, email } = req.body;
-        if (req.files && req.files.length > 0) {
-            const filePromises = req.files.map(async (file) => {
-                const result = await cloudinary.uploader.upload(file.path);
-                return result.secure_url;
-            });
-
-            Promise.all(filePromises).then((imageUrls) => {
-                const data = {
-                    Date_de_naissance: Date_de_naissance === "0000-00-00" ? null : Date_de_naissance,
-                    avatar: imageUrls[0], 
-                    telephone: telephone,
-                    fullname: fullname,
-                    email: email,
-                };
-
-                Model.user.update(data, { where: { id: req.params.id } }).then((response) => {
-                    if (response[0] !== 0) {
-                        return res.status(200).json({
-                            success: true,
-                            message: "Update identity successful!",
-                        });
-                    } else {
-                        return res.status(400).json({
-                            success: false,
-                            message: "Error updating identity",
-                        });
-                    }
-                });
-            });
-        } else {
-            const data = {
-                Date_de_naissance: Date_de_naissance === "0000-00-00" ? null : Date_de_naissance,
-                telephone: telephone,
-                fullname: fullname,
-                email: email,
-            };
-
-            Model.user.update(data, { where: { id: req.params.id } }).then((response) => {
-                if (response[0] !== 0) {
-                    return res.status(200).json({
-                        success: true,
-                        message: "Update identity successful!",
-                    });
-                } else {
-                    return res.status(400).json({
-                        success: false,
-                        message: "Error updating identity",
-                    });
-                }
-            });
-        }
-    } catch (err) {
-        return res.status(400).json({
-            success: false,
-            error: err,
+      const { Date_de_naissance, telephone, fullname, email } = req.body;
+      if (req.files && req.files.length > 0) {
+        const filePromises = req.files.map(async (file) => {
+          const result = await cloudinary.uploader.upload(file.path);
+          return result.secure_url;
         });
+
+        Promise.all(filePromises).then((imageUrls) => {
+          const data = {
+            Date_de_naissance:
+              Date_de_naissance === "0000-00-00" ? null : Date_de_naissance,
+            avatar: imageUrls[0],
+            telephone: telephone,
+            fullname: fullname,
+            email: email,
+          };
+
+          Model.user
+            .update(data, { where: { id: req.params.id } })
+            .then((response) => {
+              if (response[0] !== 0) {
+                return res.status(200).json({
+                  success: true,
+                  message: "Update identity successful!",
+                });
+              } else {
+                return res.status(400).json({
+                  success: false,
+                  message: "Error updating identity",
+                });
+              }
+            });
+        });
+      } else {
+        const data = {
+          Date_de_naissance:
+            Date_de_naissance === "0000-00-00" ? null : Date_de_naissance,
+          telephone: telephone,
+          fullname: fullname,
+          email: email,
+        };
+
+        Model.user
+          .update(data, { where: { id: req.params.id } })
+          .then((response) => {
+            if (response[0] !== 0) {
+              return res.status(200).json({
+                success: true,
+                message: "Update identity successful!",
+              });
+            } else {
+              return res.status(400).json({
+                success: false,
+                message: "Error updating identity",
+              });
+            }
+          });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
     }
-},
+  },
 
   addPoint: async (req, res) => {
     try {
@@ -533,10 +539,18 @@ const userController = {
       });
     }
   },
+
   findAlluser: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     try {
+      const usercount = await Model.user.count({});
       Model.user
         .findAll({
+          limit: +pageSize,
+          offset: offset,
+          order: order,
           attributes: [
             "id",
             "fullname",
@@ -551,9 +565,11 @@ const userController = {
         .then((response) => {
           try {
             if (response !== null) {
+              const totalPages = Math.ceil(usercount / pageSize);
               return res.status(200).json({
                 success: true,
                 users: response,
+                totalPages: totalPages,
               });
             } else {
               return res.status(200).json({

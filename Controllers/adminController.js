@@ -392,6 +392,31 @@ const adminController = {
     }
   },
 
+  changeVisibilite: async (req, res) => {
+    try {
+      Model.produitlabrairie
+        .update({ Visibilite: req.body.etat }, { where: { id: req.params.id } })
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "etat changée",
+            });
+          } else {
+            return res.status(200).json({
+              success: false,
+              message: "erreur",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
   deletesuggestion: async (req, res) => {
     const { ids } = req.body;
     try {
@@ -807,6 +832,9 @@ const adminController = {
       qte: {
         [Sequelize.Op.gt]: 0,
       },
+      Visibilite: {
+        [Sequelize.Op.ne]: 'Invisible',
+      }
     };
 
     if (filters.categprodlabfk) {
@@ -1526,6 +1554,49 @@ const adminController = {
         return res.status(200).json({
           success: true,
           livraison: commandes,
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  updatecategoryimages: async (req, res) => {
+    try {
+      const catgoriId = req.params.id;
+
+      if (req.files.length > 0) {
+        const uploadPromises = [];
+
+        req.files.forEach((file) => {
+          const uploadPromise = cloudinary.uploader
+            .upload(file.path)
+            .then((result) => {
+              const imageUrl = result.secure_url;
+              return Model.categorie.update(
+                {image: imageUrl},
+                {where: {
+                  id: catgoriId,
+                }}
+              );
+            });
+
+          uploadPromises.push(uploadPromise);
+        });
+
+        await Promise.all(uploadPromises);
+
+        return res.status(200).json({
+          success: true,
+          message: "category updated successfully",
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
         });
       }
     } catch (err) {

@@ -31,6 +31,16 @@ router.put(
   adminController.editCategory
 );
 
+router.put(
+  "/updatecategoryimages/:id",
+  upload.array("image", 1),
+  adminController.updatecategoryimages
+);
+
+router.put(
+  "/changevisibiliter/:id",
+  adminController.changeVisibilite
+);
 router.delete(
   "/deletesuggestion",
   AuthorizationUser,

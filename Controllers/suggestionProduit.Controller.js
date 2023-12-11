@@ -30,7 +30,6 @@ const suggestionProduitController = {
         };
         Model.suggestionProduit.create(data).then((response) => {
           if (response !== null) {
-            sendMail.sendSuggestionProduitEmail(email, Description, Titre);
             return res.status(200).json({
               success: true,
               message: "demande bien envoyer",
@@ -85,6 +84,37 @@ const suggestionProduitController = {
       });
     }
   },
+
+  AccepterSuggestion: async (req, res) => {
+    const {email} = req.body
+    try {
+      const numUpdated= await Model.suggestionProduit.update(
+        { etat: "Accepter" },
+        { where: { id: req.params.id } }
+      );
+  
+      if (numUpdated !== 0) {
+        const produit = await Model.suggestionProduit.findAll({ where: { id: req.params.id } });
+        sendMail.sendSuggestionProduitEmail(email, produit[0].dataValues.Description, produit[0].dataValues.Titre);
+        return res.status(200).json({
+          success: true,
+          message: "Suggestion accepted",
+          produit: produit,
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: "Suggestion not found or not updated",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+  
 
   deletesuggestion: async (req, res) => {
     const { ids } = req.body;

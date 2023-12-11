@@ -387,12 +387,18 @@ module.exports.sendAnnulerDon = (email,description)=>{
   }).catch((err)=>console.log(err))
 }
 
-module.exports.sendSuggestionProduitEmail = (email,Description,Titre)=>{
+module.exports.sendSuggestionProduitEmail = (email, Description, Titre) => {
   transport
-  .sendMail({
-    sender : email,
-    to : "maktba.tn01@gmail.com",
-    subject : `Nouveau suggestion de produit  ${Titre}  par l'utilisateur: ${email}`,
-    text : `Suggestion: ${Description}`
-  }).catch((err)=>console.log(err))
-}
+    .sendMail({
+      sender: "maktba.tn01@gmail.com",
+      to: email,
+      subject: `Suggestion acceptée`,
+      html: `
+        <p>Votre suggestion de produit <strong><em>${Titre}</em></strong> est acceptée.</p>
+        <p>Description: ${Description}</p>
+        <p>Merci.</p>
+      `,
+    })
+    .catch((err) => console.log(err));
+};
+

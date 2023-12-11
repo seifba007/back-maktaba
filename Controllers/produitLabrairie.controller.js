@@ -118,7 +118,7 @@ const produitController = {
         var etat = "remise";
       }
       if (remise == 0 || remise === undefined) {
-        var etat = "en_Stock";
+        var etat = "Nouveau";
         var prix_solde = 0;
       } else {
         var prix_solde = prix_en_Solde;
