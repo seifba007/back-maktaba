@@ -221,7 +221,16 @@ const adminController = {
   },
   findAllproduits: async (req, res) => {
     try {
-      Model.produitlabrairie.findAll().then((response) => {
+      Model.produitlabrairie.findAll({
+        where:{
+          qte: {
+            [Sequelize.Op.gt]: 0,
+          },
+          Visibilite: {
+            [Sequelize.Op.ne]: 'Invisible',
+          }
+        }
+      }).then((response) => {
         try {
           if (response !== null) {
             return res.status(200).json({
@@ -1603,6 +1612,49 @@ const adminController = {
       return res.status(400).json({
         success: false,
         error: err.message,
+      });
+    }
+  },
+
+  findAlluser: async (req, res) => {
+    try {
+      Model.user
+        .findAll({
+          attributes: [
+            "id",
+            "fullname",
+            "email",
+            "avatar",
+            "role",
+            "telephone",
+            "createdAt",
+            "etatCompte",
+          ],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              return res.status(200).json({
+                success: true,
+                users: response,
+              });
+            } else {
+              return res.status(200).json({
+                success: true,
+                users: [],
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
       });
     }
   },

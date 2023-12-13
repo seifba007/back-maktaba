@@ -83,6 +83,11 @@ router.get(
 );
 
 router.get(
+  "/getallusers",
+  adminController.findAlluser
+);
+
+router.get(
   "/founisseurrech",
   adminController.findfournissbyname
 );
