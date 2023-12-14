@@ -86,6 +86,7 @@ const produitController = {
           titre: productData.titre,
           description: productData.description,
           etat: "Nouveau",
+          Visibilite:"Visible",
           labrprodfk: productData.labrprodfk,
           categprodlabfk: productData.categprodlabfk,
           souscatprodfk: productData.souscatprodfk,

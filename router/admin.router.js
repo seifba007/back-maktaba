@@ -98,4 +98,6 @@ router.get("/findAllCommandes", adminController.findAllCommandes);
 router.get("/findCommandes", adminController.findCommandes);
 router.get("/findAllLivraison", adminController.findAllLivraison);
 router.get("/findLivraison", adminController.findLivraison);
+router.get("/findallusersadmin", adminController.findAllUsersAdmin);
+router.get("/findallfournisseuradmin", adminController.findAllFournisseurAdmin);
 module.exports = router;
