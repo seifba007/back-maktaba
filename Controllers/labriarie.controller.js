@@ -180,11 +180,12 @@ const LabriarieController = {
     }
   },
 
-  findtopproduct: async (req, res) => {
+  findTopProducts: async (req, res) => {
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      Model.ProduitCommandeEnDetail.findAll({
+  
+      const topProducts = await Model.ProduitCommandeEnDetail.findAll({
         attributes: [
           "prodlaibrcommdetfk",
           [Sequelize.fn("COUNT", "prodlaibrcommdetfk"), "count"],
@@ -192,51 +193,44 @@ const LabriarieController = {
         group: ["prodlaibrcommdetfk"],
         order: [[Sequelize.literal("count"), "DESC"]],
         limit: 5,
-        where: {
-          createdAt: {
-            [Sequelize.Op.gte]: thirtyDaysAgo,
+       
+      });
+  
+      const productPromises = topProducts.map(async (product) => {
+        const productDetails = await Model.produitlabrairie.findOne({
+          order: [["id", "DESC"]],
+          where: {
+            id: product.prodlaibrcommdetfk,
+            labrprodfk: req.params.id,
           },
-        },
-      }).then((topProducts) => {
-        topProducts.forEach((product) => {
-
-          Model.produitlabrairie
-            .findAll({
-              order : [["id", "DESC"]],
-              where: {
-                id: product.prodlaibrcommdetfk,
-                labrprodfk: req.params.id,
-              },
-              include: [
-                {
-                  model: Model.imageProduitLibrairie,
-                  attributes: ["name_Image"],
-                },
-              ],
-            })
-            .then((response) => {
-              try {
-                if (response !== null) {
-                  return res.status(200).json({
-                    success: true,
-                    produits: response,
-                  });
-                }
-              } catch (err) {
-                return res.status(400).json({
-                  success: false,
-                  error: err,
-                });
-              }
-            });
+          include: [
+            {
+              model: Model.imageProduitLibrairie,
+              attributes: ["name_Image"],
+            },
+          ],
         });
+        return productDetails;
+      });
+  
+      const products = await Promise.all(productPromises);
+  
+      return res.status(200).json({
+        success: true,
+        produits: products,
       });
     } catch (err) {
-      console.error("Erreur lors de l'obtention de produit:", err);
+      console.error("Error fetching top products:", err);
+      return res.status(500).json({
+        success: false,
+        error: err.message,
+      });
     }
   },
+  
 
-   getTop5Prod : async (req, res) => {
+   getToprevProd : async (req, res) => {
+    
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -246,11 +240,11 @@ const LabriarieController = {
           [Sequelize.fn('SUM', Sequelize.col('nbStart')), 'totalAvis'],
           'prodavisproduitsfk',
         ],
-        where: {
-          createdAt: {
-            [Sequelize.Op.gte]: thirtyDaysAgo,
-          },
-        },
+        //where: {
+          //createdAt: {
+            //[Sequelize.Op.gte]: thirtyDaysAgo,
+          //},
+        //},
         group: ['prodavisproduitsfk'],
         order: [[Sequelize.literal('totalAvis'), 'DESC']],
         limit: 5,
@@ -274,6 +268,8 @@ const LabriarieController = {
         totalAvis: item.dataValues.totalAvis,
         produitlabrairie: item.produitlabrairie,
       }));
+      console.log(topProducts)
+      console.log(formattedProducts)
   
       return res.status(200).json({
         success: true,

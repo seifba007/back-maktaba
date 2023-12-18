@@ -247,15 +247,21 @@ const bonAchatController = {
   },
 
   findBypartenaire: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const { sortBy, sortOrder, page, pageSize ,etat} = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    let whereClause = { partbonachafk: req.params.id };
+      if (etat && etat === "tout") {
+        whereClause.etat = {
+          [Sequelize.Op.or]: ["Non_Valide", "Valide"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etat = etat;
+      }
 
     try {
       const totalCount = await Model.bonAchat.count({
-        where: {
-          partbonachafk: req.params.id,
-        },
+        where: whereClause
       });
 
       Model.bonAchat
@@ -263,9 +269,7 @@ const bonAchatController = {
           order: order,
           offset: offset,
           limit: +pageSize,
-          where: {
-            partbonachafk: req.params.id,
-          },
+          where: whereClause,
           include: [
             {
               model: Model.user,
@@ -293,15 +297,21 @@ const bonAchatController = {
   },
 
   findBylibrairie: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const { sortBy, sortOrder, page, pageSize,etat } = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-
+    let whereClause = { labbonachafk: req.params.id };
     try {
+
+      if (etat && etat === "tout") {
+        whereClause.etat = {
+          [Sequelize.Op.or]: ["Non_Valide", "Valide"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etat = etat;
+      }
       const totalCount = await Model.bonAchat.count({
-        where: {
-          labbonachafk: req.params.id,
-        },
+        where: whereClause
       });
 
       Model.bonAchat
@@ -309,14 +319,62 @@ const bonAchatController = {
           order: order,
           offset: offset,
           limit: +pageSize,
-          where: {
-            labbonachafk: req.params.id,
-          },
+          where: whereClause,
           include: [
             {
               model: Model.user,
               attributes: ["fullname", "avatar"],
               include: [Model.labrairie],
+            },
+          ],
+        })
+        .then((response) => {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          if (response !== null) {
+            res.status(200).json({
+              success: true,
+              bonAchat: response,
+              totalPages: totalPages,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findByfournisseurs: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize ,etat} = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    let whereClause = { fourbonachafk: req.params.id };
+      if (etat && etat === "tout") {
+        whereClause.etat = {
+          [Sequelize.Op.or]: ["Non_Valide", "Valide"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etat = etat;
+      }
+
+    try {
+      const totalCount = await Model.bonAchat.count({
+        where: whereClause
+      });
+
+      Model.bonAchat
+        .findAll({
+          order: order,
+          offset: offset,
+          limit: +pageSize,
+          where: whereClause,
+          include: [
+            {
+              model: Model.user,
+              attributes: ["fullname", "avatar"],
+              include: [Model.client, Model.fournisseur, Model.labrairie],
             },
           ],
         })

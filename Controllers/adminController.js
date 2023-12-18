@@ -80,7 +80,7 @@ const adminController = {
           {
             model: Model.labrairie,
             attributes: {
-              include: ["nameLibrairie"],
+              include: ["nameLibrairie", "imageStore"],
             },
             required: false,
           },
@@ -318,6 +318,12 @@ const adminController = {
           where: whereClause,
           limit: +pageSize,
           where: whereClause,
+          include: [
+            {
+              model: Model.imageProduitLibrairie,
+              attributes: ["id", "name_Image"],
+            },
+          ],
         })
         .then((response) => {
           try {
@@ -823,7 +829,7 @@ const adminController = {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const topProducts = await Model.avisProduitlibraire.findAll({
         attributes: [
-          [sequelize.fn("SUM", sequelize.col("nbStart")), "totalAvis"],
+          [Sequelize.fn("SUM", Sequelize.col("nbStart")), "totalAvis"],
           "prodavisproduitsfk",
         ],
         where: {
@@ -832,7 +838,7 @@ const adminController = {
           },
         },
         group: ["prodavisproduitsfk"],
-        order: [[sequelize.literal("totalAvis"), "DESC"]],
+        order: [[Sequelize.literal("totalAvis"), "DESC"]],
         limit: 10,
         include: [
           {
@@ -890,7 +896,7 @@ const adminController = {
             },
             {
               model: Model.labrairie,
-              attributes: ["nameLibrairie"],
+              attributes: ["nameLibrairie", "imageStore"],
             },
           ],
         })
@@ -1121,7 +1127,7 @@ const adminController = {
 
     if (filters.name) {
       whereClause.nameLibrairie = {
-        [sequelize.Op.like]: `%${filters.name}%`,
+        [Sequelize.Op.like]: `%${filters.name}%`,
       };
     }
 
@@ -1451,7 +1457,10 @@ const adminController = {
               },
             ],
           },
-          { model: Model.labrairie, attributes: ["nameLibrairie"] },
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie", "imageStore"],
+          },
           { model: Model.produitlabrairie },
         ],
       });
@@ -1480,7 +1489,10 @@ const adminController = {
             model: Model.user,
             attributes: ["fullname", "avatar"],
           },
-          { model: Model.labrairie, attributes: ["nameLibrairie"] },
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie", "imageStore"],
+          },
           { model: Model.produitlabrairie },
         ],
       });
@@ -1506,7 +1518,7 @@ const adminController = {
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     const wherename = {};
     try {
-      const whereClause = {};
+      let whereClause = {};
 
       if (etat && etat === "tout") {
         whereClause.etatVender = {
@@ -1529,7 +1541,6 @@ const adminController = {
         include: [
           {
             model: Model.user,
-            attributes: [],
             where: wherename,
           },
         ],
@@ -1559,14 +1570,7 @@ const adminController = {
           },
           {
             model: Model.labrairie,
-            attributes: ["nameLibrairie", "userlabfk"],
-            include: [
-              {
-                model: Model.user,
-                attributes: ["fullname", "avatar"],
-                where: wherename,
-              },
-            ],
+            attributes: ["nameLibrairie", "userlabfk", "imageStore"],
           },
           { model: Model.produitlabrairie },
         ],
@@ -1614,7 +1618,7 @@ const adminController = {
           },
           {
             model: Model.labrairie,
-            attributes: ["nameLibrairie", "userlabfk"],
+            attributes: ["nameLibrairie", "userlabfk", "imageStore"],
             include: [
               {
                 model: Model.user,
@@ -1709,6 +1713,102 @@ const adminController = {
     }
   },
 
+  findTopProducts: async (req, res) => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const topProducts = await Model.ProduitCommandeEnDetail.findAll({
+        attributes: [
+          "prodlaibrcommdetfk",
+          [Sequelize.fn("COUNT", "prodlaibrcommdetfk"), "count"],
+        ],
+        group: ["prodlaibrcommdetfk"],
+        order: [[Sequelize.literal("count"), "DESC"]],
+        limit: 5,
+      });
+
+      const productPromises = topProducts.map(async (product) => {
+        const productDetails = await Model.produitlabrairie.findOne({
+          order: [["id", "DESC"]],
+          where: {
+            id: product.prodlaibrcommdetfk,
+          },
+          include: [
+            {
+              model: Model.imageProduitLibrairie,
+              attributes: ["name_Image"],
+            },
+          ],
+        });
+        return productDetails;
+      });
+
+      const products = await Promise.all(productPromises);
+
+      return res.status(200).json({
+        success: true,
+        produits: products,
+      });
+    } catch (err) {
+      console.error("Error fetching top products:", err);
+      return res.status(500).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  getToprevProd: async (req, res) => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const topProducts = await Model.avisProduitlibraire.findAll({
+        attributes: [
+          [Sequelize.fn("SUM", Sequelize.col("nbStart")), "totalAvis"],
+          "prodavisproduitsfk",
+        ],
+        //where: {
+        //createdAt: {
+        //[Sequelize.Op.gte]: thirtyDaysAgo,
+        //},
+        //},
+        group: ["prodavisproduitsfk"],
+        order: [[Sequelize.literal("totalAvis"), "DESC"]],
+        limit: 5,
+        include: [
+          {
+            model: Model.produitlabrairie,
+
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
+        ],
+      });
+
+      const formattedProducts = topProducts.map((item) => ({
+        totalAvis: item.dataValues.totalAvis,
+        produitlabrairie: item.produitlabrairie,
+      }));
+
+      return res.status(200).json({
+        success: true,
+        produit: formattedProducts,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(400).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  },
+
   findAlluser: async (req, res) => {
     try {
       Model.user
@@ -1758,7 +1858,12 @@ const adminController = {
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
     try {
-      const userCount = await Model.user.count({});
+      const userCount = await Model.user.count({
+        where: {
+          role: "client",
+          etatCompte: etatCompte,
+        },
+      });
 
       Model.user
         .findAll({
@@ -1798,14 +1903,14 @@ const adminController = {
           } catch (err) {
             return res.status(400).json({
               success: false,
-              error: err,
+              error: err.message,
             });
           }
         });
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message,
       });
     }
   },
@@ -1816,7 +1921,12 @@ const adminController = {
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
     try {
-      const fournisseurCount = await Model.fournisseur.count({});
+      const fournisseurCount = await Model.user.count({
+        where: {
+          role: "fournisseur",
+          etatCompte: etatCompte,
+        },
+      });
 
       Model.fournisseur
         .findAll({
@@ -1828,7 +1938,7 @@ const adminController = {
               model: Model.user,
               where: {
                 role: "fournisseur",
-                etatCompte: etatCompte
+                etatCompte: etatCompte,
               },
               attributes: [
                 "id",
@@ -1852,16 +1962,192 @@ const adminController = {
                 fournisseur: response,
                 totalPages: totalPages,
               });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err.message,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findAllLaibrairieAdmin: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatCompte } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    try {
+      const Laibrairiecount = await Model.user.count({
+        where: {
+          role: "labrairie",
+          etatCompte: etatCompte,
+        },
+      });
+
+      Model.labrairie
+        .findAll({
+          limit: +pageSize,
+          offset: offset,
+          order: order,
+          include: [
+            {
+              model: Model.user,
+              where: {
+                role: "labrairie",
+                etatCompte: etatCompte,
+              },
+              attributes: [
+                "id",
+                "fullname",
+                "email",
+                "avatar",
+                "role",
+                "telephone",
+                "createdAt",
+                "etatCompte",
+              ],
+            },
+          ],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              const totalPages = Math.ceil(Laibrairiecount / pageSize);
+              return res.status(200).json({
+                success: true,
+                Laibrairie: response,
+                totalPages: totalPages,
+              });
             } else {
               return res.status(200).json({
                 success: true,
-                users: [],
+                Laibrairie: [],
               });
             }
           } catch (err) {
             return res.status(400).json({
               success: false,
-              error: err,
+              error: err.message,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findAllpartenaireAdmin: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatCompte } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    try {
+      const partenairecount = await Model.user.count({
+        where: {
+          role: "partenaire",
+          etatCompte: etatCompte,
+        },
+      });
+
+      Model.partenaire
+        .findAll({
+          limit: +pageSize,
+          offset: offset,
+          order: order,
+          include: [
+            {
+              model: Model.user,
+              where: {
+                role: "partenaire",
+                etatCompte: etatCompte,
+              },
+              attributes: [
+                "id",
+                "fullname",
+                "email",
+                "avatar",
+                "role",
+                "telephone",
+                "createdAt",
+                "etatCompte",
+              ],
+            },
+          ],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              const totalPages = Math.ceil(partenairecount / pageSize);
+              return res.status(200).json({
+                success: true,
+                Partenaire: response,
+                totalPages: totalPages,
+              });
+            } else {
+              return res.status(200).json({
+                success: true,
+                Partenaire: [],
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err.message,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findlastCommande: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+
+    try {
+      Model.commandeEnDetail
+        .findAll({
+          limit: +pageSize,
+          offset: offset,
+          order: [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]],
+          attributes: ["id", "total_ttc", "etatVender", "createdAt"],
+          include: [
+            {
+              model: Model.user,
+              attributes: ["fullname", "avatar"],
+            },
+            {
+              model: Model.produitlabrairie,
+            },
+            {
+              model: Model.labrairie,
+            },
+          ],
+        })
+        .then((response) => {
+          if (response.length != 0) {
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "zero commande trouve ",
             });
           }
         });

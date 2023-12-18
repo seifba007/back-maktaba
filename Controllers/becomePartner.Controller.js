@@ -229,7 +229,7 @@ const BecomePartnerController = {
                 if (user !== null) {
                   const datapartenaire = {
                     id: user.id,
-                    userId: user.id,
+                    userparfk: user.id,
                   };
                   Model.partenaire.create(datapartenaire).then((partainer) => {
                     sendMail.acceptationDemendePartenariat(email, Password);

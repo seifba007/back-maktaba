@@ -58,6 +58,8 @@ router.get("/findavismoyeproduit/:id", adminController.findMoyeAvisProduit);
 router.get("/findavisproduit/nombre_avis/:id", adminController.findavisproduit);
 router.get("/getavgavisuser/moyenne_avis/:id", adminController.findavgavis);
 router.get("/top10product", adminController.gettop10prod);
+router.get("/findtopproduct", adminController.findTopProducts);
+router.get("/gettoprevprod", adminController.getToprevProd);
 router.get(
   "/nometablissement",
   adminController.findusernameetabllis
@@ -100,4 +102,7 @@ router.get("/findAllLivraison", adminController.findAllLivraison);
 router.get("/findLivraison", adminController.findLivraison);
 router.get("/findallusersadmin", adminController.findAllUsersAdmin);
 router.get("/findallfournisseuradmin", adminController.findAllFournisseurAdmin);
+router.get("/findallLaibrairieadmin", adminController.findAllLaibrairieAdmin);
+router.get("/findallpartenaireadmin", adminController.findAllpartenaireAdmin);
+router.get("/findlastCommande", adminController.findlastCommande);
 module.exports = router;

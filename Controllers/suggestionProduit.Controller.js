@@ -51,9 +51,16 @@ const suggestionProduitController = {
   },
 
   find: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     try {
+      const suggestioncount = await Model.suggestionProduit.count({})
       await Model.suggestionProduit
         .findAll({
+          limit:+pageSize,
+          order:order,
+          offset:offset,
           include: [
             { model: Model.Souscategorie },
             { model: Model.categorie },
@@ -66,9 +73,11 @@ const suggestionProduitController = {
         })
         .then((suggestionProduit) => {
           if (suggestionProduit !== null) {
+            const totalcount = Math.ceil(suggestioncount/pageSize)
             return res.status(200).json({
               success: true,
               suggestionProduit: suggestionProduit,
+              totalPages:totalcount
             });
           } else {
             return res.status(200).json({
