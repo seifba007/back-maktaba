@@ -2,6 +2,7 @@ const Model = require("../Models/index");
 const bcrypt = require("bcrypt");
 const sendMail = require("../config/Noemailer.config");
 const { Sequelize } = require("sequelize");
+const cloudinary = require("../middleware/cloudinary");
 const { response } = require("express");
 const { librairieValidation } = require("../middleware/auth/validationSchema");
 const LabriarieController = {
@@ -46,47 +47,75 @@ const LabriarieController = {
   },
 
   updateProfile: async (req, res) => {
+    const {
+      adresse,
+      ville,
+      nameLibrairie,
+      telephone,
+      facebook,
+      instagram,
+      emailLib
+    } = req.body;
     try {
-      if (req.files.length !== 0) {
-        req.body["image"] = req.files[0].filename;
-      } else {
-        req.body["image"] == null;
-      }
-      const {
-        adresse,
-        ville,
-        nameLibrairie,
-        telephone,
-        facebook,
-        instagram,
-        image,
-        emailLib,
-      } = req.body;
-      const data = {
-        adresse: adresse,
-        ville: ville,
-        nameLibrairie: nameLibrairie,
-        telephone: telephone,
-        facebook: facebook,
-        instagram: instagram,
-        imageStore: image,
-        emailLib: emailLib,
-      };
-      Model.labrairie
-        .update(data, { where: { id: req.params.id } })
-        .then((response) => {
-          if (response !== 0) {
-            return res.status(200).json({
-              success: true,
-              message: "update success",
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              message: "error to update ",
-            });
-          }
+      if (req.files && req.files.length > 0) {
+        const filePromises = req.files.map(async (file) => {
+          const result = await cloudinary.uploader.upload(file.path);
+          return result.secure_url;
         });
+
+        Promise.all(filePromises).then((imageUrls) => {
+          const data = {
+            adresse: adresse,
+            ville: ville,
+            nameLibrairie: nameLibrairie,
+            telephone: telephone,
+            facebook: facebook,
+            instagram: instagram,
+            imageStore: imageUrls[0],
+            emailLib: emailLib,
+          };
+          Model.labrairie
+            .update(data, { where: { id: req.params.id } })
+            .then((response) => {
+              if (response !== 0) {
+                return res.status(200).json({
+                  success: true,
+                  message: "update success",
+                });
+              } else {
+                return res.status(400).json({
+                  success: false,
+                  message: "error to update ",
+                });
+              }
+            });
+        });
+      }else{
+        const data = {
+          adresse: adresse,
+          ville: ville,
+          nameLibrairie: nameLibrairie,
+          telephone: telephone,
+          facebook: facebook,
+          instagram: instagram,
+          emailLib: emailLib,
+        };
+        Model.labrairie
+          .update(data, { where: { id: req.params.id } })
+          .then((response) => {
+            if (response !== 0) {
+              return res.status(200).json({
+                success: true,
+                message: "update success",
+              });
+            } else {
+              return res.status(400).json({
+                success: false,
+                message: "error to update ",
+              });
+            }
+          });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -184,7 +213,7 @@ const LabriarieController = {
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
+
       const topProducts = await Model.ProduitCommandeEnDetail.findAll({
         attributes: [
           "prodlaibrcommdetfk",
@@ -193,9 +222,8 @@ const LabriarieController = {
         group: ["prodlaibrcommdetfk"],
         order: [[Sequelize.literal("count"), "DESC"]],
         limit: 5,
-       
       });
-  
+
       const productPromises = topProducts.map(async (product) => {
         const productDetails = await Model.produitlabrairie.findOne({
           order: [["id", "DESC"]],
@@ -212,9 +240,9 @@ const LabriarieController = {
         });
         return productDetails;
       });
-  
+
       const products = await Promise.all(productPromises);
-  
+
       return res.status(200).json({
         success: true,
         produits: products,
@@ -227,26 +255,24 @@ const LabriarieController = {
       });
     }
   },
-  
 
-   getToprevProd : async (req, res) => {
-    
+  getToprevProd: async (req, res) => {
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
+
       const topProducts = await Model.avisProduitlibraire.findAll({
         attributes: [
-          [Sequelize.fn('SUM', Sequelize.col('nbStart')), 'totalAvis'],
-          'prodavisproduitsfk',
+          [Sequelize.fn("SUM", Sequelize.col("nbStart")), "totalAvis"],
+          "prodavisproduitsfk",
         ],
         //where: {
-          //createdAt: {
-            //[Sequelize.Op.gte]: thirtyDaysAgo,
-          //},
+        //createdAt: {
+        //[Sequelize.Op.gte]: thirtyDaysAgo,
         //},
-        group: ['prodavisproduitsfk'],
-        order: [[Sequelize.literal('totalAvis'), 'DESC']],
+        //},
+        group: ["prodavisproduitsfk"],
+        order: [[Sequelize.literal("totalAvis"), "DESC"]],
         limit: 5,
         include: [
           {
@@ -257,20 +283,20 @@ const LabriarieController = {
             include: [
               {
                 model: Model.imageProduitLibrairie,
-                attributes: ['name_Image'],
+                attributes: ["name_Image"],
               },
             ],
           },
         ],
       });
-  
-      const formattedProducts = topProducts.map(item => ({
+
+      const formattedProducts = topProducts.map((item) => ({
         totalAvis: item.dataValues.totalAvis,
         produitlabrairie: item.produitlabrairie,
       }));
-      console.log(topProducts)
-      console.log(formattedProducts)
-  
+      console.log(topProducts);
+      console.log(formattedProducts);
+
       return res.status(200).json({
         success: true,
         produit: formattedProducts,
@@ -285,7 +311,6 @@ const LabriarieController = {
   },
 
   findAllcommandebyetat: async (req, res) => {
-
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -333,17 +358,17 @@ const LabriarieController = {
   },
 
   findCommandeinday: async (req, res) => {
-    let {days} = req.query
-    if(days > 7){
-      days = 7
-    }else{
-      days = days
+    let { days } = req.query;
+    if (days > 7) {
+      days = 7;
+    } else {
+      days = days;
     }
-    console.log(days)
+    console.log(days);
     try {
       const date = new Date();
       date.setDate(date.getDate() - days);
-  
+
       const commandes = await Model.commandeEnDetail.findAll({
         where: {
           labrcomdetfk: req.params.id,
@@ -372,18 +397,20 @@ const LabriarieController = {
           },
         ],
       });
-  
+
       const countOnDate = {};
       commandes.forEach((commande) => {
         const commandDate = new Date(commande.createdAt);
-        const dateKey = `${commandDate.getMonth() + 1}-${commandDate.getDate()}`;
+        const dateKey = `${
+          commandDate.getMonth() + 1
+        }-${commandDate.getDate()}`;
         countOnDate[dateKey] = (countOnDate[dateKey] || 0) + 1;
       });
-  
+
       const formattedCommandes = Object.keys(countOnDate).map((date) => {
         return { date: date, nbr: countOnDate[date] };
       });
-  
+
       return res.status(200).json({
         success: true,
         commandes: formattedCommandes,
@@ -395,13 +422,11 @@ const LabriarieController = {
       });
     }
   },
-  
 
   findLatestCommandes: async (req, res) => {
-
     const { sortBy, sortOrder, page, pageSize } = req.query;
     const offset = (page - 1) * pageSize;
-    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];  
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     try {
       const date = new Date();
       date.setDate(date.getDate() - 7);
@@ -410,19 +435,19 @@ const LabriarieController = {
         where: {
           labrcomdetfk: req.params.id,
           createdAt: {
-            [Sequelize.Op.gte]: date, 
+            [Sequelize.Op.gte]: date,
           },
         },
       });
-  
+
       const latestCommandes = await Model.commandeEnDetail.findAll({
-        limit:+pageSize,
+        limit: +pageSize,
         order: order,
-        offset:offset,
+        offset: offset,
         where: {
           labrcomdetfk: req.params.id,
           createdAt: {
-            [Sequelize.Op.gte]: date, 
+            [Sequelize.Op.gte]: date,
           },
         },
         attributes: {
@@ -463,7 +488,6 @@ const LabriarieController = {
           message: "Aucun commandes trouvé avec ces filtres.",
         });
       }
-     
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -473,19 +497,17 @@ const LabriarieController = {
   },
 
   findAllproducts: async (req, res) => {
-    const { page, pageSize, sortBy, sortOrder } =
-      req.query;
+    const { page, pageSize, sortBy, sortOrder } = req.query;
     const offset = (page - 1) * pageSize;
     const filters = req.query;
     let whereClause = {};
-
 
     if (sortBy && sortOrder) {
       order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     }
 
     try {
-       whereClause = {
+      whereClause = {
         labrprodfk: req.params.id,
       };
 
@@ -705,13 +727,13 @@ const LabriarieController = {
 
   findAllLivraison: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize, etat, username } = req.query;
-  
+
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     const wherename = {};
     try {
       let whereClause = { labrcomdetfk: req.params.id };
-  
+
       if (etat && etat === "tout") {
         whereClause.etatVender = {
           [Sequelize.Op.or]: ["en_cours", "Compléter"],
@@ -719,26 +741,26 @@ const LabriarieController = {
       } else if (etat && etat !== "tout") {
         whereClause.etatVender = etat;
       }
-  
+
       if (username) {
         wherename.fullname = {
           [Sequelize.Op.like]: `%${username}%`,
         };
-  
-        whereClause = { ...whereClause, '$user.fullname$': wherename.fullname };
+
+        whereClause = { ...whereClause, "$user.fullname$": wherename.fullname };
       }
-  
+
       const count = await Model.commandeEnDetail.count({
         where: whereClause,
         include: [
           {
             model: Model.user,
             attributes: [],
-            where: wherename, 
+            where: wherename,
           },
         ],
       });
-  
+
       const commandes = await Model.commandeEnDetail.findAll({
         offset: offset,
         order: order,
@@ -748,13 +770,13 @@ const LabriarieController = {
           {
             model: Model.user,
             attributes: ["fullname", "avatar"],
-            where: wherename, 
+            where: wherename,
           },
           { model: Model.labrairie, attributes: ["nameLibrairie"] },
           { model: Model.produitlabrairie },
         ],
       });
-  
+
       if (commandes) {
         const totalPages = Math.ceil(count / pageSize);
         return res.status(200).json({
@@ -770,8 +792,6 @@ const LabriarieController = {
       });
     }
   },
-  
-  
 
   livrecommande: async (req, res) => {
     try {
@@ -841,7 +861,7 @@ const LabriarieController = {
             {
               model: Model.produitlabrairie,
               attributes: ["name_Image"],
-              include:[
+              include: [
                 {
                   model: Model.imageProduitLibrairie,
                   attributes: ["name_Image"],
@@ -850,14 +870,13 @@ const LabriarieController = {
                   model: Model.labrairie,
                   attributes: ["id", "imageStore", "nameLibrairie"],
                 },
-    
+
                 {
                   model: Model.avisProduitlibraire,
                 },
                 { model: Model.categorie, attributes: ["id", "name"] },
-              ]
+              ],
             },
-           
           ],
         })
         .then((response) => {
@@ -931,26 +950,24 @@ const LabriarieController = {
           {
             model: Model.produitlabrairie,
             //attributes: ["imageStore", "nameLibrairie"],
-            include:[
+            include: [
               {
                 model: Model.imageProduitLibrairie,
               },
               {
                 model: Model.avisProduitlibraire,
               },
-            ]
+            ],
           },
           {
             model: Model.labrairie,
             attributes: ["imageStore", "nameLibrairie"],
           },
-          
-          
         ],
       });
 
       if (products.length > 0) {
-        const totalPages = Math.ceil(products.length  / pageSize);
+        const totalPages = Math.ceil(products.length / pageSize);
         return res.status(200).json({
           success: true,
           produit: products,
@@ -971,19 +988,17 @@ const LabriarieController = {
   },
 
   allinventaire: async (req, res) => {
-    const { page, pageSize, sortBy, sortOrder } =
-      req.query;
+    const { page, pageSize, sortBy, sortOrder } = req.query;
     const offset = (page - 1) * pageSize;
     const filters = req.query;
     let whereClause = {};
-
 
     if (sortBy && sortOrder) {
       order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     }
 
     try {
-       whereClause = {
+      whereClause = {
         labrprodfk: req.params.id,
       };
 
@@ -1057,7 +1072,7 @@ const LabriarieController = {
       Visibilite: {
         [Sequelize.Op.ne]: "Invisible",
       },
-      labrprodfk: req.params.id
+      labrprodfk: req.params.id,
     };
 
     if (filters.categprodlabfk) {

@@ -139,8 +139,8 @@ const CatalogeController = {
           where: { id: req.params.id },
           include: [
             { model: Model.imageCataloge, attributes: ["id", "name_Image"] },
-            { model: Model.categorie, attributes: ["id", "name"] },
-            { model: Model.Souscategorie, attributes: ["id", "name"] },
+            { model: Model.categorie },
+            { model: Model.Souscategorie},
           ],
         })
         .then((response) => {

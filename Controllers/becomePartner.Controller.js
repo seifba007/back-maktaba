@@ -153,7 +153,7 @@ const BecomePartnerController = {
                 if (user !== null) {
                   const dataLabriarie = {
                     id: user.id,
-                    userId: user.id,
+                    userlabfk: user.id,
                   };
                   Model.labrairie.create(dataLabriarie).then((labrairie) => {
                     sendMail.acceptationDemendePartenariat(email, Password);
@@ -190,7 +190,7 @@ const BecomePartnerController = {
                 if (user !== null) {
                   const datafournisseur = {
                     id: user.id,
-                    userId: user.id,
+                    userfourfk: user.id,
                   };
                   Model.fournisseur
                     .create(datafournisseur)

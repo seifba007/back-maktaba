@@ -107,12 +107,11 @@ const adminController = {
   },
   findAllcategories: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
     const filters = req.query;
     const whereClause = {};
-    const offset = (page - 1) * pageSize;
-    const order = sortBy
-      ? [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]]
-      : [];
 
     if (filters.name) {
       whereClause.name = {
@@ -121,46 +120,21 @@ const adminController = {
     }
 
     try {
-      let cat;
-      let catcount;
-
-      if (page && pageSize && order && offset) {
-        catcount = await Model.categorie.count({
-          where: whereClause,
-        });
-
-        cat = await Model.categorie.findAll({
-          offset: offset,
-          limit: +pageSize,
-          order: order,
-          attributes: {
-            include: ["id", "name"],
+      const catcount = await Model.categorie.count({
+        where: whereClause,
+      });
+      const cat = await Model.categorie.findAll({
+        offset: offset,
+        limit: +pageSize,
+        order: order,
+        where: whereClause,
+        include: [
+          {
+            model: Model.Souscategorie,
+            //attributes: ["id", "name"],
           },
-          where: whereClause,
-          include: [
-            {
-              model: Model.Souscategorie,
-              attributes: ["id", "name"],
-            },
-          ],
-        });
-      } else {
-        cat = await Model.categorie.findAll({
-          attributes: {
-            include: ["id", "name"],
-          },
-          where: whereClause,
-          include: [
-            {
-              model: Model.Souscategorie,
-              attributes: ["id", "name"],
-            },
-          ],
-        });
-
-        catcount = cat.length;
-      }
-
+        ],
+      });
       if (cat.length > 0) {
         const totalPages = Math.ceil(catcount / pageSize);
         return res.status(200).json({
@@ -1859,7 +1833,7 @@ const adminController = {
 
     let whereClause = {
       role: "client",
-    }
+    };
     if (etatCompte && etatCompte === "tout") {
       whereClause.etatCompte = {
         [Sequelize.Op.or]: ["active", "bloque"],
@@ -1870,7 +1844,7 @@ const adminController = {
 
     try {
       const userCount = await Model.user.count({
-        where: whereClause
+        where: whereClause,
       });
 
       Model.user
@@ -1927,7 +1901,7 @@ const adminController = {
 
     let whereClause = {
       role: "fournisseur",
-    }
+    };
     if (etatCompte && etatCompte === "tout") {
       whereClause.etatCompte = {
         [Sequelize.Op.or]: ["active", "bloque"],
@@ -1937,7 +1911,7 @@ const adminController = {
     }
     try {
       const fournisseurCount = await Model.user.count({
-        where: whereClause
+        where: whereClause,
       });
 
       Model.fournisseur
@@ -1992,10 +1966,9 @@ const adminController = {
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
-
     let whereClause = {
       role: "labrairie",
-    }
+    };
     if (etatCompte && etatCompte === "tout") {
       whereClause.etatCompte = {
         [Sequelize.Op.or]: ["active", "bloque"],
@@ -2005,7 +1978,7 @@ const adminController = {
     }
     try {
       const Laibrairiecount = await Model.user.count({
-        where: whereClause
+        where: whereClause,
       });
 
       Model.labrairie
@@ -2065,10 +2038,9 @@ const adminController = {
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
-
     let whereClause = {
       role: "partenaire",
-    }
+    };
     if (etatCompte && etatCompte === "tout") {
       whereClause.etatCompte = {
         [Sequelize.Op.or]: ["active", "bloque"],
@@ -2078,7 +2050,7 @@ const adminController = {
     }
     try {
       const partenairecount = await Model.user.count({
-        where: whereClause
+        where: whereClause,
       });
 
       Model.partenaire
