@@ -1043,5 +1043,163 @@ const LabriarieController = {
       });
     }
   },
+
+  findCommandefiltre: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    const filters = req.query;
+    const whereClause = {
+      qte: {
+        [Sequelize.Op.gt]: 0,
+      },
+      Visibilite: {
+        [Sequelize.Op.ne]: "Invisible",
+      },
+      labrprodfk: req.params.id
+    };
+
+    if (filters.categprodlabfk) {
+      if (typeof filters.categprodlabfk === "string") {
+        filters.categprodlabfk = filters.categprodlabfk
+          .split(",")
+          .map((id) => parseInt(id, 10));
+      }
+      whereClause.categprodlabfk = filters.categprodlabfk;
+    }
+
+    if (filters.souscatprodfk) {
+      if (typeof filters.souscatprodfk === "string") {
+        filters.souscatprodfk = filters.souscatprodfk
+          .split(",")
+          .map((id) => parseInt(id, 10));
+      }
+      whereClause.souscatprodfk = filters.souscatprodfk;
+    }
+
+    if (filters.qteMin && filters.qteMax) {
+      whereClause.qte = {
+        [Sequelize.Op.between]: [filters.qteMin, filters.qteMax],
+        [Sequelize.Op.gt]: 0,
+      };
+    } else if (filters.qteMin) {
+      whereClause.qte = {
+        [Sequelize.Op.gte]: filters.qteMin,
+        [Sequelize.Op.gt]: 0,
+      };
+    } else if (filters.qteMax) {
+      whereClause.qte = {
+        [Sequelize.Op.lte]: filters.qteMax,
+        [Sequelize.Op.gt]: 0,
+      };
+    } else {
+      whereClause.qte = { [Sequelize.Op.gt]: 0 };
+    }
+
+    if (filters.etat) {
+      whereClause.etat = filters.etat;
+    }
+
+    if (filters.titre) {
+      whereClause.titre = {
+        [Sequelize.Op.like]: `%${filters.titre}%`,
+      };
+    }
+
+    if (filters.prixMin && filters.prixMax) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          prix: {
+            [Sequelize.Op.between]: [filters.prixMin, filters.prixMax],
+          },
+        },
+        {
+          prix_en_solde: {
+            [Sequelize.Op.between]: [filters.prixMin, filters.prixMax],
+          },
+        },
+      ];
+    } else if (filters.prixMin) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          prix: { [Sequelize.Op.gte]: filters.prixMin },
+        },
+        {
+          prix_en_solde: { [Sequelize.Op.gte]: filters.prixMin },
+        },
+      ];
+    } else if (filters.prixMax) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          prix: { [Sequelize.Op.lte]: filters.prixMax },
+        },
+        {
+          prix_en_solde: { [Sequelize.Op.lte]: filters.prixMax },
+        },
+      ];
+    }
+
+    try {
+      const totalCount = await Model.produitlabrairie.count({
+        where: whereClause,
+      });
+      const produits = await Model.produitlabrairie.findAll({
+        offset: offset,
+        order: order,
+        where: whereClause,
+        limit: +pageSize,
+        include: [
+          {
+            model: Model.categorie,
+            attributes: ["name"],
+          },
+          {
+            model: Model.Souscategorie,
+            attributes: ["name"],
+          },
+          {
+            model: Model.imageProduitLibrairie,
+          },
+          {
+            model: Model.avisProduitlibraire,
+          },
+          {
+            model: Model.labrairie,
+            attributes: [
+              "id",
+              "adresse",
+              "telephone",
+              "nameLibrairie",
+              "facebook",
+              "instagram",
+              "imageStore",
+              "emailLib",
+            ],
+          },
+        ],
+      });
+
+      if (produits.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+
+        return res.status(200).json({
+          success: true,
+          produits: produits,
+          totalPages: totalPages,
+        });
+      } else {
+        return res.status(200).json({
+          success: true,
+          message: "Aucun produit trouvé avec ces filtres.",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
 };
 module.exports = LabriarieController;

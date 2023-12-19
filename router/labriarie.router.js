@@ -26,6 +26,7 @@ router.put("/livrercommande/:id", labriarieController.livrecommande);
 router.put("/annulercommande/:id", labriarieController.annulercommande);
 router.post("/addinventaire", labriarieController.addinventaire);
 router.get("/getinventaire/:id", labriarieController.allinventaire);
+router.get("/findCommandefiltre/:id", labriarieController.findCommandefiltre);
 router.get(
   "/findallproductbyFiltre/:id",
   labriarieController.findAllproduitbyfiltre

@@ -1857,12 +1857,20 @@ const adminController = {
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
+    let whereClause = {
+      role: "client",
+    }
+    if (etatCompte && etatCompte === "tout") {
+      whereClause.etatCompte = {
+        [Sequelize.Op.or]: ["active", "bloque"],
+      };
+    } else if (etatCompte && etatCompte !== "tout") {
+      whereClause.etatCompte = etatCompte;
+    }
+
     try {
       const userCount = await Model.user.count({
-        where: {
-          role: "client",
-          etatCompte: etatCompte,
-        },
+        where: whereClause
       });
 
       Model.user
@@ -1870,10 +1878,7 @@ const adminController = {
           limit: +pageSize,
           offset: offset,
           order: order,
-          where: {
-            role: "client",
-            etatCompte: etatCompte,
-          },
+          where: whereClause,
           attributes: [
             "id",
             "fullname",
@@ -1920,12 +1925,19 @@ const adminController = {
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
+    let whereClause = {
+      role: "fournisseur",
+    }
+    if (etatCompte && etatCompte === "tout") {
+      whereClause.etatCompte = {
+        [Sequelize.Op.or]: ["active", "bloque"],
+      };
+    } else if (etatCompte && etatCompte !== "tout") {
+      whereClause.etatCompte = etatCompte;
+    }
     try {
       const fournisseurCount = await Model.user.count({
-        where: {
-          role: "fournisseur",
-          etatCompte: etatCompte,
-        },
+        where: whereClause
       });
 
       Model.fournisseur
@@ -1936,10 +1948,7 @@ const adminController = {
           include: [
             {
               model: Model.user,
-              where: {
-                role: "fournisseur",
-                etatCompte: etatCompte,
-              },
+              where: whereClause,
               attributes: [
                 "id",
                 "fullname",
@@ -1983,12 +1992,20 @@ const adminController = {
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
+
+    let whereClause = {
+      role: "labrairie",
+    }
+    if (etatCompte && etatCompte === "tout") {
+      whereClause.etatCompte = {
+        [Sequelize.Op.or]: ["active", "bloque"],
+      };
+    } else if (etatCompte && etatCompte !== "tout") {
+      whereClause.etatCompte = etatCompte;
+    }
     try {
       const Laibrairiecount = await Model.user.count({
-        where: {
-          role: "labrairie",
-          etatCompte: etatCompte,
-        },
+        where: whereClause
       });
 
       Model.labrairie
@@ -1999,10 +2016,7 @@ const adminController = {
           include: [
             {
               model: Model.user,
-              where: {
-                role: "labrairie",
-                etatCompte: etatCompte,
-              },
+              where: whereClause,
               attributes: [
                 "id",
                 "fullname",
@@ -2051,12 +2065,20 @@ const adminController = {
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
+
+    let whereClause = {
+      role: "partenaire",
+    }
+    if (etatCompte && etatCompte === "tout") {
+      whereClause.etatCompte = {
+        [Sequelize.Op.or]: ["active", "bloque"],
+      };
+    } else if (etatCompte && etatCompte !== "tout") {
+      whereClause.etatCompte = etatCompte;
+    }
     try {
       const partenairecount = await Model.user.count({
-        where: {
-          role: "partenaire",
-          etatCompte: etatCompte,
-        },
+        where: whereClause
       });
 
       Model.partenaire
@@ -2067,10 +2089,7 @@ const adminController = {
           include: [
             {
               model: Model.user,
-              where: {
-                role: "partenaire",
-                etatCompte: etatCompte,
-              },
+              where: whereClause,
               attributes: [
                 "id",
                 "fullname",
