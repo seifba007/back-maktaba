@@ -9,8 +9,10 @@ const router = express.Router();
 router.post("/add", AuthorizationUser, AuthorizationAdmin, adminController.add);
 router.get("/allusersrole", adminController.findAllusersrole);
 router.get("/allcategories", adminController.findAllcategories);
+router.get("/allcategoriespagination", adminController.findAllcategoriespagination);
 router.get("/findonecategory/:id", adminController.findOnecategory);
 router.get("/allproduits", adminController.findAllproduits);
+router.get("/findAllproduitsnumber", adminController.findAllproduitsnumber);
 
 router.delete(
   "/deletecategory",

@@ -106,6 +106,35 @@ const adminController = {
     }
   },
   findAllcategories: async (req, res) => {
+    try {
+      const cat = await Model.categorie.findAll({
+        include: [
+          {
+            model: Model.Souscategorie,
+            //attributes: ["id", "name"],
+          },
+        ],
+      });
+      if (cat.length > 0) {
+        return res.status(200).json({
+          success: true,
+          categories: cat,
+        });
+      } else {
+        return res.status(400).json({
+          success: true,
+          err: "No categories founds",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findAllcategoriespagination: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize } = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
@@ -193,6 +222,7 @@ const adminController = {
       });
     }
   },
+
   findAllproduits: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize } = req.query;
     const offset = (page - 1) * pageSize;
@@ -320,6 +350,33 @@ const adminController = {
       return res.status(400).json({
         success: false,
         error: err,
+      });
+    }
+  },
+
+  findAllproduitsnumber: async (req, res) => {
+    try {
+      const totalCount = await Model.produitlabrairie.count({
+      });
+
+      try {
+        if (totalCount !== null) {
+          return res.status(200).json({
+            success: true,
+            totalCount: totalCount,
+          });
+        }
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
+      }
+      
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
       });
     }
   },
@@ -2108,13 +2165,13 @@ const adminController = {
   findlastCommande: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize } = req.query;
     const offset = (page - 1) * pageSize;
-
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     try {
       Model.commandeEnDetail
         .findAll({
           limit: +pageSize,
           offset: offset,
-          order: [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]],
+          order: order,
           attributes: ["id", "total_ttc", "etatVender", "createdAt"],
           include: [
             {

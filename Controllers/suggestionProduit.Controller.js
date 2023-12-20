@@ -64,7 +64,6 @@ const suggestionProduitController = {
           include: [
             { model: Model.Souscategorie },
             { model: Model.categorie },
-
             {
               model: Model.user,
               attributes: ["email", "role", "fullname", "avatar", "telephone"],

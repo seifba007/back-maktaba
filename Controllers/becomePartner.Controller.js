@@ -86,32 +86,50 @@ const BecomePartnerController = {
   },
 
   findAll: async (req, res) => {
-    const {titre} = req.query
-    const whereClause = {};
-  
-    if (titre) {
-      whereClause.fullname = { [Sequelize.Op.like]: `%${titre}%` };
-    }
-  
-    try {
+    const { sortBy, sortOrder, page, pageSize, role } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
-  
-      const demandes = await Model.BecomePartner.findAll({
+    const filters = req.query;
+    const whereClause = {};
+
+    if (filters.fullname) {
+      whereClause.fullname = { [Sequelize.Op.like]: `%${filters.fullname}%` };
+    }
+
+    if (role && role === "tout") {
+      whereClause.Role = {
+        [Sequelize.Op.or]: [
+          "Librairie",
+          "Fournisseur",
+          "Enterprise",
+          "Ecole",
+          "Association",
+        ],
+      };
+    } else if (role && role !== "tout") {
+      whereClause.Role = role;
+    }
+
+    try {
+      const result = await Model.BecomePartner.findAndCountAll({
         where: whereClause,
-        attributes: {
-          exclude: ["adminpartfk", "updatedAt"],
-        },
+        order: order,
+        offset: offset,
+        limit: +pageSize,
       });
-  
-      if (demandes.length > 0) {
+
+      if (result.rows.length > 0) {
+        const totalPages = Math.ceil(result.count / pageSize);
         return res.status(200).json({
           success: true,
-          demande: demandes,
+          demande: result.rows,
+          totalPages: totalPages,
         });
       } else {
         return res.status(200).json({
           success: true,
-          message: "No demande find.",
+          message: "No demande found.",
         });
       }
     } catch (error) {
@@ -121,7 +139,6 @@ const BecomePartnerController = {
       });
     }
   },
-  
 
   accepte: async (req, res) => {
     try {
