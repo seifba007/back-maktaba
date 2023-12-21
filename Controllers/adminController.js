@@ -401,7 +401,7 @@ const adminController = {
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message,
       });
     }
   },
@@ -2162,16 +2162,16 @@ const adminController = {
     }
   },
 
-  findlastCommande: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize } = req.query;
-    const offset = (page - 1) * pageSize;
-    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+  findLastCommande: async (req, res) => {
+
     try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
       Model.commandeEnDetail
         .findAll({
-          limit: +pageSize,
-          offset: offset,
-          order: order,
+          limit: 10,
+          order : [["createdAt", "DESC"]],
           attributes: ["id", "total_ttc", "etatVender", "createdAt"],
           include: [
             {
@@ -2185,9 +2185,14 @@ const adminController = {
               model: Model.labrairie,
             },
           ],
+          where: {
+            createdAt: {
+              [Op.gte]: thirtyDaysAgo,
+            },
+          },
         })
         .then((response) => {
-          if (response.length != 0) {
+          if (response.length !== 0) {
             return res.status(200).json({
               success: true,
               commandes: response,
@@ -2195,14 +2200,14 @@ const adminController = {
           } else {
             return res.status(400).json({
               success: false,
-              err: "zero commande trouve ",
+              err: "No commands found in the last 30 days",
             });
           }
         });
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message,
       });
     }
   },

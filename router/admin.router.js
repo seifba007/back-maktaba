@@ -106,5 +106,5 @@ router.get("/findallusersadmin", adminController.findAllUsersAdmin);
 router.get("/findallfournisseuradmin", adminController.findAllFournisseurAdmin);
 router.get("/findallLaibrairieadmin", adminController.findAllLaibrairieAdmin);
 router.get("/findallpartenaireadmin", adminController.findAllpartenaireAdmin);
-router.get("/findlastCommande", adminController.findlastCommande);
+router.get("/findlastCommande", adminController.findLastCommande);
 module.exports = router;
