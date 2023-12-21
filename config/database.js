@@ -11,7 +11,7 @@ const sequelize = new Sequelize(
     dialect: process.env.DIALECT, // You can use 'mysql', 'postgres', 'sqlite', or 'mssql'
     dialectModule: mysql2,
     port: process.env.DB_PORT,
-    logging: false, // Disable SQL query logging (optional)
+    logging: false, 
   }
 );
 module.exports = sequelize;
