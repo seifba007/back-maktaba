@@ -407,25 +407,26 @@ const adminController = {
   },
 
   addcategory: async (req, res) => {
-    try {
-      req.files.forEach(async (file) => {
-        const result = await cloudinary.uploader.upload(file.path);
-        const imageUrl = result.secure_url;
-        const { subcategories } = req.body;
+  try {
+    req.files.forEach(async (file) => {
+      const result = await cloudinary.uploader.upload(file.path);
+      const imageUrl = result.secure_url;
+      const { subcategories } = req.body;
 
-        const subcategoriesArray = Array.isArray(subcategories)
-          ? subcategories
-          : [subcategories];
+      const subcategoriesArray = Array.isArray(subcategories)
+        ? subcategories
+        : subcategories ? [subcategories] : [];
 
-        const data = {
-          name: req.body.name,
-          Description: req.body.Description,
-          image: imageUrl,
-        };
+      const data = {
+        name: req.body.name,
+        Description: req.body.Description,
+        image: imageUrl,
+      };
 
-        const category = await Model.categorie.create(data);
-        const souscategories = [];
+      const category = await Model.categorie.create(data);
+      const souscategories = [];
 
+      if (subcategoriesArray.length > 0) {
         for (const subcateName of subcategoriesArray) {
           const subcategory = await Model.Souscategorie.create({
             name: subcateName,
@@ -433,21 +434,23 @@ const adminController = {
           });
           souscategories.push(subcategory);
         }
+      }
 
-        res.status(200).json({
-          success: true,
-          category: category,
-          souscategory: souscategories,
-          message: "category and subcategories added",
-        });
+      res.status(200).json({
+        success: true,
+        category: category,
+        souscategory: souscategories,
+        message: "category and subcategories added",
       });
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err,
-      });
-    }
-  },
+    });
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      error: err,
+    });
+  }
+},
+
 
   editCategory: async (req, res) => {
     try {
