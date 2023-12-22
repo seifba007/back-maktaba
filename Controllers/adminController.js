@@ -424,9 +424,9 @@ const adminController = {
       };
 
       const category = await Model.categorie.create(data);
-      const souscategories = [];
+      const souscategories = []; 
 
-      if (subcategoriesArray.length > 0) {
+      if (subcategoriesArray.length > 0) { 
         for (const subcateName of subcategoriesArray) {
           const subcategory = await Model.Souscategorie.create({
             name: subcateName,
