@@ -132,13 +132,39 @@ const commandeDetailController = {
   },
 
   findSpecCommandeByuser: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const { sortBy, sortOrder, page, pageSize, etat, username } = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
+    const wherename = {};
+
     try {
-      const totalCount = await Model.commandeSpecial.count({
-        where: { usercommdespectfk: req.params.id },
+      let whereClause = { usercommdespectfk: req.params.id };
+      if (etat && etat === "tout") {
+        whereClause.etatClient = {
+          [Sequelize.Op.or]: ["en_cours", "livre", "Rejeter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etatClient = etat;
+      }
+
+      if (username) {
+        wherename.fullname = {
+          [Sequelize.Op.like]: `%${username}%`,
+        };
+
+        whereClause = { ...whereClause, "$user.fullname$": wherename.fullname };
+      }
+
+      const count = await Model.commandeSpecial.count({
+        where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            attributes: [],
+            where: wherename,
+          },
+        ],
       });
 
       Model.commandeSpecial
@@ -146,8 +172,12 @@ const commandeDetailController = {
           offset: offset,
           order: order,
           limit: +pageSize,
-          where: { usercommdespectfk: req.params.id },
+          where: whereClause,
           include: [
+            {
+              model: Model.user,
+              where: wherename,
+            },
             {
               model: Model.labrairie,
               attributes: ["id", "nameLibrairie", "imageStore"],
@@ -156,7 +186,7 @@ const commandeDetailController = {
         })
         .then((response) => {
           if (response !== null) {
-            const totalPages = Math.ceil(totalCount / pageSize);
+            const totalPages = Math.ceil(count / pageSize);
             return res.status(200).json({
               success: true,
               commandes: response,
@@ -320,7 +350,7 @@ const commandeDetailController = {
             include: [
               {
                 model: Model.imageProduitLibrairie,
-                attributes: ["name_Image"]
+                attributes: ["name_Image"],
               },
             ],
           },
@@ -592,21 +622,54 @@ const commandeDetailController = {
   },
 
   findSpecCommandeBylibrairie: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const { sortBy, sortOrder, page, pageSize, etat, username } = req.query;
 
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const wherename = {};
+
+    
     try {
+      let whereClause = { labrcomdespectfk: req.params.id };
+      if (etat && etat === "tout") {
+        whereClause.etatClient = {
+          [Sequelize.Op.or]: ["en_cours", "livre", "Rejeter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etatClient = etat;
+      }
+
+      if (username) {
+        wherename.fullname = {
+          [Sequelize.Op.like]: `%${username}%`,
+        };
+
+        whereClause = { ...whereClause, "$user.fullname$": wherename.fullname };
+      }
+
+      const count = await Model.commandeSpecial.count({
+        where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            attributes: [],
+            where: wherename,
+          },
+        ],
+      });
+
       Model.commandeSpecial
         .findAll({
           offset: offset,
           order: order,
           limit: +pageSize,
-          where: { labrcomdespectfk: req.params.id },
+          where: whereClause,
           include: [
             {
               model: Model.user,
+
               attributes: ["fullname", "avatar", "telephone", "email", "role"],
+              where:wherename,
               include: [
                 {
                   model: Model.client,
@@ -625,14 +688,14 @@ const commandeDetailController = {
               ],
             },
           ],
-
-          order: order,
         })
         .then((response) => {
           if (response.length != 0) {
+            const totalPages = Math.ceil(count / pageSize);
             return res.status(200).json({
               success: true,
               commandes: response,
+              totalPages:totalPages
             });
           } else {
             return res.status(400).json({
@@ -699,6 +762,7 @@ const commandeDetailController = {
       });
     }
   },
+
   Annulercommande: async (req, res) => {
     try {
       const produits = req.body.produit;
@@ -749,6 +813,37 @@ const commandeDetailController = {
       });
     }
   },
+
+  Annulercommandespecial: async (req, res) => {
+    try {
+      const produits = req.body.produit;
+      Model.commandeSpecial
+        .update(
+          {
+            etatClient: "Rejeter",
+          },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande special Annuler",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error Annuler commande special",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
   Accepter: async (req, res) => {
     try {
       Model.commandeEnDetail
@@ -766,6 +861,30 @@ const commandeDetailController = {
             return res.status(400).json({
               success: false,
               message: "error accepte commande ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  AccepterCommandeSpecial: async (req, res) => {
+    try {
+      Model.commandeSpecial
+        .update({ etatClient: "en_cours" }, { where: { id: req.params.id } })
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Special acceptée",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error accepte commande Special ",
             });
           }
         });
@@ -797,6 +916,35 @@ const commandeDetailController = {
             return res.status(400).json({
               success: false,
               message: "error livre commande ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  livreCommandeSpecial: async (req, res) => {
+    try {
+      Model.commandeSpecial
+        .update(
+          {
+            etatClient: "Livre",
+          },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Special livre",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error livre commande Special",
             });
           }
         });
@@ -1419,7 +1567,6 @@ const commandeDetailController = {
                       ],
                     },
                   ],
-                  
                 },
               ],
               order: [["createdAt", "ASC"]],

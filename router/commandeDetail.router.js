@@ -38,8 +38,15 @@ router.put(
   AuthorizationUser,
   commandeDetailController.Accepter
 );
+router.put(
+  "/AccepterCommandeSpecial/:id",
+  AuthorizationUser,
+  commandeDetailController.AccepterCommandeSpecial
+);
 router.put("/Annuler/:id", AuthorizationUser, commandeDetailController.Annuler);
+router.put("/AnnulerCommandeSpecial/:id", AuthorizationUser, commandeDetailController.Annulercommandespecial);
 router.put("/livre/:id", AuthorizationUser, commandeDetailController.livre);
+router.put("/livreCommandeSpecial/:id", AuthorizationUser, commandeDetailController.livreCommandeSpecial);
 router.post(
   "/addArticle",
   AuthorizationUser,

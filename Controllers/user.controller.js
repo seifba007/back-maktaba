@@ -591,6 +591,7 @@ const userController = {
       });
     }
   },
+  
   delete: async (req, res) => {
     try {
       Model.user

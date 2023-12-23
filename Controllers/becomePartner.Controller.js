@@ -33,7 +33,7 @@ const BecomePartnerController = {
     }
 
     try {
-      const existingEmail = await Model.BecomePartner.findOne({
+      const existingEmail = await Model.user.findOne({
         where: { email: email },
       });
 
