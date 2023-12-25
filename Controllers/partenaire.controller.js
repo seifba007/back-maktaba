@@ -2,6 +2,8 @@ const Model = require("../Models/index");
 const bcrypt = require("bcrypt");
 const sendMail = require("../config/Noemailer.config");
 const { response } = require("express");
+const cloudinary = require("../middleware/cloudinary");
+
 const partenaireController = {
   addpartenaire: async (req, res) => {
     try {
@@ -181,18 +183,15 @@ const partenaireController = {
   },
   updateProfileimge: async (req, res) => {
     try {
-      if (req.files.length !== 0) {
-        req.body["image"] = req.files[0].filename;
-      } else {
-        req.body["image"] == null;
-      }
-      const { image } = req.body;
-      const data = {
-        image: image,
-      };
+      if (req.files && req.files.length > 0) {
+        const filePromises = req.files.map(async (file) => {
+          const result = await cloudinary.uploader.upload(file.path);
+          return result.secure_url;
+        });
 
-      Model.partenaire
-        .update(data, { where: { id: req.params.id } })
+        Promise.all(filePromises).then((imageUrls) => {
+          Model.partenaire
+        .update({image:imageUrls[0]}, { where: { id: req.params.id } })
         .then((response) => {
           console.log(response);
           if (response !== 0) {
@@ -207,7 +206,12 @@ const partenaireController = {
             });
           }
         });
-    } catch (err) {
+        })
+          
+  
+
+      
+       }} catch (err) {
       return res.status(400).json({
         success: false,
         error: "err",

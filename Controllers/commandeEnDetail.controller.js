@@ -690,12 +690,12 @@ const commandeDetailController = {
           ],
         })
         .then((response) => {
-          if (response.length != 0) {
+          if (response != 0) {
             const totalPages = Math.ceil(count / pageSize);
             return res.status(200).json({
               success: true,
               commandes: response,
-              totalPages:totalPages
+              totalPages: totalPages
             });
           } else {
             return res.status(400).json({
