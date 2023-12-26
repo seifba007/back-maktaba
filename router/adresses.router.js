@@ -14,4 +14,15 @@ router.delete(
   AuthorizationUser,
   adressesController.delete
 );
+router.delete(
+  "/deleteaddressepartenaire/:id/:partenaireaddressfk",
+  AuthorizationUser,
+  adressesController.deleteaddresspartenaire
+);
+
+router.delete(
+  "/deleteaddressefournisseur/:id/:fournisseuraddressfk",
+  //AuthorizationUser,
+  adressesController.deleteaddressfournisseur
+);
 module.exports = router;

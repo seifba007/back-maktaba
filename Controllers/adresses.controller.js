@@ -153,5 +153,59 @@ const adressesController = {
       });
     }
   },
+
+  deleteaddresspartenaire: async (req, res) => {
+    try {
+      Model.adresses
+        .destroy({
+          where: { id: req.params.id, partenaireaddressfk: req.params.partenaireaddressfk },
+        })
+        .then((response) => {
+          if (response != 0) {
+            return res.status(200).json({
+              success: true,
+              message: "delete partenaire addresse done !! ",
+            });
+          } else {
+            return res.status(200).json({
+              success: false,
+              meesage: "err delete addreese partenaire",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        err: err,
+      });
+    }
+  },
+
+  deleteaddressfournisseur: async (req, res) => {
+    try {
+      Model.adresses
+        .destroy({
+          where: { id: req.params.id, fournisseuraddressfk: req.params.fournisseuraddressfk },
+        })
+        .then((response) => {
+          if (response != 0) {
+            return res.status(200).json({
+              success: true,
+              message: "delete fournisseur addresse done !! ",
+            });
+          } else {
+            return res.status(200).json({
+              success: false,
+              meesage: "err delete addreese fournisseur",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        err: err,
+      });
+    }
+  },
 };
 module.exports = adressesController;
