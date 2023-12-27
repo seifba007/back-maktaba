@@ -1,8 +1,7 @@
 const Model = require ("../Models/index")
 const sendMail = require("../config/Noemailer.config");
 const signalerProduitlibraireController = {
-
-
+    
     add : async (req, res)=>{
         try{
             let filesignal = "";

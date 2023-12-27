@@ -6,6 +6,7 @@ module.exports = (db, DataTypes) => {
       prix : { type : DataTypes.FLOAT},
       etat : {type : DataTypes.STRING},
       Visibilite : {type : DataTypes.STRING},
+      codebar : {type : DataTypes.STRING},
       qte:{type: DataTypes.INTEGER},
       prix_en_Solde:{type: DataTypes.FLOAT},
       remise:{type: DataTypes.FLOAT},

@@ -1024,6 +1024,12 @@ const adminController = {
       };
     }
 
+    if (filters.codebar) {
+      whereClause.codebar = {
+        [Sequelize.Op.like]: `%${filters.codebar}%`,
+      };
+    }
+
     if (filters.prixMin && filters.prixMax) {
       whereClause[Sequelize.Op.or] = [
         {
@@ -1777,12 +1783,30 @@ const adminController = {
         });
         return productDetails;
       });
+      const productPromisescount = topProducts.map(async (product) => {
+        const productDetails = await Model.produitlabrairie.findOne({
+          order: [["id", "DESC"]],
+          where: {
+            id: product.prodlaibrcommdetfk,
+          },
+          include: [
+            {
+              model: Model.imageProduitLibrairie,
+              attributes: ["name_Image"],
+            },
+          ],
+        });
+        return product.dataValues.count;
+      });
 
       const products = await Promise.all(productPromises);
+
+      const productscount = await Promise.all(productPromisescount);
 
       return res.status(200).json({
         success: true,
         produits: products,
+        count:productscount
       });
     } catch (err) {
       console.error("Error fetching top products:", err);

@@ -326,6 +326,7 @@ const userController = {
             message: "success login",
             accessToken: accessToken,
             refreshToken: refreshToken,
+            user:user
           });
         } else {
           const characters =
@@ -372,7 +373,7 @@ const userController = {
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message,
       });
     }
   },
