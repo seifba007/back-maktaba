@@ -241,11 +241,30 @@ const LabriarieController = {
         return productDetails;
       });
 
+      const productPromisescount = topProducts.map(async (product) => {
+        const productDetails = await Model.produitlabrairie.findOne({
+          order: [["id", "DESC"]],
+          where: {
+            id: product.prodlaibrcommdetfk,
+            labrprodfk: req.params.id,
+          },
+          include: [
+            {
+              model: Model.imageProduitLibrairie,
+              attributes: ["name_Image"],
+            },
+          ],
+        });
+        return product.dataValues.count;
+      });
+
       const products = await Promise.all(productPromises);
+      const productscount = await Promise.all(productPromisescount);
 
       return res.status(200).json({
         success: true,
         produits: products,
+        count:productscount
       });
     } catch (err) {
       console.error("Error fetching top products:", err);
