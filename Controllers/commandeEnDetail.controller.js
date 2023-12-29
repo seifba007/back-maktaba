@@ -1575,6 +1575,14 @@ const commandeDetailController = {
                         },
                       ],
                     },
+                    {
+                      model: Model.partenaire,
+                      include: [
+                        {
+                          model: Model.adresses,
+                        },
+                      ],
+                    },
                   ],
                 },
               ],
