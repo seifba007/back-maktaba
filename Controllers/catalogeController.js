@@ -12,6 +12,7 @@ const CatalogeController = {
         description,
         prix,
         etat,
+        codebar,
         admincatalogefk,
         categoriecatalogefk,
         souscatalogefk,
@@ -22,6 +23,7 @@ const CatalogeController = {
         description: description,
         prix: prix,
         etat: etat,
+        codebar: codebar,
         admincatalogefk: admincatalogefk,
         categoriecatalogefk: categoriecatalogefk,
         souscatalogefk: souscatalogefk,
@@ -52,6 +54,7 @@ const CatalogeController = {
         return res.status(200).json({
           success: true,
           message: "Catalog created successfully",
+          catalog:catalog
         });
       } else {
         return res.status(400).json({
@@ -91,6 +94,12 @@ const CatalogeController = {
       };
     }
 
+    if (filters.codebar) {
+      whereClause.codebar = {
+        [Sequelize.Op.like]: `%${filters.codebar}%`,
+      };
+    }
+
     const totalCount = await Model.cataloge.count({
       where: whereClause,
     });
@@ -108,7 +117,6 @@ const CatalogeController = {
           { model: Model.imageCataloge, attributes: ["id", "name_Image"] },
           { model: Model.categorie },
           { model: Model.Souscategorie },
-
         ],
       });
 
@@ -140,7 +148,7 @@ const CatalogeController = {
           include: [
             { model: Model.imageCataloge, attributes: ["id", "name_Image"] },
             { model: Model.categorie },
-            { model: Model.Souscategorie},
+            { model: Model.Souscategorie },
           ],
         })
         .then((response) => {
@@ -223,6 +231,7 @@ const CatalogeController = {
         description,
         prix,
         etat,
+        codebar,
         admincatalogefk,
         categoriecatalogefk,
         souscatalogefk,
@@ -233,6 +242,7 @@ const CatalogeController = {
         description: description,
         prix: prix,
         etat: etat,
+        codebar:codebar,
         admincatalogefk: admincatalogefk,
         categoriecatalogefk: categoriecatalogefk,
         souscatalogefk: souscatalogefk,
