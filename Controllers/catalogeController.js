@@ -89,9 +89,18 @@ const CatalogeController = {
     }
 
     if (filters.titre) {
-      whereClause.titre = {
-        [Sequelize.Op.like]: `%${filters.titre}%`,
-      };
+      whereClause[Sequelize.Op.or] = [
+        {
+          titre: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
+          },
+        },
+        {
+          codebar: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
+          },
+        },
+      ];
     }
 
     if (filters.codebar) {
