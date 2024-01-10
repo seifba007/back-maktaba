@@ -3,9 +3,11 @@ const express = require("express");
 const router = express.Router();
 const upload = require("../middleware/upload");
 const { AuthorizationAdmin, AuthorizationUser } = require("../middleware/auth/auth");
+
 router.post("/register", userController.register);
 router.get("/verif/:email", userController.emailVerification);
-router.post("/login", userController.login);
+router.post("/login",userController.login);
+//router.get("/verify",userController.verifytoken);
 router.post("/refresh", userController.refresh);
 router.post("/sendForgotPassword", userController.sendMailforgotPassword);
 router.post("/forgotpassword/:id", userController.forgotpassword);

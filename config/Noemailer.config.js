@@ -316,7 +316,7 @@ module.exports.acceptationDemendePartenariat = (email,password) => {
     .sendMail({
       from: 000,
       to: email,
-      subject: " acceptation demende  de partenariat ",
+      subject: " acceptation demande  de partenariat ",
       html: `
       <div>
       <h1> bienvenue chez maktba.tn </h1>

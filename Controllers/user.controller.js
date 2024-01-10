@@ -19,7 +19,6 @@ const userController = {
   login: async (req, res) => {
     const data = req.body;
     const { email, password } = req.body;
-
     try {
       const { error } = loginValidation(data);
       if (error)
@@ -43,7 +42,7 @@ const userController = {
                     err: "le mot de passe n'est pas correct",
                   });
                 } else {
-                  const accessToken = createAccessToken({ id: User.id });
+                  const accessToken = createAccessToken({ id: User.id});
                   const refreshToken = createRefreshToken({ id: User.id });
                   refreshTokens.push(refreshToken);
                   res.status(200).json({
