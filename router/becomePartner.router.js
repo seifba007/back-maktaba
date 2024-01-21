@@ -14,14 +14,14 @@ router.post(
 router.get("/findAll", BecomePartnerController.findAll);
 router.post(
   "/accepter/:id",
-  AuthorizationUser,
-  AuthorizationAdmin,
+  //AuthorizationUser,
+  //AuthorizationAdmin,
   BecomePartnerController.accepte
 );
 router.put(
   "/Annuler/:id",
-  AuthorizationUser,
-  AuthorizationAdmin,
+  //AuthorizationUser,
+  //AuthorizationAdmin,
   BecomePartnerController.Annuler
 );
 module.exports = router;
