@@ -307,6 +307,22 @@ commandeEnDetail.belongsToMany(produitlabrairie, {
   constraints: false,
 });
 
+
+
+produitlabrairie.belongsToMany(commandeEnGros, {
+  through: ProduitCommandeEnGros,
+  foreignKey: 'prodlaibrcommgrosfk', 
+  otherKey: 'comgrosprodlabrfk', 
+  constraints: false,
+});
+
+commandeEnGros.belongsToMany(produitlabrairie, {
+  through: ProduitCommandeEnGros,
+  foreignKey: 'comgrosprodlabrfk', 
+  otherKey: 'prodlaibrcommgrosfk', 
+  constraints: false,
+});
+
 user.hasMany(commandeSpecial, {
   foreignKey: "usercommdespectfk",
   constraints: false,
@@ -692,7 +708,7 @@ module.exports = {
   offre,
   produitaechange,
   produitechange,
-  //ProduitCommandeEnGros,
+  ProduitCommandeEnGros,
   commandeEnDetail,
   commandeSpecial,
   ProduitCommandeEnDetail,
