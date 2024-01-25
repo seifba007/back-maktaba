@@ -1,7 +1,7 @@
 const express = require("express");
 const passport = require("passport");
 const router = express.Router();
-const { AuthorizationUser } = require("../middleware/auth/auth");
+const { AuthorizationUser, AuthorizationFournisseur } = require("../middleware/auth/auth");
 const upload = require("../middleware/upload");
 const { ROLES, inRole } = require("../security/Rolemiddleware");
 const fournisseurController = require("../Controllers/fournisseur.controller");
@@ -19,7 +19,7 @@ router.get(
 router.put(
   "/updateProfile/:id",
   AuthorizationUser,
-  fournisseurController.updateProfile
+  fournisseurController.updateProfile  
 );
 router.put(
   "/updateProfileimge/:id",
@@ -27,4 +27,15 @@ router.put(
   upload.array("image", 1),
   fournisseurController.updateProfileimge
 );
+
+
+router.get(
+  "/findAllCommandes/:id",
+  fournisseurController.findAllCommandes
+);
+
+router.get("/findAllLivraison/:id", fournisseurController.findAllLivraison);
+router.put("/livrercommande/:id",fournisseurController.livrecommande);
+router.put("/annulercommande/:id",fournisseurController.annulercommande)
+
 module.exports = router;

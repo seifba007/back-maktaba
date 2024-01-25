@@ -1,5 +1,6 @@
 const Model = require("../Models/index");
 const bcrypt = require("bcrypt");
+const { Sequelize } = require("sequelize");
 const sendMail = require("../config/Noemailer.config");
 const fournisseurController = {
   addfournisseur: async (req, res) => {
@@ -205,6 +206,187 @@ const fournisseurController = {
       return res.status(400).json({
         success: false,
         error: "err",
+      });
+    }
+  },
+
+
+  findAllCommandes: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat, laibrairiename } = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const wherename = {};
+    try {
+      let whereClause = { fourcomgrofk: req.params.id };
+
+      if (etat && etat === "tout") {
+        whereClause.etat = {
+          [Sequelize.Op.or]: ["en_cours", "livre", "Nouveau", "Rejeter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etat = etat;
+      }
+
+      if (laibrairiename) {
+        wherename.nameLibrairie = {
+          [Sequelize.Op.like]: `%${laibrairiename}%`,
+        };
+
+        whereClause = { ...whereClause, "$labrairie.nameLibrairie$": wherename.fullname };
+      }
+
+      const count = await Model.commandeEnGros.count({
+        where: whereClause,
+        include: [
+          {
+            model: Model.labrairie,
+            attributes: [],
+            where: wherename,
+          },
+        ],
+      });
+
+      const commandes = await Model.commandeEnGros.findAll({
+        offset: offset,
+        order: order,
+        limit: +pageSize,
+        where: whereClause,
+        include: [
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie", "imageStore"],
+            where:wherename,
+            
+          },
+          { model: Model.produitlabrairie },
+        ],
+      });
+
+      if (commandes) {
+        const totalPages = Math.ceil(count / pageSize);
+        return res.status(200).json({
+          success: true,
+          commandes: commandes,
+          totalPages: totalPages,
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findAllLivraison: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat, librairiename } = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const wherename = {};
+    try {
+      let whereClause = { fourcomgrofk: req.params.id };
+
+      if (etat && etat === "tout") {
+        whereClause.etat = {
+          [Sequelize.Op.or]: ["en_cours", "Compléter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etat = etat;
+      }
+
+      if (librairiename) {
+        wherename.nameLibrairie = {
+          [Sequelize.Op.like]: `%${librairiename}%`,
+        };
+
+        whereClause = { ...whereClause, "$labrairie.nameLibrairie$": wherename.nameLibrairie};
+      }
+
+      const count = await Model.commandeEnGros.count({
+        where: whereClause,
+        include: [
+          {
+            model: Model.labrairie,
+            where: wherename,
+          },
+        ],
+      });
+
+      const commandes = await Model.commandeEnGros.findAll({
+        offset: offset,
+        order: order,
+        limit: +pageSize,
+        where: whereClause,
+        include: [
+          { model: Model.labrairie, attributes: ["nameLibrairie"],where: wherename, },
+          { model: Model.produitlabrairie },
+        ],
+      });
+
+      if (commandes) {
+        const totalPages = Math.ceil(count / pageSize);
+        return res.status(200).json({
+          success: true,
+          livraison: commandes,
+          totalPages: totalPages,
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  livrecommande: async (req, res) => {
+    try {
+      Model.commandeEnGros
+        .update({ etat: "livre" }, { where: { id: req.params.id } })
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande en gros livré",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "erreur de livraison de commande en gros",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  annulercommande: async (req, res) => {
+    try {
+      Model.commandeEnGros
+        .update({ etat: "annuler" }, { where: { id: req.params.id } })
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande en gros annulée",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "erreur d'annulation de commande en gros",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
       });
     }
   },

@@ -44,8 +44,20 @@ const AuthorizationClient = async (req, res, next) => {
   }
 };
 
+const AuthorizationFournisseur = async (req, res, next) => {
+  try {
+    const user = await Model.user.findOne({ where: { id: req.user.id } });
+
+    if (user.role !== "fournisseur")
+      return res.status(400).json({ msg: "Access Denied - Must be a Client to become a Partner" });
+    next();
+  } catch (error) {
+    return res.status(500).json({ msg: error.message });
+  }
+};
+
 module.exports = {
   AuthorizationUser,
   AuthorizationAdmin,
-  AuthorizationClient
+  AuthorizationClient,AuthorizationFournisseur
 };

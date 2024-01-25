@@ -24,6 +24,61 @@ const commandeEnGrosController = {
       });
     }
   },
+
+  addcommandegros: async (req, res) => {
+    const { commande } = req.body;
+    try {
+      commande.map((data) => {
+        let commandes = {
+          total_ttc: data.total_ttc,
+          etat: "en_cours",
+          fourcomgrofk: data.fourcomgrofk,
+          labrcomgrofk: data.labrcomgrofk,
+        };
+        Model.commandeEnGros.create(commandes).then((response) => {
+          if (response !== null) {
+            data.produits.map((e) => {
+              e.comgrosprodlabrfk = response.id;
+            });
+            Model.ProduitCommandeEnDetail.bulkCreate(data.produits).then(
+              (response) => {
+                data.produits.map((e) => {
+                  Model.produitlabrairie
+                    .findByPk(e.prodlaibrcommgrosfk)
+                    .then((produit) => {
+                      if (produit !== null) {
+                        const updatedQte = produit.qte - e.Qte;
+                        if (updatedQte < 0) {
+                          updatedQte = 0;
+                        }
+                        return Model.produitlabrairie.update(
+                          { qte: updatedQte },
+                          { where: { id: e.prodlaibrcommgrosfk } }
+                        );
+                      }
+                    });
+                });
+              }
+            );
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: " error lorsque l'ajoute de commande",
+            });
+          }
+        });
+      });
+      return res.status(200).json({
+        success: true,
+        message: " add commande en  detail  Done !!",
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
   findcommandeByLabriarie: async (req, res) => {
     try {
       Model.commandeEnGros
@@ -63,66 +118,5 @@ const commandeEnGrosController = {
     }
   },
 
-  findAllLivraison: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize, etat, librairiename } = req.query;
-
-    const offset = (page - 1) * pageSize;
-    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-    const wherename = {};
-    try {
-      let whereClause = { fourcomgrofk: req.params.id };
-
-      if (etat && etat === "tout") {
-        whereClause.etat = {
-          [Sequelize.Op.or]: ["en_cours", "Compléter"],
-        };
-      } else if (etat && etat !== "tout") {
-        whereClause.etat = etat;
-      }
-
-      if (librairiename) {
-        wherename.nameLibrairie = {
-          [Sequelize.Op.like]: `%${librairiename}%`,
-        };
-
-        whereClause = { ...whereClause, "$labrairie.nameLibrairie$": wherename.nameLibrairie};
-      }
-
-      const count = await Model.commandeEnGros.count({
-        where: whereClause,
-        include: [
-          {
-            model: Model.labrairie,
-            where: wherename,
-          },
-        ],
-      });
-
-      const commandes = await Model.commandeEnGros.findAll({
-        offset: offset,
-        order: order,
-        limit: +pageSize,
-        where: whereClause,
-        include: [
-          { model: Model.labrairie, attributes: ["nameLibrairie"],where: wherename, },
-          { model: Model.produitlabrairie },
-        ],
-      });
-
-      if (commandes) {
-        const totalPages = Math.ceil(count / pageSize);
-        return res.status(200).json({
-          success: true,
-          livraison: commandes,
-          totalPages: totalPages,
-        });
-      }
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err.message,
-      });
-    }
-  },
 };
 module.exports = commandeEnGrosController;
