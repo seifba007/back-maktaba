@@ -21,4 +21,7 @@ router.put(
   upload.array("image", 4),
   CatalogeController.update
 );
+
+router.get("/findAllCatalogue", CatalogeController.findAllCatalogue);
+
 module.exports = router;
