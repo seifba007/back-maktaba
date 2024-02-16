@@ -210,9 +210,9 @@ const fournisseurController = {
     }
   },
 
-
   findAllCommandes: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize, etat, laibrairiename } = req.query;
+    const { sortBy, sortOrder, page, pageSize, etat, laibrairiename } =
+      req.query;
 
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
@@ -233,7 +233,10 @@ const fournisseurController = {
           [Sequelize.Op.like]: `%${laibrairiename}%`,
         };
 
-        whereClause = { ...whereClause, "$labrairie.nameLibrairie$": wherename.fullname };
+        whereClause = {
+          ...whereClause,
+          "$labrairie.nameLibrairie$": wherename.fullname,
+        };
       }
 
       const count = await Model.commandeEnGros.count({
@@ -256,8 +259,7 @@ const fournisseurController = {
           {
             model: Model.labrairie,
             attributes: ["nameLibrairie", "imageStore"],
-            where:wherename,
-            
+            where: wherename,
           },
           { model: Model.produitlabrairie },
         ],
@@ -280,7 +282,8 @@ const fournisseurController = {
   },
 
   findAllLivraison: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize, etat, librairiename } = req.query;
+    const { sortBy, sortOrder, page, pageSize, etat, librairiename } =
+      req.query;
 
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
@@ -301,7 +304,10 @@ const fournisseurController = {
           [Sequelize.Op.like]: `%${librairiename}%`,
         };
 
-        whereClause = { ...whereClause, "$labrairie.nameLibrairie$": wherename.nameLibrairie};
+        whereClause = {
+          ...whereClause,
+          "$labrairie.nameLibrairie$": wherename.nameLibrairie,
+        };
       }
 
       const count = await Model.commandeEnGros.count({
@@ -320,7 +326,11 @@ const fournisseurController = {
         limit: +pageSize,
         where: whereClause,
         include: [
-          { model: Model.labrairie, attributes: ["nameLibrairie"],where: wherename, },
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie"],
+            where: wherename,
+          },
           { model: Model.produitlabrairie },
         ],
       });
@@ -383,6 +393,313 @@ const fournisseurController = {
             });
           }
         });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findTopProducts: async (req, res) => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const topProducts = await Model.ProduitCommandeEnGros.findAll({
+        attributes: [
+          "prodlaibrcommgrosfk",
+          [Sequelize.fn("COUNT", "prodlaibrcommgrosfk"), "count"],
+        ],
+        group: ["prodlaibrcommgrosfk"],
+        order: [[Sequelize.literal("count"), "DESC"]],
+        limit: 5,
+      });
+
+      const productPromises = topProducts.map(async (product) => {
+        const productDetails = await Model.produitlabrairie.findOne({
+          order: [["id", "DESC"]],
+          where: {
+            id: product.prodlaibrcommgrosfk,
+            fourprodlabfk: req.params.id,
+          },
+          include: [
+            {
+              model: Model.imageProduitLibrairie,
+              attributes: ["name_Image"],
+            },
+          ],
+        });
+
+        return productDetails;
+      });
+
+      const productPromisescount = topProducts.map(async (product) => {
+        const productDetails = await Model.produitlabrairie.findOne({
+          order: [["id", "DESC"]],
+          where: {
+            id: product.prodlaibrcommgrosfk,
+            fourprodlabfk: req.params.id,
+          },
+          include: [
+            {
+              model: Model.imageProduitLibrairie,
+              attributes: ["name_Image"],
+            },
+          ],
+        });
+        return product.dataValues.count;
+      });
+
+      const products = await Promise.all(productPromises);
+      const productscount = await Promise.all(productPromisescount);
+
+      return res.status(200).json({
+        success: true,
+        produits: products,
+        count: productscount,
+      });
+    } catch (err) {
+      console.error("Error fetching top products:", err);
+      return res.status(500).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  getToprevProd: async (req, res) => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const topProducts = await Model.avisProduitlibraire.findAll({
+        attributes: [
+          [Sequelize.fn("SUM", Sequelize.col("nbStart")), "totalAvis"],
+          "prodavisproduitsfk",
+        ],
+        //where: {
+        //createdAt: {
+        //[Sequelize.Op.gte]: thirtyDaysAgo,
+        //},
+        //},
+        group: ["prodavisproduitsfk"],
+        order: [[Sequelize.literal("totalAvis"), "DESC"]],
+        limit: 5,
+        include: [
+          {
+            model: Model.produitlabrairie,
+            where: {
+              fourprodlabfk: req.params.id,
+            },
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
+        ],
+      });
+
+      const formattedProducts = topProducts.map((item) => ({
+        totalAvis: item.dataValues.totalAvis,
+        produitlabrairie: item.produitlabrairie,
+      }));
+
+      return res.status(200).json({
+        success: true,
+        produit: formattedProducts,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(400).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  },
+
+  findAllcommandebyetat: async (req, res) => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const response = await Model.commandeEnGros.findAll({
+        where: {
+          fourcomgrofk: req.params.id,
+          createdAt: {
+            [Sequelize.Op.gte]: thirtyDaysAgo,
+          },
+        },
+        include: [{ model: Model.fournisseur }],
+      });
+
+      let enAttenteCount = 0;
+      let annulerCount = 0;
+      let accepterCount = 0;
+      let completerCount = 0;
+
+      response.forEach((order) => {
+        const etat = order.etat;
+        if (etat === "Nouveau") {
+          enAttenteCount++;
+        } else if (etat === "Rejeter") {
+          annulerCount++;
+        } else if (etat === "En_cours") {
+          accepterCount++;
+        } else if (etat === "Compléter") {
+          completerCount++;
+        }
+      });
+
+      return res.status(200).json({
+        success: true,
+        commandes: response,
+        Nouveaucommande: enAttenteCount,
+        Rejetercoomande: annulerCount,
+        Encourscommande: accepterCount,
+        Completercommande: completerCount,
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findCommandeinday: async (req, res) => {
+    let { days } = req.query;
+    if (days > 7) {
+      days = 7;
+    } else {
+      days = days;
+    }
+    console.log(days);
+    try {
+      const date = new Date();
+      date.setDate(date.getDate() - days);
+
+      const commandes = await Model.commandeEnGros.findAll({
+        where: {
+          fourcomgrofk: req.params.id,
+          createdAt: {
+            [Sequelize.Op.gte]: date,
+            //[Sequelize.Op.lt]: new Date(date.getTime() + 24 * 60 * 60 * 1000),
+          },
+        },
+        include: [
+          {
+            model: Model.fournisseur,
+            attributes: ["id", "nameetablissement", "avatar"],
+          },
+          {
+            model: Model.produitlabrairie,
+            attributes: ["id", "titre", "prix"],
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
+        ],
+      });
+
+      const countOnDate = {};
+      commandes.forEach((commande) => {
+        const commandDate = new Date(commande.createdAt);
+        const dateKey = `${
+          commandDate.getMonth() + 1
+        }-${commandDate.getDate()}`;
+        countOnDate[dateKey] = (countOnDate[dateKey] || 0) + 1;
+      });
+
+      const formattedCommandes = Object.keys(countOnDate).map((date) => {
+        return { date: date, nbr: countOnDate[date] };
+      });
+
+      return res.status(200).json({
+        success: true,
+        commandes: formattedCommandes,
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+
+  findLatestCommandes: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    try {
+      const date = new Date();
+      date.setDate(date.getDate() - 7);
+
+      const totalCount = await Model.commandeEnGros.count({
+        where: {
+          fourcomgrofk: req.params.id,
+          createdAt: {
+            [Sequelize.Op.gte]: date,
+          },
+        },
+      });
+
+      const latestCommandes = await Model.commandeEnGros.findAll({
+        limit: +pageSize,
+        order: order,
+        offset: offset,
+        where: {
+          fourcomgrofk: req.params.id,
+          createdAt: {
+            [Sequelize.Op.gte]: date,
+          },
+        },
+        attributes: {
+          exclude: ["updatedAt",  "labrcomgrofk"],
+        },
+        include: [
+          {
+            model: Model.fournisseur,
+            attributes: ["id", "nameetablissement", "avatar"],
+            include:[
+              {
+                model: Model.user,
+                attributes: ["fullname", "avatar"],
+              },
+            ]
+          },
+          {
+            model: Model.produitlabrairie,
+            attributes: ["id", "titre", "prix"],
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
+          
+        ],
+      });
+      if (latestCommandes.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+
+        return res.status(200).json({
+          success: true,
+          latestCommandes: latestCommandes,
+          totalPages: totalPages,
+        });
+      } else {
+        return res.status(200).json({
+          success: true,
+          message: "Aucun commandes trouvé avec ces filtres.",
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,

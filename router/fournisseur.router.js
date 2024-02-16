@@ -38,4 +38,9 @@ router.get("/findAllLivraison/:id", fournisseurController.findAllLivraison);
 router.put("/livrercommande/:id",fournisseurController.livrecommande);
 router.put("/annulercommande/:id",fournisseurController.annulercommande)
 
+router.get("/findtopproduct/:id", fournisseurController.findTopProducts);
+router.get("/gettoprevprod/:id", fournisseurController.getToprevProd);
+router.get("/findallcommandebystate/:id", fournisseurController.findAllcommandebyetat);
+router.get("/findCommandeinday/:id", fournisseurController.findCommandeinday);
+router.get("/findLatestCommandes/:id", fournisseurController.findLatestCommandes);
 module.exports = router;
