@@ -4,7 +4,7 @@ const cloudinary = require("../middleware/cloudinary");
 
 const updateProductNewState = async () => {
   try {
-    const products = await Model.produitlabrairie.findAll({
+    const products = await Model.produitfournisseur.findAll({
       where: {
         etat: "Nouveau",
       },
@@ -21,36 +21,37 @@ const updateProductNewState = async () => {
     );
   }
 };
+
 const updateProductTopState = async () => {
   try {
-    Model.ProduitCommandeEnDetail.findAll({
+    Model.ProduitCommandeEnGros.findAll({
       attributes: [
-        "prodlaibrcommdetfk",
-        [Sequelize.fn("COUNT", "prodlaibrcommdetfk"), "count"],
+        "prodlaibrcommgrosfk",
+        [Sequelize.fn("COUNT", "prodlaibrcommgrosfk"), "count"],
       ],
-      group: ["prodlaibrcommdetfk"],
+      group: ["prodlaibrcommgrosfk"],
       order: [[Sequelize.literal("count"), "DESC"]],
       limit: 3,
     })
       .then((topProducts) => {
-        Model.produitlabrairie.update(
+        Model.produitfournisseur.update(
           { etat: "ancien" },
           { where: { etat: "plus ventes" } }
         );
         topProducts.forEach((product) => {
-          Model.produitlabrairie
+          Model.produitfournisseur
             .update(
               { etat: "plus ventes" },
-              { where: { id: product.prodlaibrcommdetfk } }
+              { where: { id: product.prodlaibrcommgrosfk } }
             )
             .then(() => {
               console.log(
-                `Produit ID: ${product.prodlaibrcommdetfk} mis à jour avec succès.`
+                `Produit ID: ${product.prodlaibrcommgrosfk} mis à jour avec succès.`
               );
             })
             .catch((err) => {
               console.error(
-                `Erreur lors de la mise à jour du produit ID ${product.prodlaibrcommdetfk} :`,
+                `Erreur lors de la mise à jour du produit ID ${product.prodlaibrcommgrosfk} :`,
                 err
               );
             });
@@ -59,7 +60,6 @@ const updateProductTopState = async () => {
       .catch((err) => {
         console.error("Erreur lors de la récupération des produits :", err);
       });
-    //console.log('État des produits mis à jour.');
   } catch (err) {
     console.error(
       "Erreur lors de la mise à jour de l'état des produits :",
@@ -71,7 +71,7 @@ const updateNewInterval = 24 * 60 * 60 * 1000;
 const updateTopInterval = 72 * 60 * 60 * 1000;
 setInterval(updateProductNewState, updateNewInterval);
 setInterval(updateProductTopState, updateTopInterval);
-const produitController = {
+const produitfournisseurController = {
   add_produit: async (req, res) => {
     try {
       const produits = [];
@@ -79,20 +79,20 @@ const produitController = {
       const produitsarr = req.body.products;
 
       for (const productData of produitsarr) {
-        const produit = await Model.produitlabrairie.create({
+        const produit = await Model.produitfournisseur.create({
           titre: productData.titre,
           description: productData.description,
           etat: "Nouveau",
-          Visibilite:"Visible",
-          codebar:productData.codebar,
-          labrprodfk: productData.labrprodfk,
-          categprodlabfk: productData.categprodlabfk,
-          souscatprodfk: productData.souscatprodfk,
+          Visibilite: "Visible",
+          codebar: productData.codebar,
+          fourprodfk: productData.fourprodfk,
+          categprodfoufk: productData.categprodfoufk,
+          souscatprodfourfk: productData.souscatprodfourfk,
         });
 
-        const image = await Model.imageProduitLibrairie.create({
+        const image = await Model.imageProduitFournsseur.create({
           name_Image: productData.image,
-          imageprodfk: produit.id,
+          imageprodfourfk: produit.id,
         });
 
         produits.push({
@@ -129,14 +129,14 @@ const produitController = {
         prix_en_Solde: prix_solde,
         remise: remise,
       };
-      Model.produitlabrairie
+      Model.produitfournisseur
         .update(produitData, { where: { id: req.params.id } })
         .then((response) => {
           if (response !== 0) {
             if (req.files.length > 0) {
-              Model.imageProduitLibrairie.destroy({
+              Model.imageProduitFournsseur.destroy({
                 where: {
-                  imageprodfk: req.params.id,
+                  imageprodfourfk: req.params.id,
                 },
               });
             }
@@ -149,9 +149,9 @@ const produitController = {
                 .then((result) => {
                   const imageUrl = result.secure_url;
 
-                  return Model.imageProduitLibrairie.create({
+                  return Model.imageProduitFournsseur.create({
                     name_Image: imageUrl,
-                    imageprodfk: req.params.id,
+                    imageprodfourfk: req.params.id,
                   });
                 });
 
@@ -181,7 +181,7 @@ const produitController = {
   delete: async (req, res) => {
     const { ids } = req.body;
     try {
-      Model.produitlabrairie
+      Model.produitfournisseur
         .destroy({
           where: {
             id: ids,
@@ -212,7 +212,7 @@ const produitController = {
       order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     }
     try {
-      Model.produitlabrairie
+      Model.produitfournisseur
         .findAll({
           limit: +pageSize,
           offset: offset,
@@ -224,16 +224,12 @@ const produitController = {
           },
           include: [
             {
-              model: Model.imageProduitLibrairie,
+              model: Model.imageProduitFournsseur,
               attributes: ["name_Image"],
             },
             {
-              model: Model.labrairie,
-              attributes: ["id", "imageStore", "nameLibrairie"],
-            },
-
-            {
-              model: Model.avisProduitlibraire,
+              model: Model.fournisseur,
+              attributes: ["id", "avatar", "nameetablissement"],
             },
             { model: Model.categorie, attributes: ["id", "name"] },
           ],
@@ -259,14 +255,14 @@ const produitController = {
     }
   },
 
-  findAllProduitByLabrairie: async (req, res) => {
+  findAllProduitByfournisseur: async (req, res) => {
     const { page, pageSize, sortBy, sortOrder } = req.query;
     const offset = (page - 1) * pageSize;
     const filters = req.query;
     let whereClause = {};
 
     whereClause = {
-      labrprodfk: req.params.id,
+      fourprodfk: req.params.id,
       //qte: {
       // [Sequelize.Op.gt]: 0,
       //},
@@ -282,32 +278,30 @@ const produitController = {
     }
 
     try {
-      const totalCount = await Model.produitlabrairie.count({
+      const totalCount = await Model.produitfournisseur.count({
         where: whereClause,
       });
 
-      const products = await Model.produitlabrairie.findAll({
+      const products = await Model.produitfournisseur.findAll({
         order: order,
         limit: +pageSize,
         offset: offset,
         where: whereClause,
         include: [
           {
-            model: Model.labrairie,
-            attributes: ["imageStore", "nameLibrairie"],
+            model: Model.fournisseur,
+            attributes: ["id", "avatar", "nameetablissement"],
           },
           {
             model: Model.categorie,
             attributes: ["id", "name", "Description", "image"],
           },
           {
-            model: Model.imageProduitLibrairie,
+            model: Model.imageProduitFournsseur,
           },
-          {
-            model: Model.avisProduitlibraire,
-          },
+         
         ],
-        group: ["produitlabrairie.id"],
+        
       });
 
       if (products.length > 0) {
@@ -320,7 +314,7 @@ const produitController = {
       } else {
         return res.status(400).json({
           success: false,
-          err: "Aucun produit trouv� pour cette labrairie.",
+          err: "Aucun produit trouv� pour cette fournisseur.",
         });
       }
     } catch (err) {
@@ -334,7 +328,7 @@ const produitController = {
   findoneproduit: async (req, res) => {
     try {
       const { id } = req.params;
-      Model.produitlabrairie
+      Model.produitfournisseur
         .findOne({
           where: {
             id: id,
@@ -343,25 +337,23 @@ const produitController = {
             },
           },
           attributes: {
-            exclude: ["createdAt", "updatedAt", "labrprodfk"],
+            exclude: ["createdAt", "updatedAt", "fourprodfk"],
           },
           include: [
             {
-              model: Model.labrairie,
-              attributes: ["id", "nameLibrairie", "imageStore"],
+              model: Model.fournisseur,
+              attributes: ["id", "avatar", "nameetablissement"],
             },
             {
               model: Model.categorie,
               attributes: ["id", "name", "Description", "image"],
             },
             {
-              model: Model.imageProduitLibrairie,
+              model: Model.imageProduitFournsseur,
               attributes: ["name_Image"],
               separate: true,
             },
-            {
-              model: Model.avisProduitlibraire,
-            },
+           
           ],
         })
         .then((response) => {
@@ -393,27 +385,27 @@ const produitController = {
       order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     }
     try {
-      Model.produitlabrairie
+      Model.produitfournisseur
         .findAll({
           order: order,
           limit: +pageSize,
           offset: offset,
           where: {
-            categprodlabfk: req.params.categprodlabfk,
+            categprodfoufk: req.params.categprodfoufk,
             qte: {
               [Sequelize.Op.gt]: 0,
             },
           },
           attributes: {
-            exclude: ["categprodlabfk", "description"],
+            exclude: ["categprodfoufk", "description"],
           },
           include: [
             {
-              model: Model.labrairie,
-              attributes: ["imageStore", "nameLibrairie"],
+              model: Model.fournisseur,
+              attributes: ["id", "avatar", "nameetablissement"],
             },
             {
-              model: Model.imageProduitLibrairie,
+              model: Model.imageProduitFournsseur,
               where: {
                 name_image: {
                   [Sequelize.Op.ne]:
@@ -421,9 +413,7 @@ const produitController = {
                 },
               },
             },
-            {
-              model: Model.avisProduitlibraire,
-            },
+            
           ],
           order: order,
         })
@@ -457,7 +447,7 @@ const produitController = {
     }
 
     try {
-      Model.produitlabrairie
+      Model.produitfournisseur
         .findAll({
           order: order,
           limit: +pageSize,
@@ -468,12 +458,12 @@ const produitController = {
               model: Model.avisProduitlibraire,
             },
             {
-              model: Model.imageProduitLibrairie,
+              model: Model.imageProduitFournsseur,
               attributes: ["name_Image"],
             },
           ],
           where: {
-            labrprodfk: req.params.id,
+            fourprodfk: req.params.id,
             qte: {
               [Sequelize.Op.gt]: 0,
             },
@@ -497,7 +487,7 @@ const produitController = {
 
   produit_mieux: async (req, res) => {
     try {
-      Model.produitlabrairie
+      Model.produitfournisseur
         .findAll({
           attributes: ["id", "titre"],
           include: [
@@ -509,17 +499,17 @@ const produitController = {
               ],
             },
             {
-              model: Model.imageProduitLibrairie,
+              model: Model.imageProduitFournsseur,
               attributes: ["name_Image"],
             },
           ],
           where: {
-            labrprodfk: req.params.id,
+            fourprodfk: req.params.id,
             qte: {
               [Sequelize.Op.gt]: 0,
             },
           },
-          group: ["produitlabrairie.id", "produitlabrairie.titre"],
+          group: ["produitfournisseur.id", "produitfournisseur.titre"],
           having: Sequelize.literal("SUM(nbStart) >24"),
         })
         .then((response) => {
@@ -547,10 +537,12 @@ const produitController = {
       },
     };
     order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-    wherec.titre = namearticle;
+    if(namearticle){
+      wherec.titre = namearticle;
+    }
 
     try {
-      Model.produitlabrairie
+      Model.produitfournisseur
         .findAll({
           order: order,
           limit: +pageSize,
@@ -558,21 +550,11 @@ const produitController = {
           where: wherec,
           include: [
             {
-              model: Model.imageProduitLibrairie,
+              model: Model.imageProduitFournsseur,
               attributes: ["name_Image"],
             },
             {
-              model: Model.labrairie,
-              attributes: [
-                "id",
-                "adresse",
-                "telephone",
-                "nameLibrairie",
-                "facebook",
-                "instagram",
-                "imageStore",
-                "emailLib",
-              ],
+              model: Model.fournisseur,
             },
           ],
         })
@@ -592,4 +574,4 @@ const produitController = {
     }
   },
 };
-module.exports = produitController;
+module.exports = produitfournisseurController;

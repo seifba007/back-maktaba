@@ -9,6 +9,7 @@ const codePromoModel = require("./codepromo");
 const bonAchatModel = require("./bonAchat");
 const categorieModel = require("./categorie");
 const produitlabrairieModel = require("./produitLabriarie");
+const produitfournisseurModel = require("./produitfournisseur");
 const commandeEnGrosModel = require("./commandeGros");
 const ProduitCommandeEnGrosModel = require("./ProduitCommandeEnGros");
 const ProduitCommandeEnDetailModel = require("./ProduitCommandeEnDetail");
@@ -19,11 +20,14 @@ const avisProduitlibraireModel = require("./avisProduitlibraire");
 const signalerProduitlibraireModel = require("./signalerProduitLibraire");
 const adressesModel = require("./adresses");
 const imageProduitLibrairieModel = require("./imageProduitLibrairie");
+const imageProduitFournisseurModel = require("./imageproduitfournisseur");
 const imageCatalogeModel = require("./imageCataloge");
+const imageCatalogeFournisseurModel = require("./imagecatalogefournisseur");
 const produitFavorieModel = require("./produitFavorie");
 const BecomePartnerModel = require("./BecomePartner");
 const adminModel = require("./admin");
 const catalogeModel = require("./cataloge");
+const catalogeFournisseurModel = require("./catalogefournisseur");
 const suggestionProduitModel = require("./suggestionProduit");
 const SouscategorieModel = require("./sousCategorie");
 const serviceInformatiqueModel = require("./serviceInformatique");
@@ -43,6 +47,7 @@ const codePromo = codePromoModel(db, Sequelize);
 const bonAchat = bonAchatModel(db, Sequelize);
 const categorie = categorieModel(db, Sequelize);
 const produitlabrairie = produitlabrairieModel(db, Sequelize);
+const produitfournisseur = produitfournisseurModel(db, Sequelize);
 const serviceInformatique = serviceInformatiqueModel(db, Sequelize);
 const don = donModel(db, Sequelize);
 const imageDon = imageDonModel(db, Sequelize);
@@ -56,11 +61,14 @@ const avisProduitlibraire = avisProduitlibraireModel(db, Sequelize);
 const signalerProduitlibraire = signalerProduitlibraireModel(db, Sequelize);
 const adresses = adressesModel(db, Sequelize);
 const imageProduitLibrairie = imageProduitLibrairieModel(db, Sequelize);
+const imageProduitFournsseur = imageProduitFournisseurModel(db, Sequelize);
 const imageCataloge = imageCatalogeModel(db, Sequelize);
+const imageCatalogeFournisseur = imageCatalogeFournisseurModel(db, Sequelize);
 const produitFavorie = produitFavorieModel(db, Sequelize);
 const admin = adminModel(db, Sequelize);
 const BecomePartner = BecomePartnerModel(db, Sequelize);
 const cataloge = catalogeModel(db, Sequelize);
+const catalogefournisseur = catalogeFournisseurModel(db, Sequelize);
 const suggestionProduit = suggestionProduitModel(db, Sequelize);
 const Souscategorie = SouscategorieModel(db, Sequelize);
 const echange = echangeModel(db, Sequelize);
@@ -132,6 +140,17 @@ cataloge.belongsTo(admin, {
   foreignKey: "admincatalogefk",
   constraints: false,
 });
+
+admin.hasMany(catalogefournisseur, {
+  foreignKey: "admincatalogefourfk",
+  constraints: false,
+});
+
+catalogefournisseur.belongsTo(admin, {
+  foreignKey: "admincatalogefourfk",
+  constraints: false,
+});
+
 labrairie.hasMany(codePromo, {
   foreignKey: "labcodeprfk", 
   constraints: false, 
@@ -238,6 +257,18 @@ produitlabrairie.belongsTo(categorie, {
   constraints: false,
 });
 
+categorie.hasMany(produitfournisseur, {
+  foreignKey: "categprodfoufk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+produitfournisseur.belongsTo(categorie, {
+  foreignKey: "categprodfoufk",
+  constraints: false,
+});
+
 labrairie.hasMany(produitlabrairie, {
   foreignKey: "labrprodfk",
   constraints: false,
@@ -247,6 +278,19 @@ labrairie.hasMany(produitlabrairie, {
 
 produitlabrairie.belongsTo(labrairie, {
   foreignKey: "labrprodfk",
+  constraints: false,
+});
+
+
+fournisseur.hasMany(produitfournisseur, {
+  foreignKey: "fourprodfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+produitfournisseur.belongsTo(fournisseur, {
+  foreignKey: "fourprodfk",
   constraints: false,
 });
 
@@ -309,17 +353,17 @@ commandeEnDetail.belongsToMany(produitlabrairie, {
 
 
 
-produitlabrairie.belongsToMany(commandeEnGros, {
+produitfournisseur.belongsToMany(commandeEnGros, {
   through: ProduitCommandeEnGros,
-  foreignKey: 'prodlaibrcommgrosfk', 
-  otherKey: 'comgrosprodlabrfk', 
+  foreignKey: 'prodfourcommgrosfk', 
+  otherKey: 'comgrosprodfourrfk', 
   constraints: false,
 });
 
-commandeEnGros.belongsToMany(produitlabrairie, {
+commandeEnGros.belongsToMany(produitfournisseur, {
   through: ProduitCommandeEnGros,
-  foreignKey: 'comgrosprodlabrfk', 
-  otherKey: 'prodlaibrcommgrosfk', 
+  foreignKey: 'comgrosprodfourrfk', 
+  otherKey: 'prodfourcommgrosfk', 
   constraints: false,
 });
 
@@ -384,6 +428,7 @@ avisProduitlibraire.belongsTo(produitlabrairie, {
   constraints: false,
 });
 
+
 produitlabrairie.hasMany(signalerProduitlibraire, {
   foreignKey: "prodsignalerfk",
   constraints: false,
@@ -416,6 +461,8 @@ adresses.belongsTo(fournisseur, {
   foreignKey: "fournisseuraddressfk",
   constraints: false,
 });
+
+
 produitlabrairie.hasMany(imageProduitLibrairie, {
   foreignKey: "imageprodfk",
   constraints: false,
@@ -426,6 +473,20 @@ imageProduitLibrairie.belongsTo(produitlabrairie, {
   foreignKey: "imageprodfk",
   constraints: false,
 });
+//
+
+produitfournisseur.hasMany(imageProduitFournsseur, {
+  foreignKey: "imageprodfourfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+imageProduitFournsseur.belongsTo(produitfournisseur, {
+  foreignKey: "imageprodfourfk",
+  constraints: false,
+});
+
+
 cataloge.hasMany(imageCataloge, {
   foreignKey: "imagecatalogefk",
   constraints: false,
@@ -436,12 +497,34 @@ imageCataloge.belongsTo(cataloge, {
   foreignKey: "imagecatalogefk",
   constraints: false,
 });
+
+
+catalogefournisseur.hasMany(imageCatalogeFournisseur, {
+  foreignKey: "imagecatalogefourfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+imageCatalogeFournisseur.belongsTo(catalogefournisseur, {
+  foreignKey: "imagecatalogefourfk",
+  constraints: false,
+});
 categorie.hasMany(cataloge, {
   foreignKey: "categoriecatalogefk",
   constraints: false,
 });
 cataloge.belongsTo(categorie, {
   foreignKey: "categoriecatalogefk",
+  constraints: false,
+});
+
+
+categorie.hasMany(catalogefournisseur, {
+  foreignKey: "categoriecatalogefourfk",
+  constraints: false,
+});
+catalogefournisseur.belongsTo(categorie, {
+  foreignKey: "categoriecatalogefourfk",
   constraints: false,
 });
 user.hasMany(produitFavorie, {
@@ -521,12 +604,31 @@ produitlabrairie.belongsTo(Souscategorie, {
   foreignKey: "souscatprodfk",
   constraints: false,
 });
+
+Souscategorie.hasMany(produitfournisseur, {
+  foreignKey: "souscatprodfourfk",
+  constraints: false,
+});
+produitfournisseur.belongsTo(Souscategorie, {
+  foreignKey: "souscatprodfourfk",
+  constraints: false,
+});
+
 Souscategorie.hasMany(cataloge, {
   foreignKey: "souscatalogefk",
   constraints: false,
 });
 cataloge.belongsTo(Souscategorie, {
   foreignKey: "souscatalogefk",
+  constraints: false,
+});
+
+Souscategorie.hasMany(catalogefournisseur, {
+  foreignKey: "souscatalogefourfk",
+  constraints: false,
+});
+catalogefournisseur.belongsTo(Souscategorie, {
+  foreignKey: "souscatalogefourfk",
   constraints: false,
 });
 
@@ -690,6 +792,7 @@ inventaire.belongsTo(produitlabrairie, {
   constraints: false,
 });
 
+
 module.exports = {
   user,
   client,
@@ -700,6 +803,7 @@ module.exports = {
   bonAchat,
   categorie,
   produitlabrairie,
+  produitfournisseur,
   serviceInformatique,
   don,
   imageDon,
@@ -717,11 +821,14 @@ module.exports = {
   signalerProduitlibraire,
   adresses,
   imageProduitLibrairie,
+  imageProduitFournsseur,
   produitFavorie,
   admin,
   BecomePartner,
   cataloge,
+  catalogefournisseur,
   imageCataloge,
+  imageCatalogeFournisseur,
   suggestionProduit,
   Souscategorie,
   inventaire

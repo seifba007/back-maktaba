@@ -52,7 +52,7 @@ const fournisseurController = {
           include: [
             {
               model: Model.user,
-              attributes: ["fullname"],
+              attributes: ["fullname","avatar"],
             },
           ],
         })

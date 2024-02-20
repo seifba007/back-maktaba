@@ -40,10 +40,10 @@ const commandeEnGrosController = {
             data.produits.map((e) => {
               e.comgrosprodlabrfk = response.id;
             });
-            Model.ProduitCommandeEnDetail.bulkCreate(data.produits).then(
+            Model.ProduitCommandeEnGros.bulkCreate(data.produits).then(
               (response) => {
                 data.produits.map((e) => {
-                  Model.produitlabrairie
+                  Model.produitfournisseur
                     .findByPk(e.prodlaibrcommgrosfk)
                     .then((produit) => {
                       if (produit !== null) {
@@ -51,7 +51,7 @@ const commandeEnGrosController = {
                         if (updatedQte < 0) {
                           updatedQte = 0;
                         }
-                        return Model.produitlabrairie.update(
+                        return Model.produitfournisseur.update(
                           { qte: updatedQte },
                           { where: { id: e.prodlaibrcommgrosfk } }
                         );
