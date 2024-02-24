@@ -1,13 +1,13 @@
 const { response } = require("express");
 const Model = require("../Models/index");
-const avisProduitlibraire = require("../Models/avisProduitlibraire");
+const avisProduitfournisseur = require("../Models/avisproduitfournisseur");
 const { Sequelize } = require("sequelize");
 const {
   addAvisProdValidation,
 } = require("../middleware/auth/validationSchema");
-const avisProduitlibraireController = {
+const avisProduitfournisseurController = {
   add: async (req, res) => {
-    const { nbStart, commenter, clientavisprodfk, prodavisproduitsfk, partavisprodfk } =
+    const { nbStart, commenter, clientavisprodfourfk, prodfouravisfk, partavisprodfourfk } =
       req.body;
     try {
       const { error } = addAvisProdValidation({commenter:commenter,nbStart:nbStart});
@@ -18,23 +18,23 @@ const avisProduitlibraireController = {
       const dataclient = {
         nbStart: nbStart,
         commenter: commenter,
-        clientavisprodfk: clientavisprodfk,
-        partavisprodfk: partavisprodfk,
-        prodavisproduitsfk: prodavisproduitsfk,
+        clientavisprodfourfk: clientavisprodfourfk,
+        partavisprodfourfk: partavisprodfourfk,
+        prodfouravisfk: prodfouravisfk,
       };
       const datapartenaire = {
         nbStart: nbStart,
         commenter: commenter,
-        clientavisprodfk: clientavisprodfk,
-        partavisprodfk: partavisprodfk,
-        prodavisproduitsfk: prodavisproduitsfk,
+        clientavisprodfourfk: clientavisprodfourfk,
+        partavisprodfourfk: partavisprodfourfk,
+        prodfouravisfk: prodfouravisfk,
       };
-      if (clientavisprodfk) {
-        Model.avisProduitlibraire.create(dataclient).then((response) => {
+      if (clientavisprodfourfk) {
+        Model.avisProduitfournisseur.create(dataclient).then((response) => {
           if (response) {
             return res.status(200).json({
               success: true,
-              message: "avis created",
+              message: "avis fournisseur created",
             });
           } else {
             return res.status(200).json({
@@ -43,8 +43,8 @@ const avisProduitlibraireController = {
             });
           }
         });
-      } else if (partavisprodfk) {
-        Model.avisProduitlibraire.create(datapartenaire).then((response) => {
+      } else if (partavisprodfourfk) {
+        Model.avisProduitfournisseur.create(datapartenaire).then((response) => {
           if (response) {
             return res.status(200).json({
               success: true,
@@ -75,7 +75,7 @@ const avisProduitlibraireController = {
         nbStart: nbStart,
         commenter: commenter,
       };
-      Model.avisProduitlibraire
+      Model.avisProduitfournisseur
         .update(data, {
           where: { id: req.params.id },
         })
@@ -102,7 +102,7 @@ const avisProduitlibraireController = {
 
   delete: async (req, res) => {
     try {
-      Model.avisProduitlibraire
+      Model.avisProduitfournisseur
         .destroy({
           where: { id: req.params.id },
         })
@@ -129,24 +129,22 @@ const avisProduitlibraireController = {
 
   getAllAvisByClient: async (req, res) => {
     try {
-      Model.avisProduitlibraire
+      Model.avisProduitfournisseur
         .findAll({
-          where: { clientavisprodfk: req.params.clientavisprodfk },
-          attributes: {
-            exclude: ["updatedAt", "clientavisprodfk", "prodavisproduitsfk"],
-          },
+          where: { clientavisprodfourfk: req.params.clientavisprodfourfk },
+          
           include: [
             {
-              model: Model.produitlabrairie,
+              model: Model.produitfournisseur,
               attributes: ["id", "titre", "prix"],
               include: [
                 {
-                  model: Model.imageProduitLibrairie,
+                  model: Model.imageProduitFournsseur,
                   attributes: ["name_Image"],
                 },
                 {
-                  model: Model.labrairie,
-                  attributes: ["nameLibrairie"],
+                  model: Model.fournisseur,
+                  attributes: ["nameetablissement"],
                 },
               ],
             },
@@ -163,30 +161,28 @@ const avisProduitlibraireController = {
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message,
       });
     }
     
   },
   getAllAvisByPartnier: async (req, res) => {
     try {
-      const response = await Model.avisProduitlibraire.findAll({
-        where: { partavisprodfk: req.params.partavisprodfk },
-        attributes: {
-          exclude: ["updatedAt", "prodavisproduitsfk"],
-        },
+      const response = await Model.avisProduitfournisseur.findAll({
+        where: { partavisprodfourfk: req.params.partavisprodfourfk },
+        
         include: [
           {
-            model: Model.produitlabrairie,
+            model: Model.produitfournisseur,
             attributes: ["id", "titre", "prix"],
             include: [
               {
-                model: Model.imageProduitLibrairie,
+                model: Model.imageProduitFournsseur,
                 attributes: ["name_Image"],
               },
               {
-                model: Model.labrairie,
-                attributes: ["nameLibrairie"],
+                model: Model.fournisseur,
+                attributes: ["nameetablissement"],
               },
             ],
           },
@@ -214,10 +210,8 @@ const avisProduitlibraireController = {
   getAllAvisByproduit: async (req, res) => {
     try {
       const avisOptions = {
-        where: { prodavisproduitsfk: req.params.prodavisproduitsfk },
-        attributes: {
-          exclude: ["updatedAt", "clientavisprodfk", "prodavisproduitsfk"],
-        },
+        where: { prodfouravisfk: req.params.prodfouravisfk },
+        
         include: [
           {
             model: Model.client,
@@ -234,7 +228,7 @@ const avisProduitlibraireController = {
         ],
       };
 
-      const response = await Model.avisProduitlibraire.findAll(avisOptions);
+      const response = await Model.avisProduitfournisseur.findAll(avisOptions);
 
       if (response.length !== 0) {
         return res.status(200).json({
@@ -244,7 +238,7 @@ const avisProduitlibraireController = {
       } else {
         return res.status(400).json({
           success: false,
-          error: "No Avis for this produitlabrairie",
+          error: "No Avis for this produit fournisseur",
         });
       }
     } catch (err) {
@@ -257,22 +251,22 @@ const avisProduitlibraireController = {
 
   getAllavisBylibriarie: async (req, res) => {
     try {
-      const labrairieId = req.params.id;
+      const fournisseurId = req.params.id;
 
       const avisOptions = {
         include: [
           {
-            model: Model.produitlabrairie,
+            model: Model.produitfournisseur,
             attributes: ["titre"],
             include: [
               {
-                model: Model.imageProduitLibrairie,
+                model: Model.imageProduitFournsseur,
                 attributes: ["name_Image"],
               },
               {
-                model: Model.labrairie,
+                model: Model.fournisseur,
                 attributes: [],
-                where: { id: labrairieId },
+                where: { id: fournisseurId },
               },
             ],
           },
@@ -293,7 +287,7 @@ const avisProduitlibraireController = {
         ],
       };
 
-      const response = await Model.avisProduitlibraire.findAll(avisOptions);
+      const response = await Model.avisProduitfournisseur.findAll(avisOptions);
 
       if (response.length !== 0) {
         return res.status(200).json({
@@ -303,13 +297,13 @@ const avisProduitlibraireController = {
       } else {
         return res.status(400).json({
           success: false,
-          error: "No Avis for this labrairie",
+          error: "No Avis for this fournisseur",
         });
       }
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err.message || "An error occurred",
+        error: err.message || "An error fournisseur",
       });
     }
   },
@@ -317,7 +311,7 @@ const avisProduitlibraireController = {
   getAvisByArticle: async (req, res) => {
     const { nameArticle } = req.body;
     try {
-      Model.avisProduitlibraire
+      Model.avisProduitfournisseur
         .findAll({
           attributes: {
             exclude: ["updatedAt", "clientavisprodfk", "prodavisproduitsfk"],
@@ -362,7 +356,7 @@ const avisProduitlibraireController = {
         .findAll({
           include: [
             {
-              model: Model.avisProduitlibraire,
+              model: Model.avisProduitfournisseur,
               attributes: [
                 "id",
                 "nbStart",
@@ -411,4 +405,4 @@ const avisProduitlibraireController = {
     }
   },
 };
-module.exports = avisProduitlibraireController;
+module.exports = avisProduitfournisseurController;

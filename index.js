@@ -47,6 +47,7 @@ const EchangeRouter = require("./router/echange.router")
 const OffreRouter = require("./router/offre.router")
 const codeClient = require("./router/codeClient.router")
 const avisProduitlibraire = require ("./router/avisProduitlibraire.router")
+const avisProduitfournisseur = require ("./router/avisProduitfournisseur.router")
 const signalerProduitlibraire = require ("./router/signalerProduitlibraire.router")
 const adresses = require("./router/adresses.router")
 const produitFavorie= require("./router/produitFavorie.router")
@@ -73,6 +74,7 @@ app.use("/echange",EchangeRouter)
 app.use("/offre",OffreRouter)
 app.use("/codeClient",codeClient)
 app.use("/avisProduitlibraire",avisProduitlibraire)
+app.use("/avisProduitfournisseur",avisProduitfournisseur)
 app.use("/signalerProduitlibraire",signalerProduitlibraire)
 app.use("/adresses",adresses)
 app.use("/produitFavorie",produitFavorie)
@@ -83,6 +85,7 @@ app.use("/sousCategorie",sousCategorie)
 app.use("/suggestionProduit",suggestionProduit)
 app.use("/catalogefournisseur",Catalogefournisseur)
 app.use("/produitfournisseur",produitFournisseurRouter)
+
 
 
 

@@ -17,6 +17,7 @@ const commandeEnDetailModel = require("./CommandeDetail");
 const commandeSpecialModel = require("./commandespecial");
 const codeClientModel = require("./codeClient");
 const avisProduitlibraireModel = require("./avisProduitlibraire");
+const avisProduitfournisseurModel = require("./avisproduitfournisseur");
 const signalerProduitlibraireModel = require("./signalerProduitLibraire");
 const adressesModel = require("./adresses");
 const imageProduitLibrairieModel = require("./imageProduitLibrairie");
@@ -58,6 +59,7 @@ const commandeSpecial = commandeSpecialModel(db, Sequelize);
 const ProduitCommandeEnDetail = ProduitCommandeEnDetailModel(db, Sequelize);
 const codeClient = codeClientModel(db, Sequelize);
 const avisProduitlibraire = avisProduitlibraireModel(db, Sequelize);
+const avisProduitfournisseur = avisProduitfournisseurModel(db, Sequelize);
 const signalerProduitlibraire = signalerProduitlibraireModel(db, Sequelize);
 const adresses = adressesModel(db, Sequelize);
 const imageProduitLibrairie = imageProduitLibrairieModel(db, Sequelize);
@@ -400,6 +402,20 @@ avisProduitlibraire.belongsTo(client, {
   foreignKey: "clientavisprodfk",
   constraints: false,
 });
+
+client.hasMany(avisProduitfournisseur, {
+  foreignKey: "clientavisprodfourfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+avisProduitfournisseur.belongsTo(client, {
+  foreignKey: "clientavisprodfourfk",
+  constraints: false,
+});
+
+
 partenaire.hasMany(avisProduitlibraire, {
   foreignKey: "partavisprodfk",
   constraints: false,
@@ -408,12 +424,32 @@ avisProduitlibraire.belongsTo(partenaire, {
   foreignKey: "partavisprodfk",
   constraints: false,
 });
+
+partenaire.hasMany(avisProduitfournisseur, {
+  foreignKey: "partavisprodfourfk",
+  constraints: false,
+});
+avisProduitfournisseur.belongsTo(partenaire, {
+  foreignKey: "partavisprodfourfk",
+  constraints: false,
+});
+
+
 fournisseur.hasMany(avisProduitlibraire, {
   foreignKey: "fournavisprodfk",
   constraints: false,
 });
 avisProduitlibraire.belongsTo(fournisseur, {
   foreignKey: "fournavisprodfk",
+  constraints: false,
+});
+
+labrairie.hasMany(avisProduitfournisseur, {
+  foreignKey: "labnavisprodfk",
+  constraints: false,
+});
+avisProduitfournisseur.belongsTo(labrairie, {
+  foreignKey: "labnavisprodfk",
   constraints: false,
 });
 
@@ -425,6 +461,18 @@ produitlabrairie.hasMany(avisProduitlibraire, {
 });
 avisProduitlibraire.belongsTo(produitlabrairie, {
   foreignKey: "prodavisproduitsfk",
+  constraints: false,
+});
+
+
+produitfournisseur.hasMany(avisProduitfournisseur, {
+  foreignKey: "prodfouravisfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+avisProduitfournisseur.belongsTo(produitfournisseur, {
+  foreignKey: "prodfouravisfk",
   constraints: false,
 });
 
@@ -818,6 +866,7 @@ module.exports = {
   ProduitCommandeEnDetail,
   codeClient,
   avisProduitlibraire,
+  avisProduitfournisseur,
   signalerProduitlibraire,
   adresses,
   imageProduitLibrairie,

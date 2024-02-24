@@ -2,6 +2,8 @@ const Model = require("../Models/index");
 const bcrypt = require("bcrypt");
 const { Sequelize } = require("sequelize");
 const sendMail = require("../config/Noemailer.config");
+const cloudinary = require("../middleware/cloudinary");
+
 const fournisseurController = {
   addfournisseur: async (req, res) => {
     try {
@@ -136,6 +138,7 @@ const fournisseurController = {
       nameetablissement,
       telephone,
       facebook,
+      ville,
       instagram,
       email,
       address,
@@ -144,7 +147,7 @@ const fournisseurController = {
       const data = {
         nameetablissement: nameetablissement,
         address: address,
-        ville: null,
+        ville: ville,
         telephone: telephone,
         email: email,
         Facebook: facebook,
@@ -177,38 +180,37 @@ const fournisseurController = {
   updateProfileimge: async (req, res) => {
     try {
       if (req.files.length !== 0) {
-        req.body["image"] = req.files[0].filename;
-      } else {
-        req.body["image"] == null;
-      }
-      const { image } = req.body;
-      const data = {
-        image: image,
-      };
-
-      Model.fournisseur
-        .update(data, { where: { id: req.params.id } })
-        .then((response) => {
-          console.log(response);
-          if (response !== 0) {
-            return res.status(200).json({
-              success: true,
-              message: "update  image success",
+        req.files.forEach((file) => {
+          const uploadPromise = cloudinary.uploader
+            .upload(file.path)
+            .then((result) => {
+              const imageUrl = result.secure_url;
+              Model.fournisseur
+                .update({"avatar" : imageUrl}, { where: { id: req.params.id } })
+                .then((response) => {
+                  if (response !== 0) {
+                    return res.status(200).json({
+                      success: true,
+                      message: "update  image success",
+                    });
+                  } else {
+                    return res.status(200).json({
+                      success: false,
+                      message: "error to update image",
+                    });
+                  }
+                });
             });
-          } else {
-            return res.status(200).json({
-              success: false,
-              message: "error to update ",
-            });
-          }
         });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: "err",
+        error: err.message,
       });
     }
   },
+
 
   findAllCommandes: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize, etat, laibrairiename } =
@@ -261,7 +263,7 @@ const fournisseurController = {
             attributes: ["nameLibrairie", "imageStore"],
             where: wherename,
           },
-          { model: Model.produitlabrairie },
+          { model: Model.produitfournisseur },
         ],
       });
 
@@ -331,7 +333,7 @@ const fournisseurController = {
             attributes: ["nameLibrairie"],
             where: wherename,
           },
-          { model: Model.produitlabrairie },
+          { model: Model.produitfournisseur },
         ],
       });
 
@@ -408,24 +410,24 @@ const fournisseurController = {
 
       const topProducts = await Model.ProduitCommandeEnGros.findAll({
         attributes: [
-          "prodlaibrcommgrosfk",
-          [Sequelize.fn("COUNT", "prodlaibrcommgrosfk"), "count"],
+          "prodfourcommgrosfk",
+          [Sequelize.fn("COUNT", "prodfourcommgrosfk"), "count"],
         ],
-        group: ["prodlaibrcommgrosfk"],
+        group: ["prodfourcommgrosfk"],
         order: [[Sequelize.literal("count"), "DESC"]],
         limit: 5,
       });
 
       const productPromises = topProducts.map(async (product) => {
-        const productDetails = await Model.produitlabrairie.findOne({
+        const productDetails = await Model.produitfournisseur.findOne({
           order: [["id", "DESC"]],
           where: {
-            id: product.prodlaibrcommgrosfk,
-            fourprodlabfk: req.params.id,
+            id: product.prodfourcommgrosfk,
+            fourprodfk: req.params.id,
           },
           include: [
             {
-              model: Model.imageProduitLibrairie,
+              model: Model.imageProduitFournsseur,
               attributes: ["name_Image"],
             },
           ],
@@ -435,15 +437,15 @@ const fournisseurController = {
       });
 
       const productPromisescount = topProducts.map(async (product) => {
-        const productDetails = await Model.produitlabrairie.findOne({
+        const productDetails = await Model.produitfournisseur.findOne({
           order: [["id", "DESC"]],
           where: {
-            id: product.prodlaibrcommgrosfk,
-            fourprodlabfk: req.params.id,
+            id: product.prodfourcommgrosfk,
+            fourprodfk: req.params.id,
           },
           include: [
             {
-              model: Model.imageProduitLibrairie,
+              model: Model.imageProduitFournsseur,
               attributes: ["name_Image"],
             },
           ],
@@ -473,28 +475,28 @@ const fournisseurController = {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const topProducts = await Model.avisProduitlibraire.findAll({
+      const topProducts = await Model.avisProduitfournisseur.findAll({
         attributes: [
           [Sequelize.fn("SUM", Sequelize.col("nbStart")), "totalAvis"],
-          "prodavisproduitsfk",
+          "prodfouravisfk",
         ],
         //where: {
         //createdAt: {
         //[Sequelize.Op.gte]: thirtyDaysAgo,
         //},
         //},
-        group: ["prodavisproduitsfk"],
+        group: ["prodfouravisfk"],
         order: [[Sequelize.literal("totalAvis"), "DESC"]],
         limit: 5,
         include: [
           {
-            model: Model.produitlabrairie,
+            model: Model.produitfournisseur,
             where: {
               fourprodlabfk: req.params.id,
             },
             include: [
               {
-                model: Model.imageProduitLibrairie,
+                model: Model.imageCatalogeFournisseur,
                 attributes: ["name_Image"],
               },
             ],
@@ -594,11 +596,11 @@ const fournisseurController = {
             attributes: ["id", "nameetablissement", "avatar"],
           },
           {
-            model: Model.produitlabrairie,
+            model: Model.produitfournisseur,
             attributes: ["id", "titre", "prix"],
             include: [
               {
-                model: Model.imageProduitLibrairie,
+                model: Model.imageProduitFournsseur,
                 attributes: ["name_Image"],
               },
             ],
@@ -674,11 +676,11 @@ const fournisseurController = {
             ]
           },
           {
-            model: Model.produitlabrairie,
+            model: Model.produitfournisseur,
             attributes: ["id", "titre", "prix"],
             include: [
               {
-                model: Model.imageProduitLibrairie,
+                model: Model.imageProduitFournsseur,
                 attributes: ["name_Image"],
               },
             ],

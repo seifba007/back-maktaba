@@ -9,6 +9,5 @@ module.exports = (db, DataTypes) => {
       email :{type :DataTypes.STRING},
       Facebook : {type : DataTypes.STRING },
       Instagram : {type : DataTypes.STRING },
-      email :{type :DataTypes.STRING}
     });
   }
