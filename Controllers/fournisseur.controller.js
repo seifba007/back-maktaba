@@ -86,14 +86,6 @@ const fournisseurController = {
       Model.fournisseur
         .findOne({
           where: { id: req.params.id },
-          attributes: [
-            "id",
-            "avatar",
-            "address",
-            "telephone",
-            "createdAt",
-            "updatedAt",
-          ],
           include: [
             {
               model: Model.adresses,
