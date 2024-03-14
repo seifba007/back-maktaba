@@ -133,14 +133,6 @@ const produitfournisseurController = {
         .update(produitData, { where: { id: req.params.id } })
         .then((response) => {
           if (response !== 0) {
-            if (req.files.length > 0) {
-              Model.imageProduitFournsseur.destroy({
-                where: {
-                  imageprodfourfk: req.params.id,
-                },
-              });
-            }
-
             const uploadPromises = [];
 
             req.files.forEach((file) => {
@@ -229,7 +221,7 @@ const produitfournisseurController = {
             },
             {
               model: Model.fournisseur,
-              attributes: ["id", "avatar", "nameetablissement"],
+              
             },
             { model: Model.categorie, attributes: ["id", "name"] },
           ],

@@ -38,7 +38,7 @@ const CatalogeFournisseurController = {
             .upload(file.path)
             .then((result) => {
               const imageUrl = result.secure_url;
-
+              console.log(imageUrl)
               return Model.imageCatalogeFournisseur.create({
                 name_Image: imageUrl,
                 imagecatalogefourfk: catalog.id,
@@ -53,7 +53,7 @@ const CatalogeFournisseurController = {
         return res.status(200).json({
           success: true,
           message: "Catalog fournisseur created successfully",
-          catalog:catalog
+          catalog: catalog
         });
       } else {
         return res.status(400).json({

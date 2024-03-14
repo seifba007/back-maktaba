@@ -44,7 +44,7 @@ const commandeEnGrosController = {
               (response) => {
                 data.produits.map((e) => {
                   Model.produitfournisseur
-                    .findByPk(e.prodlaibrcommgrosfk)
+                    .findByPk(e.prodfourcommgrosfk)
                     .then((produit) => {
                       if (produit !== null) {
                         const updatedQte = produit.qte - e.Qte;
@@ -53,7 +53,7 @@ const commandeEnGrosController = {
                         }
                         return Model.produitfournisseur.update(
                           { qte: updatedQte },
-                          { where: { id: e.prodlaibrcommgrosfk } }
+                          { where: { id: e.prodfourcommgrosfk } }
                         );
                       }
                     });
@@ -70,7 +70,7 @@ const commandeEnGrosController = {
       });
       return res.status(200).json({
         success: true,
-        message: " add commande en  detail  Done !!",
+        message: " add commande en  gros  Done !!",
       });
     } catch (err) {
       return res.status(400).json({
