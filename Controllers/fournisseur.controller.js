@@ -54,7 +54,7 @@ const fournisseurController = {
           include: [
             {
               model: Model.user,
-              attributes: ["fullname","avatar"],
+              attributes: ["fullname", "avatar"],
             },
           ],
         })
@@ -178,7 +178,7 @@ const fournisseurController = {
             .then((result) => {
               const imageUrl = result.secure_url;
               Model.fournisseur
-                .update({"avatar" : imageUrl}, { where: { id: req.params.id } })
+                .update({ avatar: imageUrl }, { where: { id: req.params.id } })
                 .then((response) => {
                   if (response !== 0) {
                     return res.status(200).json({
@@ -202,7 +202,6 @@ const fournisseurController = {
       });
     }
   },
-
 
   findAllCommandes: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize, etat, laibrairiename } =
@@ -345,10 +344,41 @@ const fournisseurController = {
     }
   },
 
+  Accepter: async (req, res) => {
+    try {
+      Model.commandeEnGros
+        .update(
+          { etatfournisseur: "en_cours" },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande accepte",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error accepte commande ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
   livrecommande: async (req, res) => {
     try {
       Model.commandeEnGros
-        .update({ etat: "livre" }, { where: { id: req.params.id } })
+        .update(
+          { etatlabrairie: "Livre", etatfournisseur: "Compléter" },
+          { where: { id: req.params.id } }
+        )
         .then((response) => {
           if (response !== 0) {
             return res.status(200).json({
@@ -373,7 +403,10 @@ const fournisseurController = {
   annulercommande: async (req, res) => {
     try {
       Model.commandeEnGros
-        .update({ etat: "annuler" }, { where: { id: req.params.id } })
+        .update(
+          { etatlabrairie: "Annule", etatfournisseur: "Rejeter" },
+          { where: { id: req.params.id } }
+        )
         .then((response) => {
           if (response !== 0) {
             return res.status(200).json({
@@ -389,6 +422,72 @@ const fournisseurController = {
         });
     } catch (err) {
       return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findOneCommande: async (req, res) => {
+    try {
+      const commandId = req.params.id;
+
+      const command = await Model.commandeEnGros.findAll({
+        where: {
+          id: commandId,
+        },
+
+        include: [
+          {
+            model: Model.labrairie,
+            
+            include: [
+              {
+                model: Model.user,
+               
+                include: [
+                  {
+                    model: Model.client,
+                    include: [
+                      {
+                        model: Model.adresses,
+                      },
+                    ],
+                  },
+                  
+                ],
+              },
+            ],
+          },
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie", "userlabfk"],
+          },
+          {
+            model: Model.produitfournisseur,
+            include: [
+              {
+                model: Model.imageProduitFournsseur,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
+        ],
+      });
+
+      if (!command) {
+        return res.status(404).json({
+          success: false,
+          error: "Command not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        commande: command,
+      });
+    } catch (err) {
+      return res.status(500).json({
         success: false,
         error: err.message,
       });
@@ -625,7 +724,6 @@ const fournisseurController = {
     }
   },
 
-
   findLatestCommandes: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize } = req.query;
     const offset = (page - 1) * pageSize;
@@ -654,18 +752,18 @@ const fournisseurController = {
           },
         },
         attributes: {
-          exclude: ["updatedAt",  "labrcomgrofk"],
+          exclude: ["updatedAt", "labrcomgrofk"],
         },
         include: [
           {
             model: Model.fournisseur,
             attributes: ["id", "nameetablissement", "avatar"],
-            include:[
+            include: [
               {
                 model: Model.user,
                 attributes: ["fullname", "avatar"],
               },
-            ]
+            ],
           },
           {
             model: Model.produitfournisseur,
@@ -677,7 +775,6 @@ const fournisseurController = {
               },
             ],
           },
-          
         ],
       });
       if (latestCommandes.length > 0) {

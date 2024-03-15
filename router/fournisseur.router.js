@@ -35,8 +35,10 @@ router.get(
 );
 
 router.get("/findAllLivraison/:id", fournisseurController.findAllLivraison);
+router.put("/acceptercommande/:id",fournisseurController.Accepter);
 router.put("/livrercommande/:id",fournisseurController.livrecommande);
-router.put("/annulercommande/:id",fournisseurController.annulercommande)
+router.put("/annulercommande/:id",fournisseurController.annulercommande);
+router.get("/findOneCommande/:id",fournisseurController.findOneCommande)
 
 router.get("/findtopproduct/:id", fournisseurController.findTopProducts);
 router.get("/gettoprevprod/:id", fournisseurController.getToprevProd);

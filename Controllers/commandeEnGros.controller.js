@@ -31,7 +31,11 @@ const commandeEnGrosController = {
       commande.map((data) => {
         let commandes = {
           total_ttc: data.total_ttc,
-          etat: "en_cours",
+          etatlabrairie: "en cours",
+          etatfournisseur: "Nouveau",
+          Adresse: data.Adresse,
+          Mode_liv: data.Mode_liv,
+          Mode_pay: data.Mode_pay,
           fourcomgrofk: data.fourcomgrofk,
           labrcomgrofk: data.labrcomgrofk,
         };
@@ -47,7 +51,7 @@ const commandeEnGrosController = {
                     .findByPk(e.prodfourcommgrosfk)
                     .then((produit) => {
                       if (produit !== null) {
-                        const updatedQte = produit.qte - e.Qte;
+                        let updatedQte = produit.qte - e.Qte;
                         if (updatedQte < 0) {
                           updatedQte = 0;
                         }
@@ -117,6 +121,9 @@ const commandeEnGrosController = {
       });
     }
   },
+
+  
+
 
 };
 module.exports = commandeEnGrosController;
