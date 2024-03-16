@@ -204,7 +204,48 @@ const fournisseurController = {
   },
 
   findAllCommandes: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize, etat, laibrairiename } =
+    const { sortBy, sortOrder, page, pageSize} =
+      req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const wherename = {};
+    try {
+      const count = await Model.commandeEnGros.count({
+        
+      });
+
+      const commandes = await Model.commandeEnGros.findAll({
+        offset: offset,
+        order: order,
+        limit: +pageSize,
+        include: [
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie", "imageStore"],
+          },
+          { model: Model.produitfournisseur },
+        ],
+      });
+
+      if (commandes) {
+        const totalPages = Math.ceil(count / pageSize);
+        return res.status(200).json({
+          success: true,
+          commandes: commandes,
+          totalPages: totalPages,
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findAllCommandesbyfournisseur: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatfournisseur, laibrairiename } =
       req.query;
 
     const offset = (page - 1) * pageSize;
@@ -213,12 +254,84 @@ const fournisseurController = {
     try {
       let whereClause = { fourcomgrofk: req.params.id };
 
-      if (etat && etat === "tout") {
-        whereClause.etat = {
+      if (etatfournisseur && etatfournisseur === "tout") {
+        whereClause.etatfournisseur = {
           [Sequelize.Op.or]: ["en_cours", "livre", "Nouveau", "Rejeter"],
         };
-      } else if (etat && etat !== "tout") {
-        whereClause.etat = etat;
+      } else if (etatfournisseur && etatfournisseur !== "tout") {
+        whereClause.etatfournisseur = etatfournisseur;
+      }
+
+      if (laibrairiename) {
+        wherename.nameLibrairie = {
+          [Sequelize.Op.like]: `%${laibrairiename}%`,
+        };
+
+        whereClause = {
+          ...whereClause,
+          "$labrairie.nameLibrairie$": wherename.fullname,
+        };
+      }
+
+      const count = await Model.commandeEnGros.count({
+        where: whereClause,
+        include: [
+          {
+            model: Model.labrairie,
+            attributes: [],
+            where: wherename,
+          },
+        ],
+      });
+
+      const commandes = await Model.commandeEnGros.findAll({
+        offset: offset,
+        order: order,
+        limit: +pageSize,
+        where: whereClause,
+        include: [
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie", "imageStore"],
+            where: wherename,
+          },
+          { model: Model.produitfournisseur },
+        ],
+      });
+
+      if (commandes) {
+        const totalPages = Math.ceil(count / pageSize);
+        return res.status(200).json({
+          success: true,
+          commandes: commandes,
+          totalPages: totalPages,
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+
+  findAllCommandesbyvender: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatlabrairie, laibrairiename } =
+      req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const wherename = {};
+    try {
+      let whereClause = { labrcomgrofk: req.params.id };
+
+      if (etatlabrairie && etatlabrairie === "tout") {
+        whereClause.etatlabrairie = {
+          [Sequelize.Op.or]: ["en_cours", "livre", "Nouveau", "Rejeter","Annuler"],
+        };
+      } else if (etatlabrairie && etatlabrairie !== "tout") {
+        whereClause.etatlabrairie = etatlabrairie;
       }
 
       if (laibrairiename) {
@@ -404,7 +517,7 @@ const fournisseurController = {
     try {
       Model.commandeEnGros
         .update(
-          {Date_rejetée: new Date(), etatlabrairie: "Annule", etatfournisseur: "Rejeter" },
+          {Date_rejetée: new Date(), etatlabrairie: "Annuler", etatfournisseur: "Rejeter" },
           { where: { id: req.params.id } }
         )
         .then((response) => {

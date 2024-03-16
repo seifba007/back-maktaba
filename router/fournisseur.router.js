@@ -30,10 +30,18 @@ router.put(
 
 
 router.get(
-  "/findAllCommandes/:id",
-  fournisseurController.findAllCommandes
+  "/findAllCommandesbyfournisseur/:id",
+  fournisseurController.findAllCommandesbyfournisseur
+);
+router.get(
+  "/findAllCommandesbyvender/:id",
+  fournisseurController.findAllCommandesbyvender
 );
 
+router.get(
+  "/findAllCommandes",
+  fournisseurController.findAllCommandes
+);
 router.get("/findAllLivraison/:id", fournisseurController.findAllLivraison);
 router.put("/acceptercommande/:id",fournisseurController.Accepter);
 router.put("/livrercommande/:id",fournisseurController.livrecommande);
