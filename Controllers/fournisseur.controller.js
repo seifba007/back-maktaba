@@ -348,7 +348,7 @@ const fournisseurController = {
     try {
       Model.commandeEnGros
         .update(
-          { etatfournisseur: "en_cours" },
+          { date_acceptation: new Date(),etatfournisseur: "en_cours" },
           { where: { id: req.params.id } }
         )
         .then((response) => {
@@ -376,7 +376,7 @@ const fournisseurController = {
     try {
       Model.commandeEnGros
         .update(
-          { etatlabrairie: "Livre", etatfournisseur: "Compléter" },
+          {  Date_préparée: new Date(),etatlabrairie: "Livre", etatfournisseur: "Compléter" },
           { where: { id: req.params.id } }
         )
         .then((response) => {
@@ -404,7 +404,7 @@ const fournisseurController = {
     try {
       Model.commandeEnGros
         .update(
-          { etatlabrairie: "Annule", etatfournisseur: "Rejeter" },
+          {Date_rejetée: new Date(), etatlabrairie: "Annule", etatfournisseur: "Rejeter" },
           { where: { id: req.params.id } }
         )
         .then((response) => {
@@ -443,25 +443,9 @@ const fournisseurController = {
             
             include: [
               {
-                model: Model.user,
-               
-                include: [
-                  {
-                    model: Model.client,
-                    include: [
-                      {
-                        model: Model.adresses,
-                      },
-                    ],
-                  },
-                  
-                ],
+                model: Model.adresses,
               },
             ],
-          },
-          {
-            model: Model.labrairie,
-            attributes: ["nameLibrairie", "userlabfk"],
           },
           {
             model: Model.produitfournisseur,

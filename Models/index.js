@@ -510,7 +510,14 @@ adresses.belongsTo(fournisseur, {
   constraints: false,
 });
 
-
+labrairie.hasMany(adresses, {
+  foreignKey: "labrairieaddressfk",
+  constraints: false,
+});
+adresses.belongsTo(labrairie, {
+  foreignKey: "labrairieaddressfk",
+  constraints: false,
+});
 produitlabrairie.hasMany(imageProduitLibrairie, {
   foreignKey: "imageprodfk",
   constraints: false,
