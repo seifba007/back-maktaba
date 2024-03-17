@@ -267,7 +267,13 @@ const fournisseurController = {
 
       if (etatfournisseur && etatfournisseur === "tout") {
         whereClause.etatfournisseur = {
-          [Sequelize.Op.or]: ["en_cours", "livre", "Nouveau", "Rejeter"],
+          [Sequelize.Op.or]: [
+            "en_cours",
+            "livre",
+            "Nouveau",
+            "Compléter",
+            "Rejeter",
+          ],
         };
       } else if (etatfournisseur && etatfournisseur !== "tout") {
         whereClause.etatfournisseur = etatfournisseur;
@@ -352,6 +358,7 @@ const fournisseurController = {
             "Nouveau",
             "Rejeter",
             "Annuler",
+            "Compléter",
           ],
         };
       } else if (etatlabrairie && etatlabrairie !== "tout") {
@@ -420,8 +427,14 @@ const fournisseurController = {
   },
 
   findAllLivraison: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize, etat, librairiename } =
-      req.query;
+    const {
+      sortBy,
+      sortOrder,
+      page,
+      pageSize,
+      etatfournisseur,
+      librairiename,
+    } = req.query;
 
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
@@ -429,12 +442,12 @@ const fournisseurController = {
     try {
       let whereClause = { fourcomgrofk: req.params.id };
 
-      if (etat && etat === "tout") {
-        whereClause.etat = {
+      if (etatfournisseur && etatfournisseur === "tout") {
+        whereClause.etatfournisseur = {
           [Sequelize.Op.or]: ["en_cours", "Compléter"],
         };
-      } else if (etat && etat !== "tout") {
-        whereClause.etat = etat;
+      } else if (etatfournisseur && etatfournisseur !== "tout") {
+        whereClause.etatfournisseur = etatfournisseur;
       }
 
       if (librairiename) {
@@ -469,7 +482,15 @@ const fournisseurController = {
             attributes: ["nameLibrairie"],
             where: wherename,
           },
-          { model: Model.produitfournisseur },
+          {
+            model: Model.produitfournisseur,
+            include: [
+              {
+                model: Model.imageProduitFournsseur,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
         ],
       });
 
