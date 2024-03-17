@@ -204,16 +204,13 @@ const fournisseurController = {
   },
 
   findAllCommandes: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize} =
-      req.query;
+    const { sortBy, sortOrder, page, pageSize } = req.query;
 
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     const wherename = {};
     try {
-      const count = await Model.commandeEnGros.count({
-        
-      });
+      const count = await Model.commandeEnGros.count({});
 
       const commandes = await Model.commandeEnGros.findAll({
         offset: offset,
@@ -224,7 +221,15 @@ const fournisseurController = {
             model: Model.labrairie,
             attributes: ["nameLibrairie", "imageStore"],
           },
-          { model: Model.produitfournisseur },
+          {
+            model: Model.produitfournisseur,
+            include: [
+              {
+                model: Model.imageProduitFournsseur,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
         ],
       });
 
@@ -245,8 +250,14 @@ const fournisseurController = {
   },
 
   findAllCommandesbyfournisseur: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize, etatfournisseur, laibrairiename } =
-      req.query;
+    const {
+      sortBy,
+      sortOrder,
+      page,
+      pageSize,
+      etatfournisseur,
+      laibrairiename,
+    } = req.query;
 
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
@@ -295,7 +306,15 @@ const fournisseurController = {
             attributes: ["nameLibrairie", "imageStore"],
             where: wherename,
           },
-          { model: Model.produitfournisseur },
+          {
+            model: Model.produitfournisseur,
+            include: [
+              {
+                model: Model.imageProduitFournsseur,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
         ],
       });
 
@@ -315,7 +334,6 @@ const fournisseurController = {
     }
   },
 
-
   findAllCommandesbyvender: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize, etatlabrairie, laibrairiename } =
       req.query;
@@ -328,7 +346,13 @@ const fournisseurController = {
 
       if (etatlabrairie && etatlabrairie === "tout") {
         whereClause.etatlabrairie = {
-          [Sequelize.Op.or]: ["en_cours", "livre", "Nouveau", "Rejeter","Annuler"],
+          [Sequelize.Op.or]: [
+            "en_cours",
+            "livre",
+            "Nouveau",
+            "Rejeter",
+            "Annuler",
+          ],
         };
       } else if (etatlabrairie && etatlabrairie !== "tout") {
         whereClause.etatlabrairie = etatlabrairie;
@@ -367,7 +391,15 @@ const fournisseurController = {
             attributes: ["nameLibrairie", "imageStore"],
             where: wherename,
           },
-          { model: Model.produitfournisseur },
+          {
+            model: Model.produitfournisseur,
+            include: [
+              {
+                model: Model.imageProduitFournsseur,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
         ],
       });
 
@@ -461,7 +493,7 @@ const fournisseurController = {
     try {
       Model.commandeEnGros
         .update(
-          { date_acceptation: new Date(),etatfournisseur: "en_cours" },
+          { date_acceptation: new Date(), etatfournisseur: "en_cours" },
           { where: { id: req.params.id } }
         )
         .then((response) => {
@@ -489,7 +521,11 @@ const fournisseurController = {
     try {
       Model.commandeEnGros
         .update(
-          {  Date_préparée: new Date(),etatlabrairie: "Livre", etatfournisseur: "Compléter" },
+          {
+            Date_préparée: new Date(),
+            etatlabrairie: "Livre",
+            etatfournisseur: "Compléter",
+          },
           { where: { id: req.params.id } }
         )
         .then((response) => {
@@ -517,7 +553,11 @@ const fournisseurController = {
     try {
       Model.commandeEnGros
         .update(
-          {Date_rejetée: new Date(), etatlabrairie: "Annuler", etatfournisseur: "Rejeter" },
+          {
+            Date_rejetée: new Date(),
+            etatlabrairie: "Annuler",
+            etatfournisseur: "Rejeter",
+          },
           { where: { id: req.params.id } }
         )
         .then((response) => {
@@ -553,7 +593,7 @@ const fournisseurController = {
         include: [
           {
             model: Model.labrairie,
-            
+
             include: [
               {
                 model: Model.adresses,

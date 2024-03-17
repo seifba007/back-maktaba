@@ -42,7 +42,7 @@ const commandeEnGrosController = {
         Model.commandeEnGros.create(commandes).then((response) => {
           if (response !== null) {
             data.produits.map((e) => {
-              e.comgrosprodlabrfk = response.id;
+              e.comgrosprodfourrfk = response.id;
             });
             Model.ProduitCommandeEnGros.bulkCreate(data.produits).then(
               (response) => {
