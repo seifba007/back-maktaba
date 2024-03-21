@@ -794,7 +794,7 @@ const fournisseurController = {
           enAttenteCount++;
         } else if (etatfournisseur === "Rejeter") {
           annulerCount++;
-        } else if (etatfournisseur === "En_cours") {
+        } else if (etatfournisseur === "en_cours") {
           accepterCount++;
         } else if (etatfournisseur === "Compléter") {
           completerCount++;
