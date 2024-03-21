@@ -479,7 +479,7 @@ const fournisseurController = {
         include: [
           {
             model: Model.labrairie,
-            attributes: ["nameLibrairie"],
+            attributes: ["nameLibrairie","imageStore"],
             where: wherename,
           },
           {
@@ -918,6 +918,10 @@ const fournisseurController = {
                 attributes: ["fullname", "avatar"],
               },
             ],
+          },
+          {
+            model: Model.labrairie,
+            attributes: ["id", "nameLibrairie", "imageStore"],
           },
           {
             model: Model.produitfournisseur,
