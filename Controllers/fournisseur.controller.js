@@ -729,23 +729,21 @@ const fournisseurController = {
           [Sequelize.fn("SUM", Sequelize.col("nbStart")), "totalAvis"],
           "prodfouravisfk",
         ],
-        //where: {
-        //createdAt: {
-        //[Sequelize.Op.gte]: thirtyDaysAgo,
-        //},
-        //},
+        where: {
+        createdAt: {
+        [Sequelize.Op.gte]: thirtyDaysAgo,
+        },
+        },
         group: ["prodfouravisfk"],
         order: [[Sequelize.literal("totalAvis"), "DESC"]],
         limit: 5,
         include: [
           {
             model: Model.produitfournisseur,
-            where: {
-              fourprodlabfk: req.params.id,
-            },
+          
             include: [
               {
-                model: Model.imageCatalogeFournisseur,
+                model: Model.imageProduitFournsseur,
                 attributes: ["name_Image"],
               },
             ],
@@ -760,7 +758,7 @@ const fournisseurController = {
 
       return res.status(200).json({
         success: true,
-        produit: formattedProducts,
+        produit: topProducts,
       });
     } catch (error) {
       console.error(error);
@@ -791,14 +789,14 @@ const fournisseurController = {
       let completerCount = 0;
 
       response.forEach((order) => {
-        const etat = order.etat;
-        if (etat === "Nouveau") {
+        const etatfournisseur = order.etatfournisseur;
+        if (etatfournisseur === "Nouveau") {
           enAttenteCount++;
-        } else if (etat === "Rejeter") {
+        } else if (etatfournisseur === "Rejeter") {
           annulerCount++;
-        } else if (etat === "En_cours") {
+        } else if (etatfournisseur === "En_cours") {
           accepterCount++;
-        } else if (etat === "Compléter") {
+        } else if (etatfournisseur === "Compléter") {
           completerCount++;
         }
       });
@@ -826,7 +824,6 @@ const fournisseurController = {
     } else {
       days = days;
     }
-    console.log(days);
     try {
       const date = new Date();
       date.setDate(date.getDate() - days);
@@ -842,11 +839,10 @@ const fournisseurController = {
         include: [
           {
             model: Model.fournisseur,
-            attributes: ["id", "nameetablissement", "avatar"],
           },
           {
             model: Model.produitfournisseur,
-            attributes: ["id", "titre", "prix"],
+           
             include: [
               {
                 model: Model.imageProduitFournsseur,

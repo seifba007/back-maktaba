@@ -318,17 +318,17 @@ const avisProduitfournisseurController = {
           },
           include: [
             {
-              model: Model.produitlabrairie,
-              attributes: ["id", "titre", "prix"],
+              model: Model.produitfournisseur,
+              
               where: { titre: nameArticle },
               include: [
                 {
-                  model: Model.imageProduitLibrairie,
+                  model: Model.imageProduitFournsseur,
                   attributes: ["name_Image"],
                 },
                 {
-                  model: Model.labrairie,
-                  attributes: ["nameLibrairie"],
+                  model: Model.fournisseur,
+                 
                 },
               ],
             },
