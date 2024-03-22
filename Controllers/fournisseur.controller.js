@@ -353,7 +353,7 @@ const fournisseurController = {
       if (etatlabrairie && etatlabrairie === "tout") {
         whereClause.etatlabrairie = {
           [Sequelize.Op.or]: [
-            "en_cours",
+            "en cours",
             "livre",
             "Nouveau",
             "Rejeter",
