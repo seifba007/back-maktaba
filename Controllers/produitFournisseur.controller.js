@@ -565,5 +565,31 @@ const produitfournisseurController = {
       });
     }
   },
+
+
+  changeVisibilite: async (req, res) => {
+    try {
+      Model.produitfournisseur
+        .update({ Visibilite: req.body.etat }, { where: { id: req.params.id } })
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "etat changée",
+            });
+          } else {
+            return res.status(200).json({
+              success: false,
+              message: "erreur",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
 };
 module.exports = produitfournisseurController;

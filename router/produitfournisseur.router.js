@@ -34,5 +34,6 @@ router.get(
 router.get("/produit_mieux/:id",produitfounisseurcontroller.produit_mieux);
 
 router.get("/produitfiltrage", produitfounisseurcontroller.produitfiltreage);
+router.get("/changeVisibilite/:id", produitfounisseurcontroller.changeVisibilite);
 
 module.exports = router;
