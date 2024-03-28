@@ -30,6 +30,7 @@ const adminModel = require("./admin");
 const catalogeModel = require("./cataloge");
 const catalogeFournisseurModel = require("./catalogefournisseur");
 const suggestionProduitModel = require("./suggestionProduit");
+const suggestionProduitFournisseurModel = require("./suggestionProduitFournisseur");
 const SouscategorieModel = require("./sousCategorie");
 const serviceInformatiqueModel = require("./serviceInformatique");
 const donModel = require("./don");
@@ -72,6 +73,7 @@ const BecomePartner = BecomePartnerModel(db, Sequelize);
 const cataloge = catalogeModel(db, Sequelize);
 const catalogefournisseur = catalogeFournisseurModel(db, Sequelize);
 const suggestionProduit = suggestionProduitModel(db, Sequelize);
+const suggestionProduitFournisseur = suggestionProduitFournisseurModel(db, Sequelize);
 const Souscategorie = SouscategorieModel(db, Sequelize);
 const echange = echangeModel(db, Sequelize);
 const offre = offreModel(db, Sequelize);
@@ -625,6 +627,14 @@ suggestionProduit.belongsTo(user, {
   foreignKey: "usersuggeprodfk",
   constraints: false,
 });
+labrairie.hasMany(suggestionProduitFournisseur, {
+  foreignKey: "labsuggeprodfourfk",
+  constraints: false,
+});
+suggestionProduitFournisseur.belongsTo(labrairie, {
+  foreignKey: "labsuggeprodfourfk",
+  constraints: false,
+});
 categorie.hasMany(Souscategorie, {
   foreignKey: "catagsouscatafk",
   constraints: false,
@@ -643,12 +653,28 @@ suggestionProduit.belongsTo(Souscategorie, {
   foreignKey: "soussuggestfk",
   constraints: false,
 });
+Souscategorie.hasMany(suggestionProduitFournisseur, {
+  foreignKey: "soussuggestfourfk",
+  constraints: false,
+});
+suggestionProduitFournisseur.belongsTo(Souscategorie, {
+  foreignKey: "soussuggestfourfk",
+  constraints: false,
+});
 categorie.hasMany(suggestionProduit, {
   foreignKey: "categoriesuggestfk",
   constraints: false,
 });
 suggestionProduit.belongsTo(categorie, {
   foreignKey: "categoriesuggestfk",
+  constraints: false,
+});
+categorie.hasMany(suggestionProduitFournisseur, {
+  foreignKey: "categoriesuggestfourfk",
+  constraints: false,
+});
+suggestionProduitFournisseur.belongsTo(categorie, {
+  foreignKey: "categoriesuggestfourfk",
   constraints: false,
 });
 Souscategorie.hasMany(produitlabrairie, {
@@ -886,6 +912,7 @@ module.exports = {
   imageCataloge,
   imageCatalogeFournisseur,
   suggestionProduit,
+  suggestionProduitFournisseur,
   Souscategorie,
   inventaire
 };

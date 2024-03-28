@@ -402,3 +402,18 @@ module.exports.sendSuggestionProduitEmail = (email, Description, Titre) => {
     .catch((err) => console.log(err));
 };
 
+module.exports.sendSuggestionProduitFournisseurEmail = (email, Description, Titre) => {
+  transport
+    .sendMail({
+      sender: "maktba.tn01@gmail.com",
+      to: email,
+      subject: `Suggestion acceptée`,
+      html: `
+        <p>Votre suggestion de produit <strong><em>${Titre}</em></strong> est acceptée.</p>
+        <p>Description: ${Description}</p>
+        <p>Merci.</p>
+      `,
+    })
+    .catch((err) => console.log(err));
+};
+

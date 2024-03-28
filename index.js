@@ -57,6 +57,7 @@ const Cataloge=require("./router/cataloge.router")
 const Catalogefournisseur=require("./router/catalogefournisseur.router")
 const sousCategorie = require("./router/sousCategorie.router")
 const suggestionProduit = require("./router/suggestionProduit.router");
+const suggestionProduitFournisseur = require("./router/suggestionProduitFournisseur.router");
 app.use("/user",userRouter)
 app.use("/client",clientRouter)
 app.use("/codePromo",codePromoRouter)
@@ -83,10 +84,9 @@ app.use("/BecomePartner",BecomePartner)
 app.use("/cataloge",Cataloge)
 app.use("/sousCategorie",sousCategorie)
 app.use("/suggestionProduit",suggestionProduit)
+app.use("/suggestionproduitfournisseur",suggestionProduitFournisseur)
 app.use("/catalogefournisseur",Catalogefournisseur)
 app.use("/produitfournisseur",produitFournisseurRouter)
-
-
 
 
 
