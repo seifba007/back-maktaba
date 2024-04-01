@@ -627,12 +627,12 @@ suggestionProduit.belongsTo(user, {
   foreignKey: "usersuggeprodfk",
   constraints: false,
 });
-labrairie.hasMany(suggestionProduitFournisseur, {
-  foreignKey: "labsuggeprodfourfk",
+fournisseur.hasMany(suggestionProduitFournisseur, {
+  foreignKey: "foursuggeprodfourfk",
   constraints: false,
 });
-suggestionProduitFournisseur.belongsTo(labrairie, {
-  foreignKey: "labsuggeprodfourfk",
+suggestionProduitFournisseur.belongsTo(fournisseur, {
+  foreignKey: "foursuggeprodfourfk",
   constraints: false,
 });
 categorie.hasMany(Souscategorie, {

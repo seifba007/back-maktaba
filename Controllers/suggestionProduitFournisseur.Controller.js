@@ -8,7 +8,7 @@ const suggestionProduitFournisseurController = {
     const {
       Titre,
       Description,
-      labsuggeprodfourfk,
+      foursuggeprodfourfk,
       soussuggestfourfk,
       categoriesuggestfourfk,
       email,
@@ -22,7 +22,7 @@ const suggestionProduitFournisseurController = {
           Description: Description,
           image: imageUrl,
           etat: "en_cours",
-          labsuggeprodfourfk: labsuggeprodfourfk,
+          foursuggeprodfourfk: foursuggeprodfourfk,
           soussuggestfourfk: soussuggestfourfk,
           categoriesuggestfourfk: categoriesuggestfourfk,
         };
@@ -53,27 +53,41 @@ const suggestionProduitFournisseurController = {
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     try {
-      const suggestioncount = await Model.suggestionProduitFournisseur.count({})
+      const suggestioncount = await Model.suggestionProduitFournisseur.count(
+        {}
+      );
       await Model.suggestionProduitFournisseur
         .findAll({
-          limit:+pageSize,
-          order:order,
-          offset:offset,
+          limit: +pageSize,
+          order: order,
+          offset: offset,
           include: [
             { model: Model.Souscategorie },
             { model: Model.categorie },
             {
               model: Model.fournisseur,
+              include: [
+                {
+                  model: Model.user,
+                  attributes: [
+                    "email",
+                    "role",
+                    "fullname",
+                    "avatar",
+                    "telephone",
+                  ],
+                },
+              ],
             },
           ],
         })
         .then((suggestionProduitFournisseur) => {
           if (suggestionProduitFournisseur !== null) {
-            const totalcount = Math.ceil(suggestioncount/pageSize)
+            const totalcount = Math.ceil(suggestioncount / pageSize);
             return res.status(200).json({
               success: true,
               suggestionProduitFournisseur: suggestionProduitFournisseur,
-              totalPages:totalcount
+              totalPages: totalcount,
             });
           } else {
             return res.status(200).json({
@@ -91,16 +105,22 @@ const suggestionProduitFournisseurController = {
   },
 
   AccepterSuggestion: async (req, res) => {
-    const {email} = req.body
+    const { email } = req.body;
     try {
-      const numUpdated= await Model.suggestionProduitFournisseur.update(
+      const numUpdated = await Model.suggestionProduitFournisseur.update(
         { etat: "Accepter" },
         { where: { id: req.params.id } }
       );
-  
+
       if (numUpdated !== 0) {
-        const produit = await Model.suggestionProduitFournisseur.findAll({ where: { id: req.params.id } });
-        sendMail.sendSuggestionProduitFournisseurEmail(email, produit[0].dataValues.Description, produit[0].dataValues.Titre);
+        const produit = await Model.suggestionProduitFournisseur.findAll({
+          where: { id: req.params.id },
+        });
+        sendMail.sendSuggestionProduitFournisseurEmail(
+          email,
+          produit[0].dataValues.Description,
+          produit[0].dataValues.Titre
+        );
         return res.status(200).json({
           success: true,
           message: "Suggestion accepted",
@@ -119,7 +139,6 @@ const suggestionProduitFournisseurController = {
       });
     }
   },
-  
 
   deletesuggestion: async (req, res) => {
     const { ids } = req.body;
