@@ -63,7 +63,7 @@ const suggestionProduitFournisseurController = {
             { model: Model.Souscategorie },
             { model: Model.categorie },
             {
-              model: Model.labrairie,
+              model: Model.fournisseur,
             },
           ],
         })
