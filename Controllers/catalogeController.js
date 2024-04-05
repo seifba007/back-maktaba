@@ -120,7 +120,7 @@ const CatalogeController = {
         offset: offset,
         where: whereClause,
         attributes: {
-          exclude: ["updatedAt", "admincatalogefk", "categoriecatalogefk"],
+          
         },
         include: [
           { model: Model.imageCataloge, attributes: ["id", "name_Image"] },
