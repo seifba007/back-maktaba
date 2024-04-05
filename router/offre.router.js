@@ -11,7 +11,7 @@ router.get("/findOffresbyechange/:id", offreController.findOffrebyechange);
 router.get("/findOffresbylibrarie/:id", offreController.findOffrebylibrarire);
 
 router.put("/accepterOffre/:id", offreController.Accepter);
-
+router.put("/changestate/:id", offreController.Changestate);
 router.get("/findAllOffresaccepter/:id", offreController.findAllOffreAccepter);
 
 module.exports = router;

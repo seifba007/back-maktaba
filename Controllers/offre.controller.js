@@ -7,6 +7,7 @@ const offreController = {
 
       const offre = await Model.offre.create({
         Description: Description,
+        Etat: "en_cours",
         echangeofffk: echangeofffk,
         labofffk: labofffk,
       });
@@ -160,6 +161,9 @@ const offreController = {
           {
             model: Model.produitechange,
           },
+          {
+            model: Model.labrairie,
+          },
         ],
         attributes: {
           exclude: ["updatedAt"],
@@ -188,8 +192,12 @@ const offreController = {
 
   Accepter: async (req, res) => {
     try {
+      const { Description } = req.body;
       Model.offre
-        .update({ Etat: "Accepter" }, { where: { id: req.params.id } })
+        .update(
+          { Etat: "Accepter", Description: Description },
+          { where: { id: req.params.id } }
+        )
         .then((response) => {
           if (response !== 0) {
             return res.status(200).json({
@@ -220,7 +228,7 @@ const offreController = {
       const totalCounttout = await Model.offre.count({
         where: {
           echangeofffk: req.params.id,
-          Etat: "Accepter"
+          Etat: "Accepter",
         },
       });
       const offres = await Model.offre.findAll({
@@ -229,7 +237,7 @@ const offreController = {
         limit: +pageSize,
         where: {
           echangeofffk: req.params.id,
-          Etat: "Accepter"
+          Etat: "Accepter",
         },
         include: [
           {
@@ -260,6 +268,35 @@ const offreController = {
       return res.status(400).json({
         success: false,
         error: err.message,
+      });
+    }
+  },
+
+  Changestate: async (req, res) => {
+    try {
+      const { Etat } = req.body;
+      Model.offre
+        .update(
+          { Etat: Etat,},
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "state offre chnaged",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error change offre ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
       });
     }
   },
