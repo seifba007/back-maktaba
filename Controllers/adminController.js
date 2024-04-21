@@ -963,11 +963,13 @@ const adminController = {
   },
 
   findCommandefiltre: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const { sortBy, sortOrder, page, pageSize ,librairieName,librairieAddress} = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
     const filters = req.query;
+    const wherenamelibararie = {}
+    const whereadresselibararie = {}
     const whereClause = {
       qte: {
         [Sequelize.Op.gt]: 0,
@@ -976,7 +978,17 @@ const adminController = {
         [Sequelize.Op.ne]: "Invisible",
       },
     };
-
+    if (librairieName) {
+      wherenamelibararie.nameLibrairie = {
+        [Sequelize.Op.like]: `%${librairieName}%`,
+      };
+    }
+  
+    if (librairieAddress) {
+      wherenamelibararie.adresse = {
+        [Sequelize.Op.like]: `%${librairieAddress}%`,
+      };
+    }
     if (filters.categprodlabfk) {
       if (typeof filters.categprodlabfk === "string") {
         filters.categprodlabfk = filters.categprodlabfk
@@ -1099,6 +1111,7 @@ const adminController = {
               "imageStore",
               "emailLib",
             ],
+            where:wherenamelibararie
           },
         ],
       });

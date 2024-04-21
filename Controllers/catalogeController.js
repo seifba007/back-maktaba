@@ -70,7 +70,7 @@ const CatalogeController = {
     }
   },
 
-  findAll: async (req, res) => {
+  findAll: async (req, res) => {  
     const { page, pageSize, sortBy, sortOrder } = req.query;
     const offset = (page - 1) * pageSize;
     const filters = req.query;
