@@ -82,7 +82,7 @@ const CatalogeFournisseurController = {
     if (filters.category) {
       whereClause.categoriecatalogefourfk = filters.category;
     }
-
+    whereClause.etat = "visible";
     if (filters.subcategory) {
       whereClause.souscatalogefourfk = filters.subcategory;
     }

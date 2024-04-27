@@ -70,24 +70,24 @@ const CatalogeController = {
     }
   },
 
-  findAll: async (req, res) => {  
+  findAll: async (req, res) => {
     const { page, pageSize, sortBy, sortOrder } = req.query;
     const offset = (page - 1) * pageSize;
     const filters = req.query;
     let whereClause = {};
-
+  
     if (sortBy && sortOrder) {
       order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     }
-
+  
     if (filters.category) {
       whereClause.categoriecatalogefk = filters.category;
     }
-
+  
     if (filters.subcategory) {
       whereClause.souscatalogefk = filters.subcategory;
     }
-
+  
     if (filters.titre) {
       whereClause[Sequelize.Op.or] = [
         {
@@ -102,33 +102,33 @@ const CatalogeController = {
         },
       ];
     }
-
+  
     if (filters.codebar) {
       whereClause.codebar = {
         [Sequelize.Op.like]: `%${filters.codebar}%`,
       };
     }
-
+  
+    whereClause.etat = "visible";
+  
     const totalCount = await Model.cataloge.count({
       where: whereClause,
     });
-
+  
     try {
       const catalogue = await Model.cataloge.findAll({
         order: order,
         limit: +pageSize,
         offset: offset,
         where: whereClause,
-        attributes: {
-          
-        },
+        attributes: {},
         include: [
           { model: Model.imageCataloge, attributes: ["id", "name_Image"] },
           { model: Model.categorie },
           { model: Model.Souscategorie },
         ],
       });
-
+  
       if (catalogue.length > 0) {
         const totalPages = Math.ceil(totalCount / pageSize);
         return res.status(200).json({
@@ -139,7 +139,7 @@ const CatalogeController = {
       } else {
         return res.status(400).json({
           success: false,
-          err: "il n y 'a pas des catalogues",
+          err: "il n'y a pas des catalogues",
         });
       }
     } catch (err) {
@@ -149,6 +149,7 @@ const CatalogeController = {
       });
     }
   },
+  
   findOne: async (req, res) => {
     try {
       Model.cataloge

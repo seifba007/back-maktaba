@@ -155,7 +155,7 @@ const BecomePartnerController = {
       );
       const passwordHash = bcrypt.hashSync(Password, 10);
       switch (Role) {
-        case "labrairie":
+        case "librairie":
           const datauser = {
             email: email,
             fullname: username,
