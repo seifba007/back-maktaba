@@ -55,6 +55,8 @@ router.get(
   adminController.findAllavis 
 );
 router.get("/findnbravisproduit/:id", adminController.findNbreAvisProduit);
+router.get("/findAllFournisseur", adminController.findAllFournisseur);
+router.get("/findAll", adminController.findAll);
 router.get("/findtotalavisproduit/:id", adminController.findTotalAvisProduit);
 router.get("/findavismoyeproduit/:id", adminController.findMoyeAvisProduit);
 router.get("/findavisproduit/nombre_avis/:id", adminController.findavisproduit);

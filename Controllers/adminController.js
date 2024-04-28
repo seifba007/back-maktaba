@@ -962,6 +962,164 @@ const adminController = {
     }
   },
 
+  findAll: async (req, res) => {
+    const { page, pageSize, sortBy, sortOrder } = req.query;
+    const offset = (page - 1) * pageSize;
+    const filters = req.query;
+    let whereClause = {};
+  
+    if (sortBy && sortOrder) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
+  
+    if (filters.category) {
+      whereClause.categoriecatalogefk = filters.category;
+    }
+  
+    if (filters.subcategory) {
+      whereClause.souscatalogefk = filters.subcategory;
+    }
+  
+    if (filters.titre) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          titre: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
+          },
+        },
+        {
+          codebar: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
+          },
+        },
+      ];
+    }
+  
+    if (filters.codebar) {
+      whereClause.codebar = {
+        [Sequelize.Op.like]: `%${filters.codebar}%`,
+      };
+    }
+  
+  
+    const totalCount = await Model.cataloge.count({
+      where: whereClause,
+    });
+  
+    try {
+      const catalogue = await Model.cataloge.findAll({
+        order: order,
+        limit: +pageSize,
+        offset: offset,
+        where: whereClause,
+        attributes: {},
+        include: [
+          { model: Model.imageCataloge, attributes: ["id", "name_Image"] },
+          { model: Model.categorie },
+          { model: Model.Souscategorie },
+        ],
+      });
+  
+      if (catalogue.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return res.status(200).json({
+          success: true,
+          catalogue: catalogue,
+          totalPages: totalPages,
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "il n'y a pas des catalogues",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findAllFournisseur: async (req, res) => {
+    const { page, pageSize, sortBy, sortOrder } = req.query;
+    const offset = (page - 1) * pageSize;
+    const filters = req.query;
+    let whereClause = {};
+
+    if (sortBy && sortOrder) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
+
+    if (filters.category) {
+      whereClause.categoriecatalogefourfk = filters.category;
+    }
+    if (filters.subcategory) {
+      whereClause.souscatalogefourfk = filters.subcategory;
+    }
+
+    if (filters.titre) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          titre: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
+          },
+        },
+        {
+          codebar: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
+          },
+        },
+      ];
+    }
+
+    if (filters.codebar) {
+      whereClause.codebar = {
+        [Sequelize.Op.like]: `%${filters.codebar}%`,
+      };
+    }
+
+    const totalCount = await Model.catalogefournisseur.count({
+      where: whereClause,
+    });
+
+    try {
+      const catalogue = await Model.catalogefournisseur.findAll({
+        order: order,
+        limit: +pageSize,
+        offset: offset,
+        where: whereClause,
+        attributes: {
+          exclude: ["updatedAt", "admincatalogefourfk", "categoriecatalogefourfk"],
+        },
+        include: [
+          { model: Model.imageCatalogeFournisseur, attributes: ["id", "name_Image"] },
+          { model: Model.categorie },
+          { model: Model.Souscategorie },
+        ],
+      });
+
+      if (catalogue.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return res.status(200).json({
+          success: true,
+          catalogue: catalogue,
+          totalPages: totalPages,
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "il n y 'a pas des catalogues",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
   findCommandefiltre: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize ,librairieName,librairieAddress} = req.query;
     const offset = (page - 1) * pageSize;
