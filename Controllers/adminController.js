@@ -1621,7 +1621,7 @@ const adminController = {
 
       if (etat && etat === "tout") {
         whereClause.etatVender = {
-          [Sequelize.Op.or]: ["en_cours", "livre", "Nouveau", "Rejeter"],
+          [Sequelize.Op.or]: ["en_cours", "livre", "Nouveau", "Rejeter","Compléter"],
         };
       } else if (etat && etat !== "tout") {
         whereClause.etatVender = etat;

@@ -59,6 +59,10 @@ const offreController = {
           {
             model: Model.produitechange,
           },
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie"]
+          },
         ],
         attributes: {
           exclude: ["updatedAt"],

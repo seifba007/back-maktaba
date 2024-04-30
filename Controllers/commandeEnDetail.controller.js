@@ -75,11 +75,8 @@ const commandeDetailController = {
         labrcomdespectfk,
       } = req.body;
       let imageUrl = "";
-
-      req.files.forEach(async (file) => {
-        const result = await cloudinary.uploader.upload(file.path);
-        imageUrl = result.secure_url;
-        console.log(imageUrl);
+  
+      if (!req.files || req.files.length === 0) {
         const commande = await Model.commandeSpecial.create({
           etatClient: etatClient,
           Adresse: Adresse,
@@ -87,19 +84,47 @@ const commandeDetailController = {
           email: email,
           telephone: telephone,
           Nom: Nom,
-          Fichier: imageUrl,
           usercommdespectfk: usercommdespectfk,
           labrcomdespectfk: labrcomdespectfk,
+        }).catch((error) => {
+          throw new Error(`Error creating command without files: ${error.message}`);
         });
+  
         res.status(200).json(commande);
-      });
+        return; 
+      }
+  
+      await Promise.all(req.files.map(async (file) => {
+        try {
+          const result = await cloudinary.uploader.upload(file.path);
+          imageUrl = result.secure_url;
+          const commande = await Model.commandeSpecial.create({
+            etatClient: etatClient,
+            Adresse: Adresse,
+            Description: Description,
+            email: email,
+            telephone: telephone,
+            Nom: Nom,
+            Fichier: imageUrl,
+            usercommdespectfk: usercommdespectfk,
+            labrcomdespectfk: labrcomdespectfk,
+          }).catch((error) => {
+            throw new Error(`Error creating command with file: ${error.message}`);
+          });
+          return commande;
+        } catch (error) {
+          throw error;
+        }
+      }));
+  
+      res.status(200).json({ message: "Commande created successfully" });
     } catch (error) {
       console.error(error);
-      res
-        .status(400)
-        .json({ error: "Erreur lors de la création de la commande" });
+      res.status(400).json({ error: "Erreur lors de la création de la commande" });
     }
   },
+  
+  
 
   deleteCommandeSpec: async (req, res) => {
     const { ids } = req.body;
