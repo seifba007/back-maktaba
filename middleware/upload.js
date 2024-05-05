@@ -20,7 +20,7 @@ var upload = multer({ //multer settings
         callback(null, true)
     },
     limits:{
-        fileSize: 1024 * 1024
+        fileSize: 6 * 1024 * 1024
     }
 });
 module.exports=upload 

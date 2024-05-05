@@ -7,11 +7,19 @@ const {
 } = require("../middleware/auth/validationSchema");
 const avisProduitlibraireController = {
   add: async (req, res) => {
-    const { nbStart, commenter, clientavisprodfk, prodavisproduitsfk, partavisprodfk } =
-      req.body;
+    const {
+      nbStart,
+      commenter,
+      clientavisprodfk,
+      prodavisproduitsfk,
+      partavisprodfk,
+    } = req.body;
     try {
-      const { error } = addAvisProdValidation({commenter:commenter,nbStart:nbStart});
-            if (error)
+      const { error } = addAvisProdValidation({
+        commenter: commenter,
+        nbStart: nbStart,
+      });
+      if (error)
         return res
           .status(400)
           .json({ success: false, err: error.details[0].message });
@@ -166,7 +174,6 @@ const avisProduitlibraireController = {
         error: err,
       });
     }
-    
   },
   getAllAvisByPartnier: async (req, res) => {
     try {
@@ -259,11 +266,11 @@ const avisProduitlibraireController = {
     try {
       const labrairieId = req.params.id;
 
-      const avisOptions = {
+      const response = await Model.avisProduitlibraire.findAll({
         include: [
           {
             model: Model.produitlabrairie,
-            attributes: ["titre"],
+            attributes: ["id", "titre", "prix"],
             include: [
               {
                 model: Model.imageProduitLibrairie,
@@ -271,11 +278,11 @@ const avisProduitlibraireController = {
               },
               {
                 model: Model.labrairie,
-                attributes: [],
-                where: { id: labrairieId },
+                attributes: ["nameLibrairie"],
               },
             ],
           },
+
           {
             model: Model.client,
             attributes: ["id"],
@@ -291,9 +298,7 @@ const avisProduitlibraireController = {
             ],
           },
         ],
-      };
-
-      const response = await Model.avisProduitlibraire.findAll(avisOptions);
+      });
 
       if (response.length !== 0) {
         return res.status(200).json({
@@ -373,10 +378,16 @@ const avisProduitlibraireController = {
               order: [["nbStart", "DESC"]],
               limit: 1,
               include: [
-                { model: Model.client, attributes: ["userclientfk"] , include:[{
-                  model: Model.user,
-                  attributes: ["fullname","avatar"],
-                }]},
+                {
+                  model: Model.client,
+                  attributes: ["userclientfk"],
+                  include: [
+                    {
+                      model: Model.user,
+                      attributes: ["fullname", "avatar"],
+                    },
+                  ],
+                },
                 {
                   model: Model.produitlabrairie,
                   attributes: ["id"],
