@@ -230,6 +230,86 @@ const BecomePartnerController = {
               });
             }
           });
+          
+          break;
+          case "enterprise":
+            const datauser3 = {
+              email: email,
+              fullname: username,
+              password: passwordHash,
+              email_verifie: "verifie",
+              role: "enterprise",
+              etatCompte: "active",
+            };
+            Model.user.findOne({ where: { email: email } }).then((response) => {
+              if (response === null) {
+                Model.user.create(datauser3).then((user) => {
+                  if (user !== null) {
+                    const dataenterprise = {
+                      id: user.id,
+                      userenterfk: user.id,
+                    };
+                    Model.enterprise
+                      .create(dataenterprise)
+                      .then((enterprise) => {
+                        sendMail.acceptationDemendePartenariat(email, Password);
+                        if (enterprise !== null) {
+                          return res.status(200).json({
+                            success: true,
+                            message: "success create enterprise",
+                          });
+                        }
+                      });
+                  }
+                });
+              } else {
+                sendMail.DemendePartenariatRejected(email);
+                return res.status(400).json({
+                  success: false,
+                  message: "email exist ",
+                });
+              }
+            });
+          break;
+          
+          case "ecole":
+            const datauser4 = {
+              email: email,
+              fullname: username,
+              password: passwordHash,
+              email_verifie: "verifie",
+              role: "ecole",
+              etatCompte: "active",
+            };
+            Model.user.findOne({ where: { email: email } }).then((response) => {
+              if (response === null) {
+                Model.user.create(datauser4).then((user) => {
+                  if (user !== null) {
+                    const dataecole = {
+                      id: user.id,
+                      userecofk: user.id,
+                    };
+                    Model.ecole
+                      .create(dataecole)
+                      .then((ecole) => {
+                        sendMail.acceptationDemendePartenariat(email, Password);
+                        if (ecole !== null) {
+                          return res.status(200).json({
+                            success: true,
+                            message: "success create ecole",
+                          });
+                        }
+                      });
+                  }
+                });
+              } else {
+                sendMail.DemendePartenariatRejected(email);
+                return res.status(400).json({
+                  success: false,
+                  message: "email exist ",
+                });
+              }
+            });
           break;
         default:
           const datauser2 = {

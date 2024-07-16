@@ -115,7 +115,6 @@ const userController = {
             point: 0,
             verification_token: verificationToken,
           };
-
           Model.user.create(datauser).then((user) => {
             if (user !== null) {
               const dataClient = {

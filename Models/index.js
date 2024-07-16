@@ -5,6 +5,8 @@ const clientModel = require("./client");
 const fournisseurModel = require("./fournisseur");
 const partenaireModel = require("./partenaire");
 const labrairieModel = require("./labriarie");
+const enterpriseModel = require("./enterprise");
+const ecoleModel = require("./ecole");
 const codePromoModel = require("./codepromo");
 const bonAchatModel = require("./bonAchat");
 const categorieModel = require("./categorie");
@@ -44,6 +46,8 @@ const user = userModel(db, Sequelize);
 const client = clientModel(db, Sequelize);
 const fournisseur = fournisseurModel(db, Sequelize);
 const labrairie = labrairieModel(db, Sequelize);
+const enterprise = enterpriseModel(db, Sequelize);
+const ecole = ecoleModel(db, Sequelize);
 const partenaire = partenaireModel(db, Sequelize);
 const codePromo = codePromoModel(db, Sequelize);
 const bonAchat = bonAchatModel(db, Sequelize);
@@ -111,6 +115,26 @@ user.hasOne(labrairie, {
 });
 labrairie.belongsTo(user, {
   foreignKey: "userlabfk",
+  constraints: false,
+});
+user.hasOne(enterprise, {
+  foreignKey: "userenterfk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+enterprise.belongsTo(user, {
+  foreignKey: "userenterfk",
+  constraints: false,
+});
+user.hasOne(ecole, {
+  foreignKey: "userecofk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+ecole.belongsTo(user, {
+  foreignKey: "userecofk",
   constraints: false,
 });
 user.hasOne(partenaire, {
@@ -878,6 +902,8 @@ module.exports = {
   user,
   client,
   labrairie,
+  enterprise,
+  ecole,
   fournisseur,
   partenaire,
   codePromo,
