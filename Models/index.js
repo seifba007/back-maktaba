@@ -15,8 +15,11 @@ const produitfournisseurModel = require("./produitfournisseur");
 const commandeEnGrosModel = require("./commandeGros");
 const ProduitCommandeEnGrosModel = require("./ProduitCommandeEnGros");
 const ProduitCommandeEnDetailModel = require("./ProduitCommandeEnDetail");
+const ProduitCommandeIdentifiantEnDetailModel = require("./ProduitCommandeIdentifiantEnDetail");
 const commandeEnDetailModel = require("./CommandeDetail");
 const commandeSpecialModel = require("./commandespecial");
+const commandespecialidentifiantModel = require("./commandespecialidentifiant");
+const commandeIdentifiantModel = require("./commandeidentifiant");
 const codeClientModel = require("./codeClient");
 const avisProduitlibraireModel = require("./avisProduitlibraire");
 const avisProduitfournisseurModel = require("./avisproduitfournisseur");
@@ -61,7 +64,10 @@ const commandeEnGros = commandeEnGrosModel(db, Sequelize);
 const ProduitCommandeEnGros = ProduitCommandeEnGrosModel(db, Sequelize);
 const commandeEnDetail = commandeEnDetailModel(db, Sequelize);
 const commandeSpecial = commandeSpecialModel(db, Sequelize);
+const commandeSpecialidentifiant = commandespecialidentifiantModel(db, Sequelize);
+const commandeIdentifiant = commandeIdentifiantModel(db, Sequelize);
 const ProduitCommandeEnDetail = ProduitCommandeEnDetailModel(db, Sequelize);
+const ProduitCommandeIdentifiantEnDetail = ProduitCommandeIdentifiantEnDetailModel(db, Sequelize);
 const codeClient = codeClientModel(db, Sequelize);
 const avisProduitlibraire = avisProduitlibraireModel(db, Sequelize);
 const avisProduitfournisseur = avisProduitfournisseurModel(db, Sequelize);
@@ -376,6 +382,21 @@ commandeEnDetail.belongsToMany(produitlabrairie, {
   through: ProduitCommandeEnDetail,
   foreignKey: 'comdetprodlabrfk', 
   otherKey: 'prodlaibrcommdetfk', 
+  constraints: false,
+});
+
+
+produitlabrairie.belongsToMany(commandeIdentifiant, {
+  through: ProduitCommandeIdentifiantEnDetail,
+  foreignKey: 'prodcomidenfk', 
+  otherKey: 'comidenprodfk', 
+  constraints: false,
+});
+
+commandeIdentifiant.belongsToMany(produitlabrairie, {
+  through: ProduitCommandeIdentifiantEnDetail,
+  foreignKey: 'comidenprodfk', 
+  otherKey: 'prodcomidenfk', 
   constraints: false,
 });
 
@@ -922,6 +943,9 @@ module.exports = {
   ProduitCommandeEnGros,
   commandeEnDetail,
   commandeSpecial,
+  commandeSpecialidentifiant,
+  commandeIdentifiant,
+  ProduitCommandeIdentifiantEnDetail,
   ProduitCommandeEnDetail,
   codeClient,
   avisProduitlibraire,

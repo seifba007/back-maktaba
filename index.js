@@ -93,7 +93,7 @@ app.use("/produitfournisseur",produitFournisseurRouter)
 /** end  */
 /** connection avec DB */
 /** end  */
-/** connection avec DB */
+/** connection avec DB */          
 
 db.authenticate().then(() => {
   console.log("Connection has been established successfully.")

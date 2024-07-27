@@ -7,7 +7,8 @@ const { AuthorizationUser } = require("../middleware/auth/auth");
 router.post("/add", AuthorizationUser, commandeDetailController.add);
 
 router.post("/addcommandespecial", upload.array("Fichier",1), commandeDetailController.addcommandespecial);
-
+router.post("/addcommandespecialidentifiant", upload.array("Fichier",1), commandeDetailController.addcommandespecialidentifiant);
+router.post("/addcommandeidentifiant", commandeDetailController.addcommandeidentifiant);
 router.get(
   "/findcommandebyuser/:id",
   commandeDetailController.findCommandeByuser
@@ -17,7 +18,18 @@ router.get(
   "/findspeccommandebyuser/:id",
   commandeDetailController.findSpecCommandeByuser
 );
+
+router.get(
+  "/findCommandeident",
+  commandeDetailController.findCommandeident
+);
+router.get(
+  "/findCommandespecident",
+  commandeDetailController.findCommandespecident
+);
 router.get("/findOneCommande/:id", commandeDetailController.findOneCommande);
+router.get("/findOneSpecidentCommande/:id", commandeDetailController.findOneSpecidentCommande);
+router.get("/findOneCommandeident/:id", commandeDetailController.findOneCommandeident);
 router.get("/findOneSpecCommande/:id", commandeDetailController.findOneSpecCommande);
 router.get(
   "/findCommandeBylibrairie/:id",
@@ -43,10 +55,22 @@ router.put(
   AuthorizationUser,
   commandeDetailController.AccepterCommandeSpecial
 );
+router.put(
+  "/AccepterCommandeidentifiant/:id",
+  commandeDetailController.AccepterCommandeidentifiant
+);
+router.put(
+  "/AccepterCommandespecidentifiant/:id",
+  commandeDetailController.AccepterCommandespecidentifiant
+);
 router.put("/Annuler/:id", AuthorizationUser, commandeDetailController.Annuler);
 router.put("/AnnulerCommandeSpecial/:id", AuthorizationUser, commandeDetailController.Annulercommandespecial);
+router.put("/AnnulercommandeIdentifiant/:id", commandeDetailController.AnnulercommandeIdentifiant);
+router.put("/AnnulercommandespecIdentifiant/:id", commandeDetailController.AnnulercommandespecIdentifiant);
 router.put("/livre/:id", AuthorizationUser, commandeDetailController.livre);
 router.put("/livreCommandeSpecial/:id", AuthorizationUser, commandeDetailController.livreCommandeSpecial);
+router.put("/livreCommandeIdentifiant/:id", commandeDetailController.livreCommandeIdentifiant);
+router.put("/livreCommandespecIdentifiant/:id", commandeDetailController.livreCommandespecIdentifiant);
 router.post(
   "/addArticle",
   AuthorizationUser,
@@ -61,6 +85,14 @@ router.delete(
 router.delete(
   "/deletecommandespecsial",
   commandeDetailController.deleteCommandeSpec
+);
+router.delete(
+  "/deletespecialidentifiant",
+  commandeDetailController.deletespecialidentifiant
+);
+router.delete(
+  "/deletedeleteidentifiant",
+  commandeDetailController.deleteidentifiant
 );
 router.get(
   "/nb_commande_par_jour/:id",

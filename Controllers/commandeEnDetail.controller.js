@@ -75,56 +75,240 @@ const commandeDetailController = {
         labrcomdespectfk,
       } = req.body;
       let imageUrl = "";
-  
+
       if (!req.files || req.files.length === 0) {
-        const commande = await Model.commandeSpecial.create({
-          etatClient: etatClient,
-          Adresse: Adresse,
-          Description: Description,
-          email: email,
-          telephone: telephone,
-          Nom: Nom,
-          usercommdespectfk: usercommdespectfk,
-          labrcomdespectfk: labrcomdespectfk,
-        }).catch((error) => {
-          throw new Error(`Error creating command without files: ${error.message}`);
-        });
-  
-        res.status(200).json(commande);
-        return; 
-      }
-  
-      await Promise.all(req.files.map(async (file) => {
-        try {
-          const result = await cloudinary.uploader.upload(file.path);
-          imageUrl = result.secure_url;
-          const commande = await Model.commandeSpecial.create({
+        const commande = await Model.commandeSpecial
+          .create({
             etatClient: etatClient,
             Adresse: Adresse,
             Description: Description,
             email: email,
             telephone: telephone,
             Nom: Nom,
-            Fichier: imageUrl,
             usercommdespectfk: usercommdespectfk,
             labrcomdespectfk: labrcomdespectfk,
-          }).catch((error) => {
-            throw new Error(`Error creating command with file: ${error.message}`);
+          })
+          .catch((error) => {
+            throw new Error(
+              `Error creating command without files: ${error.message}`
+            );
           });
-          return commande;
-        } catch (error) {
-          throw error;
-        }
-      }));
-  
+
+        res.status(200).json(commande);
+        return;
+      }
+
+      await Promise.all(
+        req.files.map(async (file) => {
+          try {
+            const result = await cloudinary.uploader.upload(file.path);
+            imageUrl = result.secure_url;
+            const commande = await Model.commandeSpecial
+              .create({
+                etatClient: etatClient,
+                Adresse: Adresse,
+                Description: Description,
+                email: email,
+                telephone: telephone,
+                Nom: Nom,
+                Fichier: imageUrl,
+                usercommdespectfk: usercommdespectfk,
+                labrcomdespectfk: labrcomdespectfk,
+              })
+              .catch((error) => {
+                throw new Error(
+                  `Error creating command with file: ${error.message}`
+                );
+              });
+            return commande;
+          } catch (error) {
+            throw error;
+          }
+        })
+      );
+
       res.status(200).json({ message: "Commande created successfully" });
     } catch (error) {
       console.error(error);
-      res.status(400).json({ error: "Erreur lors de la création de la commande" });
+      res
+        .status(400)
+        .json({ error: "Erreur lors de la création de la commande" });
     }
   },
-  
-  
+
+  addcommandespecialidentifiant: async (req, res) => {
+    try {
+      const {
+        etatClient,
+        Adresse,
+        Description,
+        email,
+        telephone,
+        Nom,
+        identifiant
+      } = req.body;
+      let imageUrl = "";
+
+      if (!req.files || req.files.length === 0) {
+        
+        res
+        .status(400)
+        .json({ error: "Erreur lors de la création de la commande" });
+      }
+
+      await Promise.all(
+        req.files.map(async (file) => {
+          try {
+            const result = await cloudinary.uploader.upload(file.path);
+            imageUrl = result.secure_url;
+            const commande = await Model.commandeSpecialidentifiant
+              .create({
+                etatClient: etatClient,
+                Adresse: Adresse,
+                Description: Description,
+                email: email,
+                telephone: telephone,
+                Nom: Nom,
+                Fichier: imageUrl,
+                identifiant: identifiant
+              })
+              .catch((error) => {
+                throw new Error(
+                  `Error creating command with file: ${error.message}`
+                );
+              });
+            return commande;
+          } catch (error) {
+            throw error;
+          }
+        })
+      );
+
+      res.status(200).json({ message: "Commande created successfully" });
+    } catch (error) {
+      console.error(error);
+      res
+        .status(400)
+        .json({ error: "Erreur lors de la création de la commande" });
+    }
+  },
+
+  deletespecialidentifiant: async (req, res) => {
+    const { ids } = req.body;
+    try {
+      Model.commandeSpecialidentifiant
+        .destroy({
+          where: {
+            id: ids,
+          },
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              message: "Commande Deleted",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "Deleted Failed",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  addcommandeidentifiant: async (req, res) => {
+    const { commande } = req.body;
+    try {
+      commande.map((data) => {
+        let commandes = {
+          Nom: data.Nom,
+          prenom: data.prenom,
+          identifiant: data.identifiant,
+          telephone: data.telephone,
+          etatClient: data.etatClient,
+          Adresse: data.Adresse,
+          Description: data.Description,
+        };
+        Model.commandeIdentifiant.create(commandes).then((response) => {
+          if (response !== null) {
+            data.produits.map((e) => {
+              e.comidenprodfk = response.id;
+            });
+            Model.ProduitCommandeIdentifiantEnDetail.bulkCreate(
+              data.produits
+            ).then((response) => {
+              data.produits.map((e) => {
+                Model.produitlabrairie
+                  .findByPk(e.prodcomidenfk)
+                  .then((produit) => {
+                    if (produit !== null) {
+                      const updatedQte = produit.qte - e.Qte;
+                      if (updatedQte < 0) {
+                        updatedQte = 0;
+                      }
+                      return Model.produitlabrairie.update(
+                        { qte: updatedQte },
+                        { where: { id: e.prodcomidenfk } }
+                      );
+                    }
+                  });
+              });
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: " error lorsque l'ajoute de commande",
+            });
+          }
+        });
+      });
+      return res.status(200).json({
+        success: true,
+        message: " add commande en  detail  Done !!",
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+  deleteidentifiant: async (req, res) => {
+    const { ids } = req.body;
+    try {
+      Model.commandeIdentifiant
+        .destroy({
+          where: {
+            id: ids,
+          },
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              message: "Commande Deleted",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "Deleted Failed",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
 
   deleteCommandeSpec: async (req, res) => {
     const { ids } = req.body;
@@ -228,6 +412,170 @@ const commandeDetailController = {
       return res.status(400).json({
         success: false,
         error: err,
+      });
+    }
+  },
+
+  findCommandeident: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat, username, identifiant } =
+      req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    const wherename = {};
+
+    try {
+      let whereClause = {};
+      if (etat && etat === "tout") {
+        whereClause.etatClient = {
+          [Sequelize.Op.or]: ["en_cours", "livre", "Rejeter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etatClient = etat;
+      }
+      if (identifiant) {
+        whereClause.identifiant = {
+          [Sequelize.Op.like]: `%${identifiant}%`,
+        };
+      }
+
+      if (username) {
+        whereClause.Nom = {
+          [Sequelize.Op.like]: `%${username}%`,
+        };
+      }
+
+      const count = await Model.commandeIdentifiant.count({
+        where: whereClause,
+      });
+
+      Model.commandeIdentifiant
+        .findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: whereClause,
+        })
+        .then((response) => {
+          if (response !== null) {
+            const totalPages = Math.ceil(count / pageSize);
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+              totalPages: totalPages,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "Aucune commande trouvée.",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+  findCommandespecident: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat, username, identifiant } =
+      req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    try {
+      let whereClause = {};
+      if (etat && etat === "tout") {
+        whereClause.etatClient = {
+          [Sequelize.Op.or]: ["en_cours", "livre", "Rejeter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etatClient = etat;
+      }
+      if (identifiant) {
+        whereClause.identifiant = {
+          [Sequelize.Op.like]: `%${identifiant}%`,
+        };
+      }
+
+      if (username) {
+        whereClause.Nom = {
+          [Sequelize.Op.like]: `%${username}%`,
+        };
+      }
+
+      const count = await Model.commandeSpecialidentifiant.count({
+        where: whereClause,
+      });
+
+      Model.commandeSpecialidentifiant
+        .findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: whereClause,
+        })
+        .then((response) => {
+          if (response !== null) {
+            const totalPages = Math.ceil(count / pageSize);
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+              totalPages: totalPages,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "Aucune commande trouvée.",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findOneCommandeident: async (req, res) => {
+    try {
+      const commandId = req.params.id;
+
+      const command = await Model.commandeIdentifiant.findAll({
+        where: {
+          id: commandId,
+        },
+
+        include: [
+          {
+            model: Model.produitlabrairie,
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
+        ],
+      });
+
+      if (!command) {
+        return res.status(404).json({
+          success: false,
+          error: "Command not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        commande: command,
+      });
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        error: err.message,
       });
     }
   },
@@ -366,7 +714,7 @@ const commandeDetailController = {
               },
               {
                 model: Model.partenaire,
-                
+
                 include: [
                   {
                     model: Model.adresses,
@@ -437,6 +785,33 @@ const commandeDetailController = {
               ],
             },
           ],
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "zero commande trouve",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        err: err,
+      });
+    }
+  },
+
+  findOneSpecidentCommande: async (req, res) => {
+    try {
+      Model.commandeSpecialidentifiant
+        .findAll({
+          where: { id: req.params.id },
         })
         .then((response) => {
           if (response !== null) {
@@ -662,7 +1037,6 @@ const commandeDetailController = {
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     const wherename = {};
 
-    
     try {
       let whereClause = { labrcomdespectfk: req.params.id };
       if (etat && etat === "tout") {
@@ -703,7 +1077,7 @@ const commandeDetailController = {
               model: Model.user,
 
               attributes: ["fullname", "avatar", "telephone", "email", "role"],
-              where:wherename,
+              where: wherename,
               include: [
                 {
                   model: Model.client,
@@ -729,7 +1103,7 @@ const commandeDetailController = {
             return res.status(200).json({
               success: true,
               commandes: response,
-              totalPages: totalPages
+              totalPages: totalPages,
             });
           } else {
             return res.status(400).json({
@@ -850,7 +1224,6 @@ const commandeDetailController = {
 
   Annulercommandespecial: async (req, res) => {
     try {
-      const produits = req.body.produit;
       Model.commandeSpecial
         .update(
           {
@@ -868,6 +1241,64 @@ const commandeDetailController = {
             return res.status(400).json({
               success: false,
               message: "error Annuler commande special",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  AnnulercommandeIdentifiant: async (req, res) => {
+    try {
+      Model.commandeIdentifiant
+        .update(
+          {
+            etatClient: "Rejeter",
+          },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Identifiant Annuler",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error Annuler Identifiant special",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  AnnulercommandespecIdentifiant: async (req, res) => {
+    try {
+      Model.commandeSpecialidentifiant
+        .update(
+          {
+            etatClient: "Rejeter",
+          },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Identifiant Annuler",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error Annuler Identifiant special",
             });
           }
         });
@@ -929,6 +1360,54 @@ const commandeDetailController = {
       });
     }
   },
+  AccepterCommandeidentifiant: async (req, res) => {
+    try {
+      Model.commandeIdentifiant
+        .update({ etatClient: "en_cours" }, { where: { id: req.params.id } })
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Identifiant acceptée",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error accepte commande Identifiant ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  AccepterCommandespecidentifiant: async (req, res) => {
+    try {
+      Model.commandeSpecialidentifiant
+        .update({ etatClient: "en_cours" }, { where: { id: req.params.id } })
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Identifiant acceptée",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error accepte commande Identifiant ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
   livre: async (req, res) => {
     try {
       Model.commandeEnDetail
@@ -979,6 +1458,64 @@ const commandeDetailController = {
             return res.status(400).json({
               success: false,
               message: "error livre commande Special",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  livreCommandeIdentifiant: async (req, res) => {
+    try {
+      Model.commandeIdentifiant
+        .update(
+          {
+            etatClient: "Livre",
+          },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Identifiant livre",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error livre commande Identifiant",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  livreCommandespecIdentifiant: async (req, res) => {
+    try {
+      Model.commandeSpecialidentifiant
+        .update(
+          {
+            etatClient: "Livre",
+          },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Identifiant livre",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error livre commande Identifiant",
             });
           }
         });
