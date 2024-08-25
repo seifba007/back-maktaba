@@ -3,20 +3,21 @@ const Model = require("../Models/index");
 const offreController = {
   AddOffre: async (req, res) => {
     try {
-      const { Description, echangeofffk, labofffk } = req.body;
+      const { Description, echangeofffk, labofffk, clientofffk } = req.body;
 
       const offre = await Model.offre.create({
         Description: Description,
         Etat: "en_cours",
         echangeofffk: echangeofffk,
         labofffk: labofffk,
+        clientofffk: clientofffk,
       });
 
       const produitsaechange = req.body.produitsaechange;
       for (const produit of produitsaechange) {
         await Model.produitaechange.create({
-          Name: produit.name,
-          Qte: produit.quantite,
+          Name: produit.Name,
+          Qte: produit.Qte,
           offreprodaechk: offre.id,
         });
       }
@@ -24,8 +25,8 @@ const offreController = {
       const produitsechange = req.body.produitsechange;
       for (const produit of produitsechange) {
         await Model.produitechange.create({
-          Name: produit.name,
-          Qte: produit.quantite,
+          Name: produit.Name,
+          Qte: produit.Qte,
           offreprodechk: offre.id,
         });
       }
@@ -61,7 +62,16 @@ const offreController = {
           },
           {
             model: Model.labrairie,
-            attributes: ["nameLibrairie"]
+            attributes: ["nameLibrairie"],
+          },
+          {
+            model: Model.client,
+            include: [
+              {
+                model: Model.user,
+                attributes: ["email", "fullname", "avatar"],
+              },
+            ],
           },
         ],
         attributes: {
@@ -194,6 +204,55 @@ const offreController = {
     }
   },
 
+  findoneOffre: async (req, res) => {
+    try {
+      const offres = await Model.offre.findAll({
+        where: {
+          id: req.params.id,
+        },
+        include: [
+          {
+            model: Model.produitaechange,
+          },
+          {
+            model: Model.produitechange,
+          },
+          {
+            model: Model.labrairie,
+          },
+          {
+            model: Model.client,
+            include: [
+              {
+                model: Model.user,
+                attributes: ["email", "fullname", "avatar"],
+              },
+            ],
+          },
+        ],
+        attributes: {
+          exclude: ["updatedAt"],
+        },
+      });
+      if (offres.length > 0) {
+        return res.status(200).json({
+          success: true,
+          offres: offres,
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "Aucune offre trouvée pour cette librarire.",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
   Accepter: async (req, res) => {
     try {
       const { Description } = req.body;
@@ -280,10 +339,7 @@ const offreController = {
     try {
       const { Etat } = req.body;
       Model.offre
-        .update(
-          { Etat: Etat,},
-          { where: { id: req.params.id } }
-        )
+        .update({ Etat: Etat }, { where: { id: req.params.id } })
         .then((response) => {
           if (response !== 0) {
             return res.status(200).json({

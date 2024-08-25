@@ -1,17 +1,20 @@
 const express = require("express");
 const router = express.Router();
 const upload = require("../middleware/upload");
+const { AuthorizationUser } = require("../middleware/auth/auth");
 
 const donController = require("../Controllers/don.controller");
 
-router.post("/addDon", upload.array("Fichier",10), donController.addDon);
+router.post("/addDon",AuthorizationUser, upload.array("Fichier",10), donController.addDon);
 router.put(
     "/accepterDon/:id",
+    AuthorizationUser,
     donController.Accepter
   );
 
   router.put(
     "/annulerDon/:id",
+    AuthorizationUser,
     donController.Annuler
   );
 
@@ -22,6 +25,7 @@ router.put(
 
   router.delete(
     "/deleteDon",
+    AuthorizationUser,
     donController.deleteDon
   );
 module.exports = router;

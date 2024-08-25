@@ -5,17 +5,20 @@ const produitfounisseurcontroller = require("../Controllers/produitFournisseur.c
 const {AuthorizationUser } = require("../middleware/auth/auth");
 router.post(
   "/add",
+  AuthorizationUser,
   upload.array("image", 3),
   produitfounisseurcontroller.add_produit
 );
 
 router.put(
   "/update/:id",
+  AuthorizationUser,
   upload.array("image", 3),
   produitfounisseurcontroller.update
 );
 router.delete(
   "/delete",
+  AuthorizationUser,
   produitfounisseurcontroller.delete
 );
 router.get("/findAll", produitfounisseurcontroller.findAll);
@@ -34,6 +37,6 @@ router.get(
 router.get("/produit_mieux/:id",produitfounisseurcontroller.produit_mieux);
 
 router.get("/produitfiltrage", produitfounisseurcontroller.produitfiltreage);
-router.put("/changeVisibilite/:id", produitfounisseurcontroller.changeVisibilite);
+router.put("/changeVisibilite/:id", AuthorizationUser,produitfounisseurcontroller.changeVisibilite);
 
 module.exports = router;

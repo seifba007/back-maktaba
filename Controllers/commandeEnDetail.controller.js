@@ -2,65 +2,255 @@ const { response } = require("express");
 const Model = require("../Models/index");
 const cloudinary = require("../middleware/cloudinary");
 const { Sequelize, where, Op, or } = require("sequelize");
+const codePromo = require("./codePromo.controller");
 const commandeDetailController = {
   add: async (req, res) => {
-    const { commande } = req.body;
+    const { commande, promoCode, clientid } = req.body;
+
     try {
-      commande.map((data) => {
-        let commandes = {
-          total_ttc: data.total_ttc,
-          etatClient: "en cours",
-          etatVender: "Nouveau",
-          Adresse: data.Adresse,
-          Mode_liv: data.Mode_liv,
-          Mode_pay: data.Mode_pay,
-          usercommdetfk: data.usercommdetfk,
-          labrcomdetfk: data.labrcomdetfk,
-        };
-        Model.commandeEnDetail.create(commandes).then((response) => {
-          if (response !== null) {
-            data.produits.map((e) => {
-              e.comdetprodlabrfk = response.id;
+        let codePromoRecord = null;
+
+        if (promoCode) {
+            codePromoRecord = await Model.codePromo.findOne({
+                where: { code: promoCode },
+                include: [
+                    {
+                        model: Model.codePromocategory,
+                        include: [{ model: Model.categorie }],
+                    },
+                ],
             });
-            Model.ProduitCommandeEnDetail.bulkCreate(data.produits).then(
-              (response) => {
-                data.produits.map((e) => {
-                  Model.produitlabrairie
-                    .findByPk(e.prodlaibrcommdetfk)
-                    .then((produit) => {
-                      if (produit !== null) {
-                        const updatedQte = produit.qte - e.Qte;
-                        if (updatedQte < 0) {
-                          updatedQte = 0;
-                        }
-                        return Model.produitlabrairie.update(
-                          { qte: updatedQte },
-                          { where: { id: e.prodlaibrcommdetfk } }
-                        );
-                      }
-                    });
+
+            if (!codePromoRecord) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid promo code.",
                 });
-              }
-            );
-          } else {
-            return res.status(400).json({
-              success: false,
-              message: " error lorsque l'ajoute de commande",
+            }
+        }
+
+        let oldTotal = 0.0;
+        let newTotal = 0.0;
+        const updatedCommandeDetails = [];
+
+        for (const data of commande) {
+            let commandes = {
+                total_ttc: data.total_ttc,
+                etatClient: "en cours",
+                etatVender: "Nouveau",
+                identifiant: data.identifiant,
+                Adresse: data.Adresse,
+                Mode_liv: data.Mode_liv,
+                Mode_pay: data.Mode_pay,
+                usercommdetfk: data.usercommdetfk,
+                labrcomdetfk: data.labrcomdetfk,
+            };
+
+            const newCommande = await Model.commandeEnDetail.create(commandes);
+
+            if (!newCommande) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Error adding the order.",
+                });
+            }
+
+            const updatedProduits = [];
+
+            for (const e of data.produits) {
+                const produit = await Model.produitlabrairie.findByPk(
+                    e.prodlaibrcommdetfk
+                );
+
+                if (produit) {
+                    const oldPrice = produit.prix;
+                    const tva = produit.tva; 
+                    let newPrice = oldPrice;
+                    let eligibleCategory = null;
+
+                    if (codePromoRecord) {
+                        const codePromocat = await Model.codePromocategory.findAll({
+                            where: { promocodeid: codePromoRecord.dataValues.id },
+                        });
+
+                        for (const category of codePromocat) {
+                            eligibleCategory =
+                                category.ctagorieid === produit.categprodlabfk;
+
+                            if (eligibleCategory) {
+                                const discount = category.discountPercentage;
+                                newPrice = (oldPrice * (1 - discount / 100)) + tva;
+                                break;
+                            }
+                        }
+                    }
+
+                    oldTotal += oldPrice * e.Qte;
+                    newTotal += newPrice * e.Qte;
+
+                    updatedProduits.push({
+                        ...e,
+                        oldPrice,
+                        newPrice,
+                        comdetprodlabrfk: newCommande.id,
+                    });
+
+                    let updatedQte = produit.qte - e.Qte;
+                    if (updatedQte < 0) {
+                        updatedQte = 0;
+                    }
+                    await Model.produitlabrairie.update(
+                        { qte: updatedQte },
+                        { where: { id: e.prodlaibrcommdetfk } }
+                    );
+                }
+            }
+
+            await Model.ProduitCommandeEnDetail.bulkCreate(updatedProduits);
+
+            if (codePromoRecord) {
+                await Model.historycodePromo.create({
+                    historypromocodeid: codePromoRecord.id,
+                    clienthiscodeprfk: clientid,
+                });
+            }
+
+            updatedCommandeDetails.push({
+                ...data,
+                produits: updatedProduits,
+                oldTotal,
+                newTotal,
             });
-          }
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Order added successfully!",
+            commandeDetails: updatedCommandeDetails,
+            oldTotal,
+            newTotal,
         });
-      });
-      return res.status(200).json({
-        success: true,
-        message: " add commande en  detail  Done !!",
-      });
     } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err,
-      });
+        return res.status(400).json({
+            success: false,
+            error: err.message,
+        });
     }
-  },
+},
+
+calculecommande: async (req, res) => {
+  const { commande, promoCode, clientid } = req.body;
+
+  try {
+      let codePromoRecord = null;
+
+      if (promoCode) {
+          codePromoRecord = await Model.codePromo.findOne({
+              where: { code: promoCode },
+              include: [
+                  {
+                      model: Model.codePromocategory,
+                      include: [{ model: Model.categorie }],
+                  },
+              ],
+          });
+
+          if (!codePromoRecord) {
+              return res.status(400).json({
+                  success: false,
+                  message: "Invalid promo code.",
+              });
+          }
+      }
+
+      let oldTotal = 0.0;
+      let newTotal = 0.0;
+      const updatedCommandeDetails = [];
+
+      for (const data of commande) {
+          let commandes = {
+              total_ttc: data.total_ttc,
+              etatClient: "en cours",
+              etatVender: "Nouveau",
+              identifiant: data.identifiant,
+              Adresse: data.Adresse,
+              Mode_liv: data.Mode_liv,
+              Mode_pay: data.Mode_pay,
+              usercommdetfk: data.usercommdetfk,
+              labrcomdetfk: data.labrcomdetfk,
+          };
+
+        
+
+          const updatedProduits = [];
+
+          for (const e of data.produits) {
+              const produit = await Model.produitlabrairie.findByPk(
+                  e.prodlaibrcommdetfk
+              );
+
+              if (produit) {
+                  const oldPrice = produit.prix;
+                  const tva = produit.tva; 
+                  let newPrice = oldPrice;
+                  let eligibleCategory = null;
+
+                  if (codePromoRecord) {
+                      const codePromocat = await Model.codePromocategory.findAll({
+                          where: { promocodeid: codePromoRecord.dataValues.id },
+                      });
+
+                      for (const category of codePromocat) {
+                          eligibleCategory =
+                              category.ctagorieid === produit.categprodlabfk;
+
+                          if (eligibleCategory) {
+                              const discount = category.discountPercentage;
+                              newPrice = (oldPrice * (1 - discount / 100)) + tva;
+                              break;
+                          }
+                      }
+                  }
+
+                  oldTotal += oldPrice * e.Qte;
+                  newTotal += newPrice * e.Qte;
+
+                  updatedProduits.push({
+                      ...e,
+                      oldPrice,
+                      newPrice,
+                  });
+
+                  let updatedQte = produit.qte - e.Qte;
+                  if (updatedQte < 0) {
+                      updatedQte = 0;
+                  }
+                
+              }
+          }
+
+          updatedCommandeDetails.push({
+              ...data,
+              produits: updatedProduits,
+              oldTotal,
+              newTotal,
+          });
+      }
+
+      return res.status(200).json({
+          success: true,
+          message: "Order calculated successfully!",
+          commandeDetails: updatedCommandeDetails,
+          oldTotal,
+          newTotal,
+      });
+  } catch (err) {
+      return res.status(400).json({
+          success: false,
+          error: err.message,
+      });
+  }
+},
 
   addcommandespecial: async (req, res) => {
     try {
@@ -71,72 +261,162 @@ const commandeDetailController = {
         email,
         telephone,
         Nom,
+        identifiant,
         usercommdespectfk,
         labrcomdespectfk,
+        codepromo,
       } = req.body;
-      let imageUrl = "";
-
-      if (!req.files || req.files.length === 0) {
-        const commande = await Model.commandeSpecial
-          .create({
-            etatClient: etatClient,
-            Adresse: Adresse,
-            Description: Description,
-            email: email,
-            telephone: telephone,
-            Nom: Nom,
-            usercommdespectfk: usercommdespectfk,
-            labrcomdespectfk: labrcomdespectfk,
-          })
-          .catch((error) => {
-            throw new Error(
-              `Error creating command without files: ${error.message}`
-            );
-          });
-
-        res.status(200).json(commande);
-        return;
+      let codeExist = null;
+      if (req.body.codepromo) {
+        codeExist = await Model.codePromo.findOne({
+          where: { code: codepromo, etat: "Valider" },
+        });
+        if (!codeExist) {
+          return res.status(400).json({ message: "Promo code does not exist" });
+        }
       }
 
-      await Promise.all(
+      let commande = null;
+
+      if (!req.files || req.files.length === 0) {
+        commande = await Model.commandeSpecial.create({
+          etatClient: etatClient,
+          Adresse: Adresse,
+          Description: Description,
+          codepromo: codepromo,
+          email: email,
+          telephone: telephone,
+          identifiant: identifiant,
+          Nom: Nom,
+          usercommdespectfk: usercommdespectfk,
+          labrcomdespectfk: labrcomdespectfk,
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: "Commande created successfully without files",
+          commande,
+        });
+      }
+
+      const uploadedFiles = await Promise.all(
         req.files.map(async (file) => {
           try {
             const result = await cloudinary.uploader.upload(file.path);
-            imageUrl = result.secure_url;
-            const commande = await Model.commandeSpecial
-              .create({
-                etatClient: etatClient,
-                Adresse: Adresse,
-                Description: Description,
-                email: email,
-                telephone: telephone,
-                Nom: Nom,
-                Fichier: imageUrl,
-                usercommdespectfk: usercommdespectfk,
-                labrcomdespectfk: labrcomdespectfk,
-              })
-              .catch((error) => {
-                throw new Error(
-                  `Error creating command with file: ${error.message}`
-                );
-              });
-            return commande;
+            return result.secure_url;
           } catch (error) {
-            throw error;
+            throw new Error(`File upload failed: ${error.message}`);
           }
         })
       );
 
-      res.status(200).json({ message: "Commande created successfully" });
+      commande = await Model.commandeSpecial.create({
+        etatClient: etatClient,
+        Adresse: Adresse,
+        Description: Description,
+        codepromo: codepromo,
+        email: email,
+        identifiant: identifiant,
+        telephone: telephone,
+        Nom: Nom,
+        Fichier: uploadedFiles.join(","),
+        usercommdespectfk: usercommdespectfk,
+        labrcomdespectfk: labrcomdespectfk,
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: "Commande created successfully with files",
+        commande,
+      });
     } catch (error) {
       console.error(error);
-      res
-        .status(400)
-        .json({ error: "Erreur lors de la création de la commande" });
+      return res.status(400).json({
+        success: false,
+        error: `Error creating the commande: ${error.message}`,
+      });
+    }
+  },
+  addcommandeinviter: async (req, res) => {
+    try {
+      const { email, telephone, fullname, commande } = req.body;
+
+      const user = await Model.user.create({
+        fullname: fullname,
+        email: email,
+        password: null,
+        email_verifie: "verifie",
+        role: "inviter",
+        etatCompte: "active",
+        point: 0,
+        telephone: telephone,
+        verification_token: null,
+      });
+      const updatedCommandeDetails = [];
+
+      for (const data of commande) {
+        let commandes = {
+          total_ttc: data.total_ttc,
+          etatClient: "en cours",
+          etatVender: "Nouveau",
+          Adresse: data.Adresse,
+          Mode_liv: data.Mode_liv,
+          Mode_pay: data.Mode_pay,
+          usercommdetfk: user.id,
+          labrcomdetfk: data.labrcomdetfk,
+        };
+
+        const newCommande = await Model.commandeEnDetail.create(commandes);
+
+        if (!newCommande) {
+          return res.status(400).json({
+            success: false,
+            message: "Error adding the order.",
+          });
+        }
+
+        const updatedProduits = [];
+
+        for (const e of data.produits) {
+          const produit = await Model.produitlabrairie.findByPk(
+            e.prodlaibrcommdetfk
+          );
+
+          if (produit) {
+            updatedProduits.push({
+              ...e,
+              comdetprodlabrfk:newCommande.id
+            });
+
+            let updatedQte = produit.qte - e.Qte;
+            if (updatedQte < 0) {
+              updatedQte = 0;
+            }
+            await Model.produitlabrairie.update(
+              { qte: updatedQte },
+              { where: { id: e.prodlaibrcommdetfk } }
+            );
+          }
+        }
+
+        await Model.ProduitCommandeEnDetail.bulkCreate(updatedProduits);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Commande guest created successfully",
+        commande,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(400).json({
+        success: false,
+        error: `Error creating the commande: ${error.message}`,
+      });
     }
   },
 
-  addcommandespecialidentifiant: async (req, res) => {
+  addcommandespecialinviter: async (req, res) => {
     try {
       const {
         etatClient,
@@ -145,167 +425,90 @@ const commandeDetailController = {
         email,
         telephone,
         Nom,
-        identifiant
+        identifiant,
+        labrcomdespectfk,
+        codepromo,
       } = req.body;
-      let imageUrl = "";
+      let codeExist = null;
 
-      if (!req.files || req.files.length === 0) {
-        
-        res
-        .status(400)
-        .json({ error: "Erreur lors de la création de la commande" });
+      const user = await Model.user.create({
+        fullname: Nom,
+        email: email,
+        password: null,
+        email_verifie: "verifie",
+        role: "inviter",
+        etatCompte: "active",
+        point: 0,
+        telephone: telephone,
+        verification_token: null,
+      });
+      if (req.body.codepromo) {
+        codeExist = await Model.codePromo.findOne({
+          where: { code: codepromo, etat: "Valider" },
+        });
+        if (!codeExist) {
+          return res.status(400).json({ message: "Promo code does not exist" });
+        }
       }
 
-      await Promise.all(
+      let commande = null;
+
+      if (!req.files || req.files.length === 0) {
+        commande = await Model.commandeSpecial.create({
+          etatClient: etatClient,
+          Adresse: Adresse,
+          Description: Description,
+          codepromo: codepromo,
+          email: email,
+          telephone: telephone,
+          identifiant: identifiant,
+          Nom: Nom,
+          usercommdespectfk: user.id,
+          labrcomdespectfk: labrcomdespectfk,
+        });
+
+        return res.status(200).json({
+          success: true,
+          message: "Commande created successfully without files",
+          commande,
+        });
+      }
+
+      const uploadedFiles = await Promise.all(
         req.files.map(async (file) => {
           try {
             const result = await cloudinary.uploader.upload(file.path);
-            imageUrl = result.secure_url;
-            const commande = await Model.commandeSpecialidentifiant
-              .create({
-                etatClient: etatClient,
-                Adresse: Adresse,
-                Description: Description,
-                email: email,
-                telephone: telephone,
-                Nom: Nom,
-                Fichier: imageUrl,
-                identifiant: identifiant
-              })
-              .catch((error) => {
-                throw new Error(
-                  `Error creating command with file: ${error.message}`
-                );
-              });
-            return commande;
+            return result.secure_url;
           } catch (error) {
-            throw error;
+            throw new Error(`File upload failed: ${error.message}`);
           }
         })
       );
 
-      res.status(200).json({ message: "Commande created successfully" });
-    } catch (error) {
-      console.error(error);
-      res
-        .status(400)
-        .json({ error: "Erreur lors de la création de la commande" });
-    }
-  },
-
-  deletespecialidentifiant: async (req, res) => {
-    const { ids } = req.body;
-    try {
-      Model.commandeSpecialidentifiant
-        .destroy({
-          where: {
-            id: ids,
-          },
-        })
-        .then((response) => {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              message: "Commande Deleted",
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              err: "Deleted Failed",
-            });
-          }
-        });
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err,
+      commande = await Model.commandeSpecial.create({
+        etatClient: etatClient,
+        Adresse: Adresse,
+        Description: Description,
+        codepromo: codepromo,
+        email: email,
+        identifiant: identifiant,
+        telephone: telephone,
+        Nom: Nom,
+        Fichier: uploadedFiles.join(","),
+        usercommdespectfk: user.id,
+        labrcomdespectfk: labrcomdespectfk,
       });
-    }
-  },
 
-  addcommandeidentifiant: async (req, res) => {
-    const { commande } = req.body;
-    try {
-      commande.map((data) => {
-        let commandes = {
-          Nom: data.Nom,
-          prenom: data.prenom,
-          identifiant: data.identifiant,
-          telephone: data.telephone,
-          etatClient: data.etatClient,
-          Adresse: data.Adresse,
-          Description: data.Description,
-        };
-        Model.commandeIdentifiant.create(commandes).then((response) => {
-          if (response !== null) {
-            data.produits.map((e) => {
-              e.comidenprodfk = response.id;
-            });
-            Model.ProduitCommandeIdentifiantEnDetail.bulkCreate(
-              data.produits
-            ).then((response) => {
-              data.produits.map((e) => {
-                Model.produitlabrairie
-                  .findByPk(e.prodcomidenfk)
-                  .then((produit) => {
-                    if (produit !== null) {
-                      const updatedQte = produit.qte - e.Qte;
-                      if (updatedQte < 0) {
-                        updatedQte = 0;
-                      }
-                      return Model.produitlabrairie.update(
-                        { qte: updatedQte },
-                        { where: { id: e.prodcomidenfk } }
-                      );
-                    }
-                  });
-              });
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              message: " error lorsque l'ajoute de commande",
-            });
-          }
-        });
-      });
       return res.status(200).json({
         success: true,
-        message: " add commande en  detail  Done !!",
+        message: "Commande created successfully with files",
+        commande,
       });
-    } catch (err) {
+    } catch (error) {
+      console.error(error);
       return res.status(400).json({
         success: false,
-        error: err.message,
-      });
-    }
-  },
-  deleteidentifiant: async (req, res) => {
-    const { ids } = req.body;
-    try {
-      Model.commandeIdentifiant
-        .destroy({
-          where: {
-            id: ids,
-          },
-        })
-        .then((response) => {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              message: "Commande Deleted",
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              err: "Deleted Failed",
-            });
-          }
-        });
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err,
+        error: `Error creating the commande: ${error.message}`,
       });
     }
   },
@@ -386,6 +589,70 @@ const commandeDetailController = {
             {
               model: Model.user,
               where: wherename,
+            },
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie", "imageStore"],
+            },
+          ],
+        })
+        .then((response) => {
+          if (response !== null) {
+            const totalPages = Math.ceil(count / pageSize);
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+              totalPages: totalPages,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "Aucune commande trouvée.",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findSpecCommandeBycodepromo: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat, codePromo } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    try {
+      let whereClause = { codePromo: codePromo };
+      if (etat && etat === "tout") {
+        whereClause.etatClient = {
+          [Sequelize.Op.or]: ["en_cours", "livre", "Rejeter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etatClient = etat;
+      }
+
+      const count = await Model.commandeSpecial.count({
+        where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            attributes: [],
+          },
+        ],
+      });
+
+      Model.commandeSpecial
+        .findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: whereClause,
+          include: [
+            {
+              model: Model.user,
             },
             {
               model: Model.labrairie,
@@ -688,7 +955,115 @@ const commandeDetailController = {
       });
     }
   },
+  findCommandeByidentifiant: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatcommande, identifiant } =
+      req.query;
 
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    try {
+      if (etatcommande == "tout") {
+        const totalCounttout = await Model.commandeEnDetail.count({
+          where: {
+            identifiant: identifiant,
+          },
+        });
+        const commandes = await Model.commandeEnDetail.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            identifiant: identifiant,
+          },
+          attributes: {
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+          },
+          include: [
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie", "imageStore"],
+            },
+            {
+              model: Model.produitlabrairie,
+              attributes: ["id", "titre", "prix"],
+              include: [
+                {
+                  model: Model.imageProduitLibrairie,
+                  attributes: ["name_Image"],
+                },
+              ],
+            },
+          ],
+        });
+        if (commandes.length > 0) {
+          const totalPages = Math.ceil(totalCounttout / pageSize);
+          return res.status(200).json({
+            success: true,
+            commandes: commandes,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune commande trouvée pour cet utilisateur.",
+          });
+        }
+      } else {
+        const totalCount = await Model.commandeEnDetail.count({
+          where: {
+            identifiant: identifiant,
+            etatClient: etatcommande,
+          },
+        });
+        const commandes = await Model.commandeEnDetail.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            identifiant: identifiant,
+            etatClient: etatcommande,
+          },
+          attributes: {
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+          },
+          include: [
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie", "imageStore"],
+            },
+            {
+              model: Model.produitlabrairie,
+              attributes: ["id", "titre", "prix"],
+              include: [
+                {
+                  model: Model.imageProduitLibrairie,
+                  attributes: ["name_Image"],
+                },
+              ],
+            },
+          ],
+        });
+        if (commandes.length > 0) {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          return res.status(200).json({
+            success: true,
+            commandes: commandes,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune commande trouvée pour cet utilisateur.",
+          });
+        }
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
   findOneCommande: async (req, res) => {
     try {
       const commandId = req.params.id;

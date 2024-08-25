@@ -30,6 +30,7 @@ app.use('/uploads',express.static("uploads"))
 require('./security/passport')(passport)
 /** les router */
 const userRouter= require("./router/user.router")
+const mediarouter= require("./router/media.router")
 const clientRouter = require ("./router/client.router")
 const codePromoRouter = require ("./router/codePromo.router")
 const bonAchatRouter = require("./router/bonAchat.router")
@@ -59,6 +60,7 @@ const sousCategorie = require("./router/sousCategorie.router")
 const suggestionProduit = require("./router/suggestionProduit.router");
 const suggestionProduitFournisseur = require("./router/suggestionProduitFournisseur.router");
 app.use("/user",userRouter)
+app.use("/media",mediarouter)
 app.use("/client",clientRouter)
 app.use("/codePromo",codePromoRouter)
 app.use("/bonAchat",bonAchatRouter)
@@ -87,7 +89,6 @@ app.use("/suggestionProduit",suggestionProduit)
 app.use("/suggestionproduitfournisseur",suggestionProduitFournisseur)
 app.use("/catalogefournisseur",Catalogefournisseur)
 app.use("/produitfournisseur",produitFournisseurRouter)
-
 
 
 /** end  */

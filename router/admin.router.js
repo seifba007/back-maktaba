@@ -6,13 +6,13 @@ const {
   AuthorizationAdmin,
 } = require("../middleware/auth/auth");
 const router = express.Router();
-router.post("/add", AuthorizationUser, AuthorizationAdmin, adminController.add);
-router.get("/allusersrole", adminController.findAllusersrole);
-router.get("/allcategories", adminController.findAllcategories);
-router.get("/allcategoriespagination", adminController.findAllcategoriespagination);
-router.get("/findonecategory/:id", adminController.findOnecategory);
-router.get("/allproduits", adminController.findAllproduits);
-router.get("/findAllproduitsnumber", adminController.findAllproduitsnumber);
+router.post("/add", AuthorizationAdmin, adminController.add);
+router.get("/allusersrole",AuthorizationUser, adminController.findAllusersrole);
+router.get("/allcategories", AuthorizationUser,adminController.findAllcategories);
+router.get("/allcategoriespagination", AuthorizationUser,adminController.findAllcategoriespagination);
+router.get("/findonecategory/:id",AuthorizationUser, adminController.findOnecategory);
+router.get("/allproduits",AuthorizationUser, adminController.findAllproduits);
+router.get("/findAllproduitsnumber", AuthorizationUser,adminController.findAllproduitsnumber);
 
 router.delete(
   "/deletecategory",
@@ -40,7 +40,7 @@ router.put(
 );
 
 router.put(
-  "/changevisibiliter/:id",
+  "/changevisibiliter/:id",AuthorizationUser,
   adminController.changeVisibilite
 );
 router.delete(

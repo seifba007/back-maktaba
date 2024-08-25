@@ -1,6 +1,7 @@
 const Sequelize = require("sequelize");
 const db = require("../config/database");
 const userModel = require("./user");
+const mediaModel = require("./media");
 const clientModel = require("./client");
 const fournisseurModel = require("./fournisseur");
 const partenaireModel = require("./partenaire");
@@ -8,6 +9,8 @@ const labrairieModel = require("./labriarie");
 const enterpriseModel = require("./enterprise");
 const ecoleModel = require("./ecole");
 const codePromoModel = require("./codepromo");
+const codePromocategoryModel = require("./codepromocategory");
+const historycodePromoModel = require("./history_codepromo");
 const bonAchatModel = require("./bonAchat");
 const categorieModel = require("./categorie");
 const produitlabrairieModel = require("./produitLabriarie");
@@ -18,8 +21,6 @@ const ProduitCommandeEnDetailModel = require("./ProduitCommandeEnDetail");
 const ProduitCommandeIdentifiantEnDetailModel = require("./ProduitCommandeIdentifiantEnDetail");
 const commandeEnDetailModel = require("./CommandeDetail");
 const commandeSpecialModel = require("./commandespecial");
-const commandespecialidentifiantModel = require("./commandespecialidentifiant");
-const commandeIdentifiantModel = require("./commandeidentifiant");
 const codeClientModel = require("./codeClient");
 const avisProduitlibraireModel = require("./avisProduitlibraire");
 const avisProduitfournisseurModel = require("./avisproduitfournisseur");
@@ -46,6 +47,7 @@ const produitaechangeModel = require("./produitaechange");
 const produitechangeModel = require("./produitechange");
 const inventaireModel = require("./inventaire");
 const user = userModel(db, Sequelize);
+const media = mediaModel(db, Sequelize);
 const client = clientModel(db, Sequelize);
 const fournisseur = fournisseurModel(db, Sequelize);
 const labrairie = labrairieModel(db, Sequelize);
@@ -53,6 +55,8 @@ const enterprise = enterpriseModel(db, Sequelize);
 const ecole = ecoleModel(db, Sequelize);
 const partenaire = partenaireModel(db, Sequelize);
 const codePromo = codePromoModel(db, Sequelize);
+const codePromocategory = codePromocategoryModel(db, Sequelize);
+const historycodePromo = historycodePromoModel(db, Sequelize);
 const bonAchat = bonAchatModel(db, Sequelize);
 const categorie = categorieModel(db, Sequelize);
 const produitlabrairie = produitlabrairieModel(db, Sequelize);
@@ -64,10 +68,10 @@ const commandeEnGros = commandeEnGrosModel(db, Sequelize);
 const ProduitCommandeEnGros = ProduitCommandeEnGrosModel(db, Sequelize);
 const commandeEnDetail = commandeEnDetailModel(db, Sequelize);
 const commandeSpecial = commandeSpecialModel(db, Sequelize);
-const commandeSpecialidentifiant = commandespecialidentifiantModel(db, Sequelize);
-const commandeIdentifiant = commandeIdentifiantModel(db, Sequelize);
+
 const ProduitCommandeEnDetail = ProduitCommandeEnDetailModel(db, Sequelize);
-const ProduitCommandeIdentifiantEnDetail = ProduitCommandeIdentifiantEnDetailModel(db, Sequelize);
+const ProduitCommandeIdentifiantEnDetail =
+  ProduitCommandeIdentifiantEnDetailModel(db, Sequelize);
 const codeClient = codeClientModel(db, Sequelize);
 const avisProduitlibraire = avisProduitlibraireModel(db, Sequelize);
 const avisProduitfournisseur = avisProduitfournisseurModel(db, Sequelize);
@@ -83,7 +87,10 @@ const BecomePartner = BecomePartnerModel(db, Sequelize);
 const cataloge = catalogeModel(db, Sequelize);
 const catalogefournisseur = catalogeFournisseurModel(db, Sequelize);
 const suggestionProduit = suggestionProduitModel(db, Sequelize);
-const suggestionProduitFournisseur = suggestionProduitFournisseurModel(db, Sequelize);
+const suggestionProduitFournisseur = suggestionProduitFournisseurModel(
+  db,
+  Sequelize
+);
 const Souscategorie = SouscategorieModel(db, Sequelize);
 const echange = echangeModel(db, Sequelize);
 const offre = offreModel(db, Sequelize);
@@ -185,9 +192,47 @@ catalogefournisseur.belongsTo(admin, {
   constraints: false,
 });
 
+codePromocategory.belongsTo(codePromo, {
+  foreignKey: "promocodeid",
+  constraints: false,
+});
+
+codePromo.hasMany(codePromocategory, {
+  foreignKey: "promocodeid",
+  constraints: false,
+});
+
+historycodePromo.belongsTo(codePromo, {
+  foreignKey: "historypromocodeid",
+  constraints: false,
+});
+
+codePromo.hasMany(historycodePromo, {
+  foreignKey: "historypromocodeid",
+  constraints: false,
+});
+
+categorie.hasMany(codePromocategory, {
+  foreignKey: "ctagorieid",
+  constraints: false,
+});
+codePromocategory.belongsTo(categorie, {
+  foreignKey: "ctagorieid",
+  constraints: false,
+});
+
+client.hasMany(historycodePromo, {
+  foreignKey: "clienthiscodeprfk",
+  constraints: false,
+});
+historycodePromo.belongsTo(client, {
+  foreignKey: "clienthiscodeprfk",
+  constraints: false,
+});
+
 labrairie.hasMany(codePromo, {
-  foreignKey: "labcodeprfk", 
-  constraints: false, 
+  foreignKey: "labcodeprfk",
+  constraints: false,
 });
 codePromo.belongsTo(labrairie, {
   foreignKey: "labcodeprfk",
@@ -199,6 +244,15 @@ partenaire.hasMany(codePromo, {
 });
 codePromo.belongsTo(partenaire, {
   foreignKey: "partcodeprfk",
+  constraints: false,
+});
+
+client.hasMany(codePromo, {
+  foreignKey: "usercodefk",
+  constraints: false,
+});
+codePromo.belongsTo(client, {
+  foreignKey: "usercodefk",
   constraints: false,
 });
 
@@ -214,15 +268,15 @@ codePromo.belongsTo(fournisseur, {
 
 client.belongsToMany(codePromo, {
   through: codeClient,
-  foreignKey: "clientId", 
-  otherKey: "codePromoId", 
+  foreignKey: "clientId",
+  otherKey: "codePromoId",
   constraints: false,
 });
 
 codePromo.belongsToMany(client, {
   through: codeClient,
   foreignKey: "codePromoId",
-  otherKey: "clientId", 
+  otherKey: "clientId",
   constraints: false,
 });
 
@@ -232,7 +286,6 @@ user.hasMany(bonAchat, {
   onDelete: "CASCADE",
   onUpdate: "CASCADE",
 });
-
 
 bonAchat.belongsTo(user, {
   foreignKey: "userbonachafk",
@@ -315,7 +368,6 @@ produitlabrairie.belongsTo(labrairie, {
   constraints: false,
 });
 
-
 fournisseur.hasMany(produitfournisseur, {
   foreignKey: "fourprodfk",
   constraints: false,
@@ -360,7 +412,6 @@ commandeEnDetail.belongsTo(user, {
   constraints: false,
 });
 
-
 labrairie.hasMany(commandeEnDetail, {
   foreignKey: "labrcomdetfk",
   constraints: false,
@@ -373,46 +424,30 @@ commandeEnDetail.belongsTo(labrairie, {
 
 produitlabrairie.belongsToMany(commandeEnDetail, {
   through: ProduitCommandeEnDetail,
-  foreignKey: 'prodlaibrcommdetfk', 
-  otherKey: 'comdetprodlabrfk', 
+  foreignKey: "prodlaibrcommdetfk",
+  otherKey: "comdetprodlabrfk",
   constraints: false,
 });
 
 commandeEnDetail.belongsToMany(produitlabrairie, {
   through: ProduitCommandeEnDetail,
-  foreignKey: 'comdetprodlabrfk', 
-  otherKey: 'prodlaibrcommdetfk', 
+  foreignKey: "comdetprodlabrfk",
+  otherKey: "prodlaibrcommdetfk",
   constraints: false,
 });
-
-
-produitlabrairie.belongsToMany(commandeIdentifiant, {
-  through: ProduitCommandeIdentifiantEnDetail,
-  foreignKey: 'prodcomidenfk', 
-  otherKey: 'comidenprodfk', 
-  constraints: false,
-});
-
-commandeIdentifiant.belongsToMany(produitlabrairie, {
-  through: ProduitCommandeIdentifiantEnDetail,
-  foreignKey: 'comidenprodfk', 
-  otherKey: 'prodcomidenfk', 
-  constraints: false,
-});
-
 
 
 produitfournisseur.belongsToMany(commandeEnGros, {
   through: ProduitCommandeEnGros,
-  foreignKey: 'prodfourcommgrosfk', 
-  otherKey: 'comgrosprodfourrfk', 
+  foreignKey: "prodfourcommgrosfk",
+  otherKey: "comgrosprodfourrfk",
   constraints: false,
 });
 
 commandeEnGros.belongsToMany(produitfournisseur, {
   through: ProduitCommandeEnGros,
-  foreignKey: 'comgrosprodfourrfk', 
-  otherKey: 'prodfourcommgrosfk', 
+  foreignKey: "comgrosprodfourrfk",
+  otherKey: "prodfourcommgrosfk",
   constraints: false,
 });
 
@@ -462,7 +497,6 @@ avisProduitfournisseur.belongsTo(client, {
   constraints: false,
 });
 
-
 partenaire.hasMany(avisProduitlibraire, {
   foreignKey: "partavisprodfk",
   constraints: false,
@@ -480,7 +514,6 @@ avisProduitfournisseur.belongsTo(partenaire, {
   foreignKey: "partavisprodfourfk",
   constraints: false,
 });
-
 
 fournisseur.hasMany(avisProduitlibraire, {
   foreignKey: "fournavisprodfk",
@@ -511,7 +544,6 @@ avisProduitlibraire.belongsTo(produitlabrairie, {
   constraints: false,
 });
 
-
 produitfournisseur.hasMany(avisProduitfournisseur, {
   foreignKey: "prodfouravisfk",
   constraints: false,
@@ -522,7 +554,6 @@ avisProduitfournisseur.belongsTo(produitfournisseur, {
   foreignKey: "prodfouravisfk",
   constraints: false,
 });
-
 
 produitlabrairie.hasMany(signalerProduitlibraire, {
   foreignKey: "prodsignalerfk",
@@ -588,7 +619,6 @@ imageProduitFournsseur.belongsTo(produitfournisseur, {
   constraints: false,
 });
 
-
 cataloge.hasMany(imageCataloge, {
   foreignKey: "imagecatalogefk",
   constraints: false,
@@ -599,7 +629,6 @@ imageCataloge.belongsTo(cataloge, {
   foreignKey: "imagecatalogefk",
   constraints: false,
 });
-
 
 catalogefournisseur.hasMany(imageCatalogeFournisseur, {
   foreignKey: "imagecatalogefourfk",
@@ -619,7 +648,6 @@ cataloge.belongsTo(categorie, {
   foreignKey: "categoriecatalogefk",
   constraints: false,
 });
-
 
 categorie.hasMany(catalogefournisseur, {
   foreignKey: "categoriecatalogefourfk",
@@ -853,7 +881,6 @@ produitechange.belongsTo(offre, {
   constraints: false,
 });
 
-
 labrairie.hasMany(echange, {
   foreignKey: "labechfk",
   constraints: false,
@@ -866,8 +893,6 @@ echange.belongsTo(labrairie, {
   constraints: false,
 });
 
-
-
 labrairie.hasMany(offre, {
   foreignKey: "labofffk",
   constraints: false,
@@ -877,6 +902,18 @@ labrairie.hasMany(offre, {
 
 offre.belongsTo(labrairie, {
   foreignKey: "labofffk",
+  constraints: false,
+});
+
+client.hasMany(offre, {
+  foreignKey: "clientofffk",
+  constraints: false,
+  onDelete: "CASCADE",
+  onUpdate: "CASCADE",
+});
+
+offre.belongsTo(client, {
+  foreignKey: "clientofffk",
   constraints: false,
 });
 
@@ -892,7 +929,6 @@ echange.belongsTo(client, {
   constraints: false,
 });
 
-
 labrairie.hasMany(inventaire, {
   foreignKey: "labinvfk",
   constraints: false,
@@ -904,7 +940,6 @@ inventaire.belongsTo(labrairie, {
   foreignKey: "labinvfk",
   constraints: false,
 });
-
 
 produitlabrairie.hasMany(inventaire, {
   foreignKey: "prodlabinvfk",
@@ -918,9 +953,9 @@ inventaire.belongsTo(produitlabrairie, {
   constraints: false,
 });
 
-
 module.exports = {
   user,
+  media,
   client,
   labrairie,
   enterprise,
@@ -928,6 +963,8 @@ module.exports = {
   fournisseur,
   partenaire,
   codePromo,
+  codePromocategory,
+  historycodePromo,
   bonAchat,
   categorie,
   produitlabrairie,
@@ -943,8 +980,6 @@ module.exports = {
   ProduitCommandeEnGros,
   commandeEnDetail,
   commandeSpecial,
-  commandeSpecialidentifiant,
-  commandeIdentifiant,
   ProduitCommandeIdentifiantEnDetail,
   ProduitCommandeEnDetail,
   codeClient,
@@ -964,5 +999,5 @@ module.exports = {
   suggestionProduit,
   suggestionProduitFournisseur,
   Souscategorie,
-  inventaire
+  inventaire,
 };

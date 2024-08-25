@@ -2,7 +2,7 @@ const userController = require("../Controllers/user.controller");
 const express = require("express");
 const router = express.Router();
 const upload = require("../middleware/upload");
-const { AuthorizationAdmin, AuthorizationUser } = require("../middleware/auth/auth");
+const { AuthorizationUser } = require("../middleware/auth/auth");
 
 router.post("/register", userController.register);
 router.get("/verif/:email", userController.emailVerification);
@@ -13,9 +13,10 @@ router.post("/sendForgotPassword", userController.sendMailforgotPassword);
 router.post("/forgotpassword/:id", userController.forgotpassword);
 router.post("/contact", userController.Contact);
 router.post("/loginsocial", userController.authWithSocialMedia);
-router.put("/updatePassword/:id", userController.updatePassword);
+router.put("/updatePassword/:id", AuthorizationUser,userController.updatePassword);
 router.put(
   "/updateIdentite/:id",
+  AuthorizationUser,
   upload.array("image", 1),
   userController.updateIdentite
 );

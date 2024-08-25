@@ -2,7 +2,7 @@ const express = require("express");
 const avisproduitfournisseur = require("../Controllers/avisProduitfournisseur.controller");
 const router = express.Router();
 const { AuthorizationUser } = require("../middleware/auth/auth");
-router.post("/add",  avisproduitfournisseur.add);
+router.post("/add",  AuthorizationUser , avisproduitfournisseur.add);
 router.put(
   "/update/:id",
   AuthorizationUser,
@@ -10,7 +10,7 @@ router.put(
 );
 router.delete(
   "/delete/:id",
-  //AuthorizationUser,
+  AuthorizationUser,
   avisproduitfournisseur.delete
 );
 router.get(

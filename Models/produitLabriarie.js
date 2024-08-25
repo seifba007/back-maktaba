@@ -4,6 +4,7 @@ module.exports = (db, DataTypes) => {
       titre : {type : DataTypes.STRING},
       description : {type : DataTypes.STRING},
       prix : { type : DataTypes.FLOAT},
+      tva:{type: DataTypes.FLOAT},
       etat : {type : DataTypes.STRING},
       Visibilite : {type : DataTypes.STRING},
       codebar : {type : DataTypes.STRING},

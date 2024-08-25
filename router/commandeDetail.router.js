@@ -4,14 +4,24 @@ const upload = require("../middleware/upload");
 
 const commandeDetailController = require("../Controllers/commandeEnDetail.controller");
 const { AuthorizationUser } = require("../middleware/auth/auth");
-router.post("/add", AuthorizationUser, commandeDetailController.add);
-
-router.post("/addcommandespecial", upload.array("Fichier",1), commandeDetailController.addcommandespecial);
-router.post("/addcommandespecialidentifiant", upload.array("Fichier",1), commandeDetailController.addcommandespecialidentifiant);
-router.post("/addcommandeidentifiant", commandeDetailController.addcommandeidentifiant);
+router.post("/add",AuthorizationUser, commandeDetailController.add);
+router.post("/calculecommande", commandeDetailController.calculecommande);
+router.post("/addcommandeinviter", commandeDetailController.addcommandeinviter);
+router.post("/addcommandespecial",AuthorizationUser, upload.array("Fichier",1), commandeDetailController.addcommandespecial);
+router.post("/addcommandespecialinviter", upload.array("Fichier",1), commandeDetailController.addcommandespecialinviter);
 router.get(
   "/findcommandebyuser/:id",
   commandeDetailController.findCommandeByuser
+);
+
+router.get(
+  "/findCommandeByidentifiant",
+  commandeDetailController.findCommandeByidentifiant
+);
+
+router.get(
+  "/findSpecCommandeBycodepromo",
+  commandeDetailController.findSpecCommandeBycodepromo
 );
 
 router.get(
@@ -86,14 +96,7 @@ router.delete(
   "/deletecommandespecsial",
   commandeDetailController.deleteCommandeSpec
 );
-router.delete(
-  "/deletespecialidentifiant",
-  commandeDetailController.deletespecialidentifiant
-);
-router.delete(
-  "/deletedeleteidentifiant",
-  commandeDetailController.deleteidentifiant
-);
+
 router.get(
   "/nb_commande_par_jour/:id",
   commandeDetailController.nb_commande_par_jour

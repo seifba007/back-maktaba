@@ -77,7 +77,7 @@ const userController = {
   },
   register: async (req, res) => {
     const data = req.body;
-    const { fullname, email, password } = req.body;
+    const { fullname, email, password,telephone } = req.body;
     try {
       const { error } = registerValidation(data);
       if (error)
@@ -113,6 +113,7 @@ const userController = {
             role: "client",
             etatCompte: "active",
             point: 0,
+            telephone:telephone,
             verification_token: verificationToken,
           };
           Model.user.create(datauser).then((user) => {

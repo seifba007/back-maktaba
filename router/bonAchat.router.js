@@ -10,5 +10,5 @@ router.get("/findByuser/:id", bonAchatController.findByuser);
 router.get("/findBypartenaire/:id", bonAchatController.findBypartenaire);
 router.get("/findBylibrairie/:id", bonAchatController.findBylibrairie)
 router.get("/findByfournisseurs/:id", bonAchatController.findByfournisseurs)
-router.delete("/delete",  bonAchatController.delete);
+router.delete("/delete", AuthorizationUser, bonAchatController.delete);
 module.exports = router;

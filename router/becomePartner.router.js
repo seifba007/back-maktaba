@@ -7,21 +7,19 @@ const {
   AuthorizationAdmin,
 } = require("../middleware/auth/auth");
 router.post(
-  "/add",
+  "/add",AuthorizationUser,
   upload.array("file", 1),
   BecomePartnerController.add
 );
 router.get("/findAll", BecomePartnerController.findAll);
 router.post(
   "/accepter/:id",
-  //AuthorizationUser,
-  //AuthorizationAdmin,
+  AuthorizationAdmin,
   BecomePartnerController.accepte
 );
 router.put(
   "/Annuler/:id",
-  //AuthorizationUser,
-  //AuthorizationAdmin,
+  AuthorizationAdmin,
   BecomePartnerController.Annuler
 );
 module.exports = router;

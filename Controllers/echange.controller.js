@@ -14,8 +14,8 @@ const echangeController = {
       const produitsaechange = req.body.produitsaechange;
       for (const produit of produitsaechange) {
         await Model.produitaechange.create({
-          Name: produit.name,
-          Qte: produit.quantite,
+          Name: produit.Name,
+          Qte: produit.Qte,
           echangeprodaechk: echange.id,
         });
       }
@@ -23,8 +23,8 @@ const echangeController = {
       const produitsechange = req.body.produitsechange;
       for (const produit of produitsechange) {
         await Model.produitechange.create({
-          Name: produit.name,
-          Qte: produit.quantite,
+          Name: produit.Name,
+          Qte: produit.Qte,
           echangeprodechk: echange.id,
         });
       }

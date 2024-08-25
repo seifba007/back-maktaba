@@ -18,6 +18,7 @@ router.put(
 );
 router.delete(
   "/delete",
+  AuthorizationUser,
   ProduitLabrairieController.delete
 );
 router.get("/findAll", ProduitLabrairieController.findAll);

@@ -16,7 +16,7 @@ const registerValidation = (data) => {
     fullname: Joi.string().required().max(100),
     password: Joi.string()
       .min(6)
-      .required()
+
       .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$")),
   });
   return schema.validate(data);
@@ -52,7 +52,7 @@ const addcategoryValidation = (data) => {
   });
   return schema.validate(data);
 };
-const addcategory= (data) => {
+const addcategory = (data) => {
   const schema = Joi.object({
     name: Joi.string().min(2).required(),
     Description: Joi.string().min(6).required(),
@@ -128,8 +128,7 @@ const catalogeValidation = (data) => {
 
 const codepromoValidation = (data) => {
   const schema = Joi.object({
-    code: Joi.string(),
-    pourcentage: Joi.number().integer(),
+    code: Joi.string().min(8).max(8).required(),
   });
   return schema.validate(data);
 };
@@ -145,7 +144,6 @@ const librairieValidation = (data) => {
   });
 
   return schema.validate(data);
-  
 };
 const produitValidation = (data) => {
   const schema = Joi.object({
@@ -199,7 +197,6 @@ const suggestionProduitValidation = (data) => {
     etat: Joi.string(),
     categoriesuggestfk: Joi.number(),
     soussuggestfk: Joi.number(),
-  
   });
   return schema.validate(data);
 };

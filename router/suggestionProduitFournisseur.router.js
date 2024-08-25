@@ -6,9 +6,10 @@ const { AuthorizationUser } = require("../middleware/auth/auth");
 router.post(
   "/add",
   upload.array("image", 3),
+  AuthorizationUser,
   suggestionProduitFournisseurController.add
 );
 router.get("/findAll", suggestionProduitFournisseurController.find);
-router.put("/accepter/:id", suggestionProduitFournisseurController.AccepterSuggestion);
-router.delete("/deletesuggestion", suggestionProduitFournisseurController.deletesuggestion);
+router.put("/accepter/:id", AuthorizationUser ,suggestionProduitFournisseurController.AccepterSuggestion);
+router.delete("/deletesuggestion",AuthorizationUser, suggestionProduitFournisseurController.deletesuggestion);
 module.exports = router;

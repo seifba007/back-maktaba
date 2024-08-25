@@ -23,16 +23,13 @@ const bonAchatController = {
 
       function generateRandomCode() {
         let code = "#";
-        for (let i = 0; i < 7; i++) {
-          const randomDigit = Math.floor(Math.random() * 10);
-          code += randomDigit;
-        }
-        for (let i = 0; i < 2; i++) {
-          const randomDigit = Math.floor(Math.random() * 10);
-          code += randomDigit;
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        for (let i = 0; i < 9; i++) {
+            const randomIndex = Math.floor(Math.random() * characters.length);
+            code += characters[randomIndex];
         }
         return code;
-      }
+    }
 
       const data = {
         solde: solde,
