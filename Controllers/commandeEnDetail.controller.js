@@ -6,251 +6,263 @@ const codePromo = require("./codePromo.controller");
 const commandeDetailController = {
   add: async (req, res) => {
     const { commande, promoCode, clientid } = req.body;
-
     try {
-        let codePromoRecord = null;
-
-        if (promoCode) {
-            codePromoRecord = await Model.codePromo.findOne({
-                where: { code: promoCode },
-                include: [
-                    {
-                        model: Model.codePromocategory,
-                        include: [{ model: Model.categorie }],
-                    },
-                ],
-            });
-
-            if (!codePromoRecord) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid promo code.",
-                });
-            }
-        }
-
-        let oldTotal = 0.0;
-        let newTotal = 0.0;
-        const updatedCommandeDetails = [];
-
-        for (const data of commande) {
-            let commandes = {
-                total_ttc: data.total_ttc,
-                etatClient: "en cours",
-                etatVender: "Nouveau",
-                identifiant: data.identifiant,
-                Adresse: data.Adresse,
-                Mode_liv: data.Mode_liv,
-                Mode_pay: data.Mode_pay,
-                usercommdetfk: data.usercommdetfk,
-                labrcomdetfk: data.labrcomdetfk,
-            };
-
-            const newCommande = await Model.commandeEnDetail.create(commandes);
-
-            if (!newCommande) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Error adding the order.",
-                });
-            }
-
-            const updatedProduits = [];
-
-            for (const e of data.produits) {
-                const produit = await Model.produitlabrairie.findByPk(
-                    e.prodlaibrcommdetfk
-                );
-
-                if (produit) {
-                    const oldPrice = produit.prix;
-                    const tva = produit.tva; 
-                    let newPrice = oldPrice;
-                    let eligibleCategory = null;
-
-                    if (codePromoRecord) {
-                        const codePromocat = await Model.codePromocategory.findAll({
-                            where: { promocodeid: codePromoRecord.dataValues.id },
-                        });
-
-                        for (const category of codePromocat) {
-                            eligibleCategory =
-                                category.ctagorieid === produit.categprodlabfk;
-
-                            if (eligibleCategory) {
-                                const discount = category.discountPercentage;
-                                newPrice = (oldPrice * (1 - discount / 100)) + tva;
-                                break;
-                            }
-                        }
-                    }
-
-                    oldTotal += oldPrice * e.Qte;
-                    newTotal += newPrice * e.Qte;
-
-                    updatedProduits.push({
-                        ...e,
-                        oldPrice,
-                        newPrice,
-                        comdetprodlabrfk: newCommande.id,
-                    });
-
-                    let updatedQte = produit.qte - e.Qte;
-                    if (updatedQte < 0) {
-                        updatedQte = 0;
-                    }
-                    await Model.produitlabrairie.update(
-                        { qte: updatedQte },
-                        { where: { id: e.prodlaibrcommdetfk } }
-                    );
-                }
-            }
-
-            await Model.ProduitCommandeEnDetail.bulkCreate(updatedProduits);
-
-            if (codePromoRecord) {
-                await Model.historycodePromo.create({
-                    historypromocodeid: codePromoRecord.id,
-                    clienthiscodeprfk: clientid,
-                });
-            }
-
-            updatedCommandeDetails.push({
-                ...data,
-                produits: updatedProduits,
-                oldTotal,
-                newTotal,
-            });
-        }
-
-        return res.status(200).json({
-            success: true,
-            message: "Order added successfully!",
-            commandeDetails: updatedCommandeDetails,
-            oldTotal,
-            newTotal,
-        });
-    } catch (err) {
-        return res.status(400).json({
-            success: false,
-            error: err.message,
-        });
-    }
-},
-
-calculecommande: async (req, res) => {
-  const { commande, promoCode, clientid } = req.body;
-
-  try {
       let codePromoRecord = null;
 
       if (promoCode) {
-          codePromoRecord = await Model.codePromo.findOne({
-              where: { code: promoCode },
-              include: [
-                  {
-                      model: Model.codePromocategory,
-                      include: [{ model: Model.categorie }],
-                  },
-              ],
-          });
+        codePromoRecord = await Model.codePromo.findOne({
+          where: { code: promoCode },
+          include: [
+            {
+              model: Model.codePromocategory,
+              include: [{ model: Model.categorie }],
+            },
+          ],
+        });
 
-          if (!codePromoRecord) {
-              return res.status(400).json({
-                  success: false,
-                  message: "Invalid promo code.",
-              });
-          }
+        if (!codePromoRecord) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid promo code.",
+          });
+        }
       }
 
       let oldTotal = 0.0;
       let newTotal = 0.0;
+      let newTotalremise = 0.0;
+      let newPricetva = 0.0;
+      let newtotaltva = 0.0;
       const updatedCommandeDetails = [];
 
       for (const data of commande) {
-          let commandes = {
-              total_ttc: data.total_ttc,
-              etatClient: "en cours",
-              etatVender: "Nouveau",
-              identifiant: data.identifiant,
-              Adresse: data.Adresse,
-              Mode_liv: data.Mode_liv,
-              Mode_pay: data.Mode_pay,
-              usercommdetfk: data.usercommdetfk,
-              labrcomdetfk: data.labrcomdetfk,
-          };
+        let commandes = {
+          total_ttc: data.total_ttc,
+          etatClient: "en cours",
+          etatVender: "Nouveau",
+          identifiant: data.identifiant,
+          Adresse: data.Adresse,
+          Mode_liv: data.Mode_liv,
+          Mode_pay: data.Mode_pay,
+          usercommdetfk: data.usercommdetfk,
+          labrcomdetfk: data.labrcomdetfk,
+        };
 
-        
+        const newCommande = await Model.commandeEnDetail.create(commandes);
 
-          const updatedProduits = [];
-
-          for (const e of data.produits) {
-              const produit = await Model.produitlabrairie.findByPk(
-                  e.prodlaibrcommdetfk
-              );
-
-              if (produit) {
-                  const oldPrice = produit.prix;
-                  const tva = produit.tva; 
-                  let newPrice = oldPrice;
-                  let eligibleCategory = null;
-
-                  if (codePromoRecord) {
-                      const codePromocat = await Model.codePromocategory.findAll({
-                          where: { promocodeid: codePromoRecord.dataValues.id },
-                      });
-
-                      for (const category of codePromocat) {
-                          eligibleCategory =
-                              category.ctagorieid === produit.categprodlabfk;
-
-                          if (eligibleCategory) {
-                              const discount = category.discountPercentage;
-                              newPrice = (oldPrice * (1 - discount / 100)) + tva;
-                              break;
-                          }
-                      }
-                  }
-
-                  oldTotal += oldPrice * e.Qte;
-                  newTotal += newPrice * e.Qte;
-
-                  updatedProduits.push({
-                      ...e,
-                      oldPrice,
-                      newPrice,
-                  });
-
-                  let updatedQte = produit.qte - e.Qte;
-                  if (updatedQte < 0) {
-                      updatedQte = 0;
-                  }
-                
-              }
-          }
-
-          updatedCommandeDetails.push({
-              ...data,
-              produits: updatedProduits,
-              oldTotal,
-              newTotal,
+        if (!newCommande) {
+          return res.status(400).json({
+            success: false,
+            message: "Error adding the order.",
           });
+        }
+
+        const updatedProduits = [];
+
+        for (const e of data.produits) {
+          const produit = await Model.produitlabrairie.findByPk(
+            e.prodlaibrcommdetfk
+          );
+
+          if (produit) {
+            const oldPrice = produit.prix;
+            const tva = produit.tva;
+            let newPrice = oldPrice;
+            let eligibleCategory = null;
+
+            if (codePromoRecord) {
+              const codePromocat = await Model.codePromocategory.findAll({
+                where: { promocodeid: codePromoRecord.dataValues.id },
+              });
+
+              for (const category of codePromocat) {
+                eligibleCategory =
+                  category.ctagorieid === produit.categprodlabfk;
+
+                if (eligibleCategory) {
+                  const discount = category.discountPercentage;
+                  newPrice = oldPrice * (1 - discount / 100);
+                  newPricetva = newPrice + newPrice * (tva / 100);
+                  break;
+                }
+              }
+            }
+
+
+            oldTotal += oldPrice * e.Qte;
+            newTotalremise += newPrice * e.Qte;
+            newTotal += newPricetva * e.Qte;
+            newtotaltva += newPricetva * e.Qte;
+
+            updatedProduits.push({
+              ...e,
+              oldPrice,
+              newPrice,
+              newPricetva,
+            });
+
+            let updatedQte = produit.qte - e.Qte;
+            if (updatedQte < 0) {
+              updatedQte = 0;
+            }
+            await Model.produitlabrairie.update(
+              { qte: updatedQte },
+              { where: { id: e.prodlaibrcommdetfk } }
+            );
+          }
+        }
+
+        await Model.ProduitCommandeEnDetail.bulkCreate(updatedProduits);
+
+        if (codePromoRecord) {
+          await Model.historycodePromo.create({
+            historypromocodeid: codePromoRecord.id,
+            clienthiscodeprfk: clientid,
+          });
+        }
+
+        updatedCommandeDetails.push({
+          ...data,
+          produits: updatedProduits,
+          oldTotal,
+          newTotal,
+        });
       }
 
       return res.status(200).json({
-          success: true,
-          message: "Order calculated successfully!",
-          commandeDetails: updatedCommandeDetails,
+        success: true,
+        message: "Order added successfully!",
+        commandeDetails: updatedCommandeDetails,
+        oldTotal,
+        newTotal,
+        newTotalremise
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  calculecommande: async (req, res) => {
+    const { commande, promoCode, clientid } = req.body;
+
+    try {
+      let codePromoRecord = null;
+
+      if (promoCode) {
+        codePromoRecord = await Model.codePromo.findOne({
+          where: { code: promoCode },
+          include: [
+            {
+              model: Model.codePromocategory,
+              include: [{ model: Model.categorie }],
+            },
+          ],
+        });
+
+        if (!codePromoRecord) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid promo code.",
+          });
+        }
+      }
+
+      let oldTotal = 0.0;
+      let newTotal = 0.0;
+      let newTotalremise = 0.0;
+      let newPricetva = 0.0;
+      let newtotaltva = 0.0;
+      const updatedCommandeDetails = [];
+
+      for (const data of commande) {
+        let commandes = {
+          total_ttc: data.total_ttc,
+          etatClient: "en cours",
+          etatVender: "Nouveau",
+          identifiant: data.identifiant,
+          Adresse: data.Adresse,
+          Mode_liv: data.Mode_liv,
+          Mode_pay: data.Mode_pay,
+          usercommdetfk: data.usercommdetfk,
+          labrcomdetfk: data.labrcomdetfk,
+        };
+
+        const updatedProduits = [];
+
+        for (const e of data.produits) {
+          const produit = await Model.produitlabrairie.findByPk(
+            e.prodlaibrcommdetfk
+          );
+
+          if (produit) {
+            const oldPrice = produit.prix;
+            const tva = produit.tva;
+            let newPrice = oldPrice;
+            let eligibleCategory = null;
+
+            if (codePromoRecord) {
+              const codePromocat = await Model.codePromocategory.findAll({
+                where: { promocodeid: codePromoRecord.dataValues.id },
+              });
+
+              for (const category of codePromocat) {
+                eligibleCategory =
+                  category.ctagorieid === produit.categprodlabfk;
+
+                if (eligibleCategory) {
+                  const discount = category.discountPercentage;
+                  newPrice = oldPrice * (1 - discount / 100);
+                  newPricetva = newPrice + newPrice * (tva / 100);
+                  break;
+                }
+              }
+            }
+
+            oldTotal += oldPrice * e.Qte;
+            newTotalremise += newPrice * e.Qte;
+            newTotal += newPricetva * e.Qte;
+            newtotaltva += newPricetva * e.Qte;
+
+            updatedProduits.push({
+              ...e,
+              oldPrice,
+              newPrice,
+              newPricetva,
+            });
+
+            let updatedQte = produit.qte - e.Qte;
+            if (updatedQte < 0) {
+              updatedQte = 0;
+            }
+          }
+        }
+
+        updatedCommandeDetails.push({
+          ...data,
+          produits: updatedProduits,
           oldTotal,
           newTotal,
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Order calculated successfully!",
+        commandeDetails: updatedCommandeDetails,
+        oldTotal,
+        newTotal,
+        newTotalremise
       });
-  } catch (err) {
+    } catch (err) {
       return res.status(400).json({
-          success: false,
-          error: err.message,
+        success: false,
+        error: err.message,
       });
-  }
-},
+    }
+  },
 
   addcommandespecial: async (req, res) => {
     try {
@@ -385,7 +397,7 @@ calculecommande: async (req, res) => {
           if (produit) {
             updatedProduits.push({
               ...e,
-              comdetprodlabrfk:newCommande.id
+              comdetprodlabrfk: newCommande.id,
             });
 
             let updatedQte = produit.qte - e.Qte;
@@ -419,7 +431,6 @@ calculecommande: async (req, res) => {
   addcommandespecialinviter: async (req, res) => {
     try {
       const {
-        etatClient,
         Adresse,
         Description,
         email,
@@ -430,6 +441,8 @@ calculecommande: async (req, res) => {
         codepromo,
       } = req.body;
       let codeExist = null;
+      let addressestk = null;
+      let commande = null;
 
       const user = await Model.user.create({
         fullname: Nom,
@@ -442,6 +455,59 @@ calculecommande: async (req, res) => {
         telephone: telephone,
         verification_token: null,
       });
+      if (Adresse == null) {
+        addressestk = 1;
+        if (!req.files || req.files.length === 0) {
+          commande = await Model.commandeSpecial.create({
+            etatClient: "en cours",
+            Adresse: addressestk,
+            Description: Description,
+            codepromo: codepromo,
+            email: email,
+            telephone: telephone,
+            identifiant: identifiant,
+            Nom: Nom,
+            usercommdespectfk: user.id,
+            labrcomdespectfk: labrcomdespectfk,
+          });
+
+          return res.status(200).json({
+            success: true,
+            message: "Commande created successfully without files",
+            commande,
+          });
+        }
+
+        const uploadedFiles = await Promise.all(
+          req.files.map(async (file) => {
+            try {
+              const result = await cloudinary.uploader.upload(file.path);
+              return result.secure_url;
+            } catch (error) {
+              throw new Error(`File upload failed: ${error.message}`);
+            }
+          })
+        );
+
+        commande = await Model.commandeSpecial.create({
+          etatClient: etatClient,
+          Adresse: addressestk,
+          Description: Description,
+          codepromo: codepromo,
+          email: email,
+          identifiant: identifiant,
+          telephone: telephone,
+          Nom: Nom,
+          Fichier: uploadedFiles.join(","),
+          usercommdespectfk: user.id,
+          labrcomdespectfk: labrcomdespectfk,
+        });
+      }
+
+      const data = {
+        Adresse: Adresse,
+      };
+      const addresseinv = await Model.adresses.create(data);
       if (req.body.codepromo) {
         codeExist = await Model.codePromo.findOne({
           where: { code: codepromo, etat: "Valider" },
@@ -451,12 +517,12 @@ calculecommande: async (req, res) => {
         }
       }
 
-      let commande = null;
+      
 
       if (!req.files || req.files.length === 0) {
         commande = await Model.commandeSpecial.create({
-          etatClient: etatClient,
-          Adresse: Adresse,
+          etatClient: "en cours",
+          Adresse: addresseinv.id,
           Description: Description,
           codepromo: codepromo,
           email: email,
@@ -487,7 +553,7 @@ calculecommande: async (req, res) => {
 
       commande = await Model.commandeSpecial.create({
         etatClient: etatClient,
-        Adresse: Adresse,
+        Adresse: addresseinv.id,
         Description: Description,
         codepromo: codepromo,
         email: email,

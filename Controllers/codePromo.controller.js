@@ -4,42 +4,67 @@ const { codepromoValidation } = require("../middleware/auth/validationSchema");
 const codeClient = require("../Models/codeClient");
 const codePromo = {
   add: async (req, res) => {
-    const { categories, labcodeprfk, partcodeprfk, fourcodeprfk } = req.body;
-
-    try {
-      function generateRandomCode() {
-        let code = "";
-        const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        for (let i = 0; i < 8; i++) {
-          const randomIndex = Math.floor(Math.random() * characters.length);
-          code += characters[randomIndex];
-        }
-        return code;
+    const { code, categories, labcodeprfk, partcodeprfk, fourcodeprfk } = req.body;
+  
+    function generateRandomCode() {
+      let code = "";
+      const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      for (let i = 0; i < 8; i++) {
+        const randomIndex = Math.floor(Math.random() * characters.length);
+        code += characters[randomIndex];
       }
-
+      return code;
+    }
+  
+    try {
+      let newPromo = null;
+      let generatedCode = code;
+  
+      if (!code) {
+        generatedCode = generateRandomCode();
+      } else {
+        if (code.length !== 8) {
+          return res.status(400).json({
+            success: false,
+            message: "The code must be exactly 8 characters long.",
+          });
+        }
+  
+        const validCodePattern = /^[A-Z0-9]+$/;
+        if (!validCodePattern.test(code)) {
+          return res.status(400).json({
+            success: false,
+            message: "The code must contain only uppercase letters and numbers.",
+          });
+        }
+  
+        const existingCode = await Model.codePromo.findOne({
+          where: { code: code },
+        });
+  
+        if (existingCode) {
+          return res.status(400).json({
+            success: false,
+            message: "Code already exists.",
+          });
+        }
+      }
+  
       let data = {
-        code: generateRandomCode(),
+        code: generatedCode,
         labcodeprfk: labcodeprfk,
         partcodeprfk: partcodeprfk,
         fourcodeprfk: fourcodeprfk,
         etat: "Non_Confirmer",
       };
-
-      const newPromo = await Model.codePromo.create(data);
-
-      
-      if (!newPromo) {
-        return res.status(400).json({
-          success: false,
-          message: "Failed to create the promo code.",
-        });
-      }
-
+  
+      newPromo = await Model.codePromo.create(data);
+  
       for (const category of categories) {
         const categoryRecord = await Model.categorie.findOne({
           where: { id: category.id },
         });
-
+  
         if (!categoryRecord) {
           return res.status(400).json({
             success: false,
@@ -52,7 +77,7 @@ const codePromo = {
           discountPercentage: category.discountPercentage,
         });
       }
-
+  
       return res.status(200).json({
         success: true,
         message: "Code created and associated with categories successfully.",
@@ -65,6 +90,7 @@ const codePromo = {
       });
     }
   },
+  
 
   addmanual: async (req, res) => {
     const {
