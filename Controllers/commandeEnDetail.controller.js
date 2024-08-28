@@ -490,7 +490,7 @@ const commandeDetailController = {
         );
 
         commande = await Model.commandeSpecial.create({
-          etatClient: etatClient,
+          etatClient: "en cours",
           Adresse: addressestk,
           Description: Description,
           codepromo: codepromo,
@@ -552,7 +552,7 @@ const commandeDetailController = {
       );
 
       commande = await Model.commandeSpecial.create({
-        etatClient: etatClient,
+        etatClient: "en cours",
         Adresse: addresseinv.id,
         Description: Description,
         codepromo: codepromo,
