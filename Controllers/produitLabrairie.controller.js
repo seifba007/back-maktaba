@@ -202,55 +202,61 @@ const produitController = {
       });
     }
   },
-
   findAll: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize } = req.query;
-
+  
     const offset = (page - 1) * pageSize;
-
-    if ((sortBy, sortOrder)) {
+  
+    let order = [];
+    if (sortBy && sortOrder) {
       order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     }
+  
     try {
-      Model.produitlabrairie
-        .findAll({
-          limit: +pageSize,
-          offset: offset,
-          order: order,
-          where: {
-            qte: {
-              [Sequelize.Op.gt]: 0,
-            },
+      const products = await Model.produitlabrairie.findAll({
+        limit: +pageSize,
+        offset: offset,
+        order: order,
+        where: {
+          qte: {
+            [Sequelize.Op.gt]: 0,
           },
-          include: [
-            {
-              model: Model.imageProduitLibrairie,
-              attributes: ["name_Image"],
-            },
-            {
-              model: Model.labrairie,
-              attributes: ["id", "imageStore", "nameLibrairie"],
-            },
-
-            {
-              model: Model.avisProduitlibraire,
-            },
-            { model: Model.categorie, attributes: ["id", "name"] },
-          ],
-        })
-        .then((response) => {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              produit: response,
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              err: " zero produit",
-            });
-          }
+        },
+        include: [
+          {
+            model: Model.imageProduitLibrairie,
+            attributes: ["name_Image"],
+          },
+          {
+            model: Model.labrairie,
+            attributes: ["id", "imageStore", "nameLibrairie"],
+          },
+          {
+            model: Model.avisProduitlibraire,
+          },
+          { model: Model.categorie, attributes: ["id", "name"] },
+        ],
+      });
+  
+      if (products && products.length > 0) {
+        const productsWithTTC = products.map(product => {
+          const ttc = Math.ceil(product.prix * (1 + product.tva / 100));
+          return {
+            ...product.toJSON(), 
+            ttc, 
+          };
         });
+  
+        return res.status(200).json({
+          success: true,
+          produit: productsWithTTC,
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "zero produit",
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,

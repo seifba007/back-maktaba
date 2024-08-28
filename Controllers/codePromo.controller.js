@@ -1,5 +1,6 @@
 const { where } = require("sequelize");
 const Model = require("../Models/index");
+const { Sequelize } = require("sequelize");
 const { codepromoValidation } = require("../middleware/auth/validationSchema");
 const codeClient = require("../Models/codeClient");
 const codePromo = {
