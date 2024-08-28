@@ -16,6 +16,18 @@ router.put(
   upload.array("image", 3),
   ProduitLabrairieController.update
 );
+
+router.put(
+  "/updateTVA",
+
+  ProduitLabrairieController.updateTVA
+);
+
+router.put(
+  "/updateAllPrices",
+
+  ProduitLabrairieController.updateAllPrices
+);
 router.delete(
   "/delete",
   AuthorizationUser,

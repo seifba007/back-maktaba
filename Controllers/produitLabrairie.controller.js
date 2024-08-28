@@ -607,5 +607,115 @@ const produitController = {
       });
     }
   },
+
+  updateTVA: async (req, res) => {
+    try {
+        const tvaMappings = {
+            52: 0,
+            53: 19,
+            54: 0,
+            55: 19,
+            56: 19,
+            57: 0,
+            58: 0,
+            59: 19,
+            60: 0,
+            61: 19,
+            62: 19,
+            63: 19,
+            64: 19,
+            65: 19,
+            66: 19,
+            67: 19,
+            68: 19,
+            69: 19,
+            71: 19,
+            72: 19,
+            73: 19,
+            74: 19,
+            75: 19,
+            76: 7,
+            77: 19,
+            82: 19,
+            84: 19,
+            85: 19,
+            86: 19,
+            87: 19,
+            88: 19,
+            90: 19,
+            91: 19,
+            92: 19,
+            93: 19,
+            94: 19,
+            95: 19,
+            96: 19,
+            97: 19,
+            102: 19,
+            105: 19,
+            106: 19,
+            107: 19,
+            108: 19,
+            109: 19,
+            112: 19,
+            115: 19,
+            118: 19,
+            119: 19,
+            120: 19
+        };
+
+        const updatePromises = [];
+
+        for (const categoryId in tvaMappings) {
+            const newTva = tvaMappings[categoryId];
+            updatePromises.push(
+                Model.produitlabrairie.update(
+                    { tva: newTva },
+                    { where: { categprodlabfk: categoryId } }
+                )
+            );
+        }
+
+        await Promise.all(updatePromises);
+
+        return res.status(200).json({
+            success: true,
+            message: "TVA updated successfully for the specified categories."
+        });
+    } catch (err) {
+        return res.status(400).json({
+            success: false,
+            error: err.message,
+        });
+    }
+},
+
+updateAllPrices: async (req, res) => {
+  try {
+      const products = await Model.produitlabrairie.findAll();
+
+      const updatePromises = products.map(product => {
+          const currentPrice = product.prix; 
+          const tva = product.tva; 
+          
+          const newPrice = currentPrice / (1 + tva / 100);
+
+          return product.update({ prix: newPrice });
+      });
+
+      await Promise.all(updatePromises);
+
+      return res.status(200).json({
+          success: true,
+          message: "Prices updated successfully for all products."
+      });
+  } catch (err) {
+      return res.status(400).json({
+          success: false,
+          error: err.message,
+      });
+  }
+},
+
+
 };
 module.exports = produitController;
