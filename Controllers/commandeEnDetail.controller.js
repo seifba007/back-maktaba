@@ -33,6 +33,8 @@ const commandeDetailController = {
       let newTotalremise = 0.0;
       let newPricetva = 0.0;
       let totaltva = 0.0;
+      let price = 0.0;
+      let tva = 0.0;
       const updatedCommandeDetails = [];
 
       for (const data of commande) {
@@ -65,8 +67,9 @@ const commandeDetailController = {
           );
 
           if (produit) {
-            const oldPrice = produit.prix;
-            const tva = produit.tva;
+            tva = produit.tva;
+            price = produit.prix ;
+            const oldPrice = price;
             let newPrice = oldPrice;
             let eligibleCategory = null;
 
@@ -88,10 +91,15 @@ const commandeDetailController = {
               }
             }
 
+            newPricetva = newPrice + newPrice * (tva / 100);
+  
             totalHT += oldPrice * e.Qte;
             newTotalremise += newPrice * e.Qte;
             newTotal += newPricetva * e.Qte;
-            totaltva += newPricetva * e.Qte;
+            totaltva = newTotal - totalHT;
+            if(totaltva<0){
+              totaltva = totaltva * (-1)
+            }
 
             updatedProduits.push({
               ...e,
