@@ -1121,13 +1121,12 @@ const adminController = {
   },
 
   findCommandefiltre: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize ,librairieName,librairieAddress} = req.query;
+    const { sortBy, sortOrder, page, pageSize, librairieName, librairieAddress } = req.query;
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-
+  
     const filters = req.query;
-    const wherenamelibararie = {}
-    const whereadresselibararie = {}
+    const wherenamelibararie = {};
     const whereClause = {
       qte: {
         [Sequelize.Op.gt]: 0,
@@ -1136,6 +1135,7 @@ const adminController = {
         [Sequelize.Op.ne]: "Invisible",
       },
     };
+  
     if (librairieName) {
       wherenamelibararie.nameLibrairie = {
         [Sequelize.Op.like]: `%${librairieName}%`,
@@ -1147,24 +1147,21 @@ const adminController = {
         [Sequelize.Op.like]: `%${librairieAddress}%`,
       };
     }
+  
     if (filters.categprodlabfk) {
       if (typeof filters.categprodlabfk === "string") {
-        filters.categprodlabfk = filters.categprodlabfk
-          .split(",")
-          .map((id) => parseInt(id, 10));
+        filters.categprodlabfk = filters.categprodlabfk.split(",").map((id) => parseInt(id, 10));
       }
       whereClause.categprodlabfk = filters.categprodlabfk;
     }
-
+  
     if (filters.souscatprodfk) {
       if (typeof filters.souscatprodfk === "string") {
-        filters.souscatprodfk = filters.souscatprodfk
-          .split(",")
-          .map((id) => parseInt(id, 10));
+        filters.souscatprodfk = filters.souscatprodfk.split(",").map((id) => parseInt(id, 10));
       }
       whereClause.souscatprodfk = filters.souscatprodfk;
     }
-
+  
     if (filters.qteMin && filters.qteMax) {
       whereClause.qte = {
         [Sequelize.Op.between]: [filters.qteMin, filters.qteMax],
@@ -1183,23 +1180,23 @@ const adminController = {
     } else {
       whereClause.qte = { [Sequelize.Op.gt]: 0 };
     }
-
+  
     if (filters.etat) {
       whereClause.etat = filters.etat;
     }
-
+  
     if (filters.titre) {
       whereClause.titre = {
         [Sequelize.Op.like]: `%${filters.titre}%`,
       };
     }
-
+  
     if (filters.codebar) {
       whereClause.codebar = {
         [Sequelize.Op.like]: `%${filters.codebar}%`,
       };
     }
-
+  
     if (filters.prixMin && filters.prixMax) {
       whereClause[Sequelize.Op.or] = [
         {
@@ -1232,11 +1229,12 @@ const adminController = {
         },
       ];
     }
-
+  
     try {
       const totalCount = await Model.produitlabrairie.count({
         where: whereClause,
       });
+  
       const produits = await Model.produitlabrairie.findAll({
         offset: offset,
         order: order,
@@ -1269,17 +1267,25 @@ const adminController = {
               "imageStore",
               "emailLib",
             ],
-            where:wherenamelibararie
+            where: wherenamelibararie,
           },
         ],
       });
-
+  
       if (produits.length > 0) {
+        const produitsWithTTC = produits.map((produit) => {
+          const ttc = produit.prix * (1 + produit.tva / 100);
+          return {
+            ...produit.toJSON(), 
+            ttc,
+          };
+        });
+  
         const totalPages = Math.ceil(totalCount / pageSize);
-
+  
         return res.status(200).json({
           success: true,
-          produits: produits,
+          produits: produitsWithTTC,
           totalPages: totalPages,
         });
       } else {
@@ -1295,6 +1301,7 @@ const adminController = {
       });
     }
   },
+  
 
   findproduitbyname: async (req, res) => {
     const { name } = req.query;

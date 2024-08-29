@@ -28,11 +28,11 @@ const commandeDetailController = {
         }
       }
 
-      let oldTotal = 0.0;
+      let totalHT = 0.0;
       let newTotal = 0.0;
       let newTotalremise = 0.0;
       let newPricetva = 0.0;
-      let newtotaltva = 0.0;
+      let totaltva = 0.0;
       const updatedCommandeDetails = [];
 
       for (const data of commande) {
@@ -88,11 +88,10 @@ const commandeDetailController = {
               }
             }
 
-
-            oldTotal += oldPrice * e.Qte;
+            totalHT += oldPrice * e.Qte;
             newTotalremise += newPrice * e.Qte;
             newTotal += newPricetva * e.Qte;
-            newtotaltva += newPricetva * e.Qte;
+            totaltva += newPricetva * e.Qte;
 
             updatedProduits.push({
               ...e,
@@ -124,7 +123,7 @@ const commandeDetailController = {
         updatedCommandeDetails.push({
           ...data,
           produits: updatedProduits,
-          oldTotal,
+          totalHT,
           newTotal,
         });
       }
@@ -133,9 +132,9 @@ const commandeDetailController = {
         success: true,
         message: "Order added successfully!",
         commandeDetails: updatedCommandeDetails,
-        oldTotal,
+        totalHT,
         newTotal,
-        newTotalremise
+        newTotalremise,
       });
     } catch (err) {
       return res.status(400).json({
@@ -147,10 +146,9 @@ const commandeDetailController = {
 
   calculecommande: async (req, res) => {
     const { commande, promoCode, clientid } = req.body;
-
     try {
       let codePromoRecord = null;
-
+  
       if (promoCode) {
         codePromoRecord = await Model.codePromo.findOne({
           where: { code: promoCode },
@@ -161,7 +159,7 @@ const commandeDetailController = {
             },
           ],
         });
-
+  
         if (!codePromoRecord) {
           return res.status(400).json({
             success: false,
@@ -169,14 +167,16 @@ const commandeDetailController = {
           });
         }
       }
-
-      let oldTotal = 0.0;
+  
+      let totalHT = 0.0;
       let newTotal = 0.0;
       let newTotalremise = 0.0;
       let newPricetva = 0.0;
-      let newtotaltva = 0.0;
+      let totaltva = 0.0;
+      let price = 0.0;
+      let tva = 0.0;
       const updatedCommandeDetails = [];
-
+  
       for (const data of commande) {
         let commandes = {
           total_ttc: data.total_ttc,
@@ -189,72 +189,72 @@ const commandeDetailController = {
           usercommdetfk: data.usercommdetfk,
           labrcomdetfk: data.labrcomdetfk,
         };
-
+  
         const updatedProduits = [];
-
+  
         for (const e of data.produits) {
           const produit = await Model.produitlabrairie.findByPk(
             e.prodlaibrcommdetfk
           );
-
+  
           if (produit) {
-            const oldPrice = produit.prix;
-            const tva = produit.tva;
+            tva = produit.tva;
+            price = produit.prix ;
+            const oldPrice = price;
             let newPrice = oldPrice;
             let eligibleCategory = null;
-
-            if (codePromoRecord) {
+  
+            if (produit.remise && produit.remise > 0) {
+              newPrice = oldPrice * (1 - produit.remise / 100);
+            } else if (codePromoRecord) {
               const codePromocat = await Model.codePromocategory.findAll({
                 where: { promocodeid: codePromoRecord.dataValues.id },
               });
-
               for (const category of codePromocat) {
                 eligibleCategory =
                   category.ctagorieid === produit.categprodlabfk;
-
                 if (eligibleCategory) {
                   const discount = category.discountPercentage;
                   newPrice = oldPrice * (1 - discount / 100);
-                  newPricetva = newPrice + newPrice * (tva / 100);
                   break;
                 }
               }
             }
-
-            oldTotal += oldPrice * e.Qte;
+  
+            newPricetva = newPrice + newPrice * (tva / 100);
+  
+            totalHT += oldPrice * e.Qte;
             newTotalremise += newPrice * e.Qte;
             newTotal += newPricetva * e.Qte;
-            newtotaltva += newPricetva * e.Qte;
-
+            totaltva = newTotal - totalHT;
+            if(totaltva<0){
+              totaltva = totaltva * (-1)
+            }
+  
             updatedProduits.push({
               ...e,
               oldPrice,
               newPrice,
-              newPricetva,
+              //newPricetva,
             });
-
-            let updatedQte = produit.qte - e.Qte;
-            if (updatedQte < 0) {
-              updatedQte = 0;
-            }
           }
         }
-
+  
         updatedCommandeDetails.push({
           ...data,
           produits: updatedProduits,
-          oldTotal,
-          newTotal,
+
         });
       }
-
+  
       return res.status(200).json({
         success: true,
         message: "Order calculated successfully!",
         commandeDetails: updatedCommandeDetails,
-        oldTotal,
+        totalHT,
         newTotal,
-        newTotalremise
+        newTotalremise,
+        totaltva
       });
     } catch (err) {
       return res.status(400).json({
@@ -263,6 +263,7 @@ const commandeDetailController = {
       });
     }
   },
+  
 
   addcommandespecial: async (req, res) => {
     try {
@@ -459,7 +460,7 @@ const commandeDetailController = {
         addressestk = 1;
         if (!req.files || req.files.length === 0) {
           commande = await Model.commandeSpecial.create({
-            etatClient: "en cours",
+            etatClient: "en_cours",
             Adresse: addressestk,
             Description: Description,
             codepromo: codepromo,
@@ -490,7 +491,7 @@ const commandeDetailController = {
         );
 
         commande = await Model.commandeSpecial.create({
-          etatClient: "en cours",
+          etatClient: "en_cours",
           Adresse: addressestk,
           Description: Description,
           codepromo: codepromo,
@@ -517,11 +518,9 @@ const commandeDetailController = {
         }
       }
 
-      
-
       if (!req.files || req.files.length === 0) {
         commande = await Model.commandeSpecial.create({
-          etatClient: "en cours",
+          etatClient: "en_cours",
           Adresse: addresseinv.id,
           Description: Description,
           codepromo: codepromo,
@@ -552,7 +551,7 @@ const commandeDetailController = {
       );
 
       commande = await Model.commandeSpecial.create({
-        etatClient: "en cours",
+        etatClient: "en_cours",
         Adresse: addresseinv.id,
         Description: Description,
         codepromo: codepromo,
@@ -1549,7 +1548,7 @@ const commandeDetailController = {
           } else {
             return res.status(400).json({
               success: false,
-              err: "  zero commande trouve ",
+              err: "zero commande trouve ",
             });
           }
         });
