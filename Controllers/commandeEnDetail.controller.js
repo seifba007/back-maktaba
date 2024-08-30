@@ -68,7 +68,7 @@ const commandeDetailController = {
 
           if (produit) {
             tva = produit.tva;
-            price = produit.prix ;
+            price = produit.prix;
             const oldPrice = price;
             let newPrice = oldPrice;
             let eligibleCategory = null;
@@ -92,13 +92,13 @@ const commandeDetailController = {
             }
 
             newPricetva = newPrice + newPrice * (tva / 100);
-  
+
             totalHT += oldPrice * e.Qte;
             newTotalremise += newPrice * e.Qte;
             newTotal += newPricetva * e.Qte;
             totaltva = newTotal - totalHT;
-            if(totaltva<0){
-              totaltva = totaltva * (-1)
+            if (totaltva < 0) {
+              totaltva = totaltva * -1;
             }
 
             updatedProduits.push({
@@ -156,7 +156,7 @@ const commandeDetailController = {
     const { commande, promoCode, clientid } = req.body;
     try {
       let codePromoRecord = null;
-  
+
       if (promoCode) {
         codePromoRecord = await Model.codePromo.findOne({
           where: { code: promoCode },
@@ -167,7 +167,7 @@ const commandeDetailController = {
             },
           ],
         });
-  
+
         if (!codePromoRecord) {
           return res.status(400).json({
             success: false,
@@ -175,7 +175,7 @@ const commandeDetailController = {
           });
         }
       }
-  
+
       let totalHT = 0.0;
       let newTotal = 0.0;
       let newTotalremise = 0.0;
@@ -184,7 +184,7 @@ const commandeDetailController = {
       let price = 0.0;
       let tva = 0.0;
       const updatedCommandeDetails = [];
-  
+
       for (const data of commande) {
         let commandes = {
           total_ttc: data.total_ttc,
@@ -197,21 +197,21 @@ const commandeDetailController = {
           usercommdetfk: data.usercommdetfk,
           labrcomdetfk: data.labrcomdetfk,
         };
-  
+
         const updatedProduits = [];
-  
+
         for (const e of data.produits) {
           const produit = await Model.produitlabrairie.findByPk(
             e.prodlaibrcommdetfk
           );
-  
+
           if (produit) {
             tva = produit.tva;
-            price = produit.prix ;
+            price = produit.prix;
             const oldPrice = price;
             let newPrice = oldPrice;
             let eligibleCategory = null;
-  
+
             if (produit.remise && produit.remise > 0) {
               newPrice = oldPrice * (1 - produit.remise / 100);
             } else if (codePromoRecord) {
@@ -228,17 +228,17 @@ const commandeDetailController = {
                 }
               }
             }
-  
+
             newPricetva = newPrice + newPrice * (tva / 100);
-  
+
             totalHT += oldPrice * e.Qte;
             newTotalremise += newPrice * e.Qte;
             newTotal += newPricetva * e.Qte;
             totaltva = newTotal - totalHT;
-            if(totaltva<0){
-              totaltva = totaltva * (-1)
+            if (totaltva < 0) {
+              totaltva = totaltva * -1;
             }
-  
+
             updatedProduits.push({
               ...e,
               oldPrice,
@@ -247,14 +247,13 @@ const commandeDetailController = {
             });
           }
         }
-  
+
         updatedCommandeDetails.push({
           ...data,
           produits: updatedProduits,
-
         });
       }
-  
+
       return res.status(200).json({
         success: true,
         message: "Order calculated successfully!",
@@ -262,7 +261,7 @@ const commandeDetailController = {
         totalHT,
         newTotal,
         newTotalremise,
-        totaltva
+        totaltva,
       });
     } catch (err) {
       return res.status(400).json({
@@ -271,7 +270,6 @@ const commandeDetailController = {
       });
     }
   },
-  
 
   addcommandespecial: async (req, res) => {
     try {
@@ -373,6 +371,7 @@ const commandeDetailController = {
         telephone: telephone,
         verification_token: null,
       });
+      console.log(user);
       const updatedCommandeDetails = [];
 
       for (const data of commande) {
@@ -427,6 +426,7 @@ const commandeDetailController = {
         success: true,
         message: "Commande guest created successfully",
         commande,
+        user: user,
       });
     } catch (error) {
       console.error(error);
@@ -444,7 +444,7 @@ const commandeDetailController = {
         Description,
         email,
         telephone,
-        Nom,
+        fullname,
         identifiant,
         labrcomdespectfk,
         codepromo,
@@ -454,7 +454,7 @@ const commandeDetailController = {
       let commande = null;
 
       const user = await Model.user.create({
-        fullname: Nom,
+        fullname: fullname,
         email: email,
         password: null,
         email_verifie: "verifie",
@@ -535,11 +535,16 @@ const commandeDetailController = {
           email: email,
           telephone: telephone,
           identifiant: identifiant,
-          Nom: Nom,
+          fullname: fullname,
           usercommdespectfk: user.id,
           labrcomdespectfk: labrcomdespectfk,
         });
-
+        Model.adresses.update(
+          {
+            cspecaddressfk: commande.id,
+          },
+          { where: { id: addresseinv.id } }
+        );
         return res.status(200).json({
           success: true,
           message: "Commande created successfully without files",
@@ -566,7 +571,7 @@ const commandeDetailController = {
         email: email,
         identifiant: identifiant,
         telephone: telephone,
-        Nom: Nom,
+        fullname: fullname,
         Fichier: uploadedFiles.join(","),
         usercommdespectfk: user.id,
         labrcomdespectfk: labrcomdespectfk,
@@ -1305,7 +1310,11 @@ const commandeDetailController = {
             exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
           },
           include: [
-            { model: Model.user, attributes: ["fullname", "avatar"] },
+            {
+              model: Model.user,
+              attributes: ["fullname", "avatar", "email", "telephone"],
+              include: [{ model: Model.adresses }],
+            },
             { model: Model.produitlabrairie },
           ],
         });
@@ -1522,6 +1531,12 @@ const commandeDetailController = {
           where: whereClause,
           include: [
             {
+              model: Model.adresses,
+              attributes: {
+                exclude: ["partenaireaddressfk", "fournisseuraddressfk"],
+              },
+            },
+            {
               model: Model.user,
 
               attributes: ["fullname", "avatar", "telephone", "email", "role"],
@@ -1529,17 +1544,6 @@ const commandeDetailController = {
               include: [
                 {
                   model: Model.client,
-                  include: [
-                    {
-                      model: Model.adresses,
-                      attributes: {
-                        exclude: [
-                          "partenaireaddressfk",
-                          "fournisseuraddressfk",
-                        ],
-                      },
-                    },
-                  ],
                 },
               ],
             },

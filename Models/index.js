@@ -665,6 +665,22 @@ produitFavorie.belongsTo(user, {
   foreignKey: "userprodfavfk",
   constraints: false,
 });
+commandeSpecial.hasMany(adresses, {
+  foreignKey: "cspecaddressfk",
+  constraints: false,
+});
+adresses.belongsTo(commandeSpecial, {
+  foreignKey: "cspecaddressfk",
+  constraints: false,
+});
+commandeEnDetail.hasMany(adresses, {
+  foreignKey: "comaddressfk",
+  constraints: false,
+});
+adresses.belongsTo(commandeEnDetail, {
+  foreignKey: "comaddressfk",
+  constraints: false,
+});
 partenaire.hasMany(produitFavorie, {
   foreignKey: "partprodfavfk",
   constraints: false,
