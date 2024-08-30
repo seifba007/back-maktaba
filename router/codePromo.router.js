@@ -9,6 +9,7 @@ router.get("/findAll",codePromoController.findAll)
 router.get("/findOne/:id", codePromoController.findOne)
 router.get("/findByuser/:id", codePromoController.findByuser)
 router.get("/findBypartenaire/:id", codePromoController.findBypartenaire)
+router.get("/findBypartenairecommande/:id", codePromoController.findBypartenairecommande)
 router.put("/update/:id" ,AuthorizationUser, codePromoController.update)
 router.get("/findBycode", codePromoController.findBycode)
 module.exports = router

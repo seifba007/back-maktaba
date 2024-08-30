@@ -230,6 +230,15 @@ historycodePromo.belongsTo(client, {
   constraints: false,
 });
 
+partenaire.hasMany(historycodePromo, {
+  foreignKey: "parthiscodeprfk",
+  constraints: false,
+});
+historycodePromo.belongsTo(partenaire, {
+  foreignKey: "parthiscodeprfk",
+  constraints: false,
+});
+
 labrairie.hasMany(codePromo, {
   foreignKey: "labcodeprfk",
   constraints: false,

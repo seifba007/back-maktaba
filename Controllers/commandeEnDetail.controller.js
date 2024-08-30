@@ -3,9 +3,10 @@ const Model = require("../Models/index");
 const cloudinary = require("../middleware/cloudinary");
 const { Sequelize, where, Op, or } = require("sequelize");
 const codePromo = require("./codePromo.controller");
+const adresses = require("../Models/adresses");
 const commandeDetailController = {
   add: async (req, res) => {
-    const { commande, promoCode, clientid } = req.body;
+    const { commande, promoCode, clientid ,partenaireID} = req.body;
     try {
       let codePromoRecord = null;
 
@@ -125,6 +126,9 @@ const commandeDetailController = {
           await Model.historycodePromo.create({
             historypromocodeid: codePromoRecord.id,
             clienthiscodeprfk: clientid,
+            usedat : new Date(),
+            parthiscodeprfk:partenaireID,
+            totalachat:newTotal
           });
         }
 
@@ -358,7 +362,7 @@ const commandeDetailController = {
   },
   addcommandeinviter: async (req, res) => {
     try {
-      const { email, telephone, fullname, commande } = req.body;
+      const { email, telephone, fullname, commande, Adresse } = req.body;
 
       const user = await Model.user.create({
         fullname: fullname,
@@ -371,55 +375,115 @@ const commandeDetailController = {
         telephone: telephone,
         verification_token: null,
       });
-      console.log(user);
       const updatedCommandeDetails = [];
 
-      for (const data of commande) {
-        let commandes = {
-          total_ttc: data.total_ttc,
-          etatClient: "en cours",
-          etatVender: "Nouveau",
-          Adresse: data.Adresse,
-          Mode_liv: data.Mode_liv,
-          Mode_pay: data.Mode_pay,
-          usercommdetfk: user.id,
-          labrcomdetfk: data.labrcomdetfk,
-        };
+      if (Adresse == null) {
+        for (const data of commande) {
+          let commandes = {
+            total_ttc: data.total_ttc,
+            etatClient: "en cours",
+            etatVender: "Nouveau",
+            Adresse: 1,
+            Mode_liv: data.Mode_liv,
+            Mode_pay: data.Mode_pay,
+            usercommdetfk: user.id,
+            labrcomdetfk: data.labrcomdetfk,
+          };
 
-        const newCommande = await Model.commandeEnDetail.create(commandes);
+          const newCommande = await Model.commandeEnDetail.create(commandes);
 
-        if (!newCommande) {
-          return res.status(400).json({
-            success: false,
-            message: "Error adding the order.",
-          });
-        }
-
-        const updatedProduits = [];
-
-        for (const e of data.produits) {
-          const produit = await Model.produitlabrairie.findByPk(
-            e.prodlaibrcommdetfk
-          );
-
-          if (produit) {
-            updatedProduits.push({
-              ...e,
-              comdetprodlabrfk: newCommande.id,
+          if (!newCommande) {
+            return res.status(400).json({
+              success: false,
+              message: "Error adding the order.",
             });
-
-            let updatedQte = produit.qte - e.Qte;
-            if (updatedQte < 0) {
-              updatedQte = 0;
-            }
-            await Model.produitlabrairie.update(
-              { qte: updatedQte },
-              { where: { id: e.prodlaibrcommdetfk } }
-            );
           }
-        }
 
-        await Model.ProduitCommandeEnDetail.bulkCreate(updatedProduits);
+          const updatedProduits = [];
+
+          for (const e of data.produits) {
+            const produit = await Model.produitlabrairie.findByPk(
+              e.prodlaibrcommdetfk
+            );
+
+            if (produit) {
+              updatedProduits.push({
+                ...e,
+                comdetprodlabrfk: newCommande.id,
+              });
+
+              let updatedQte = produit.qte - e.Qte;
+              if (updatedQte < 0) {
+                updatedQte = 0;
+              }
+              await Model.produitlabrairie.update(
+                { qte: updatedQte },
+                { where: { id: e.prodlaibrcommdetfk } }
+              );
+            }
+          }
+
+          await Model.ProduitCommandeEnDetail.bulkCreate(updatedProduits);
+        }
+      } else {
+        for (const data of commande) {
+          let commandes = {
+            total_ttc: data.total_ttc,
+            etatClient: "en cours",
+            etatVender: "Nouveau",
+            Mode_liv: data.Mode_liv,
+            Mode_pay: data.Mode_pay,
+            usercommdetfk: user.id,
+            labrcomdetfk: data.labrcomdetfk,
+          };
+          
+
+          const newCommande = await Model.commandeEnDetail.create({
+            total_ttc: data.total_ttc,
+            etatClient: "en cours",
+            etatVender: "Nouveau",
+            Mode_liv: data.Mode_liv,
+            Mode_pay: data.Mode_pay,
+            usercommdetfk: user.id,
+            labrcomdetfk: data.labrcomdetfk,
+          });
+           await Model.adresses.create({
+            Adresse:Adresse,
+            comaddressfk:newCommande.id
+          });
+          if (!newCommande) {
+            return res.status(400).json({
+              success: false,
+              message: "Error adding the order.",
+            });
+          }
+
+          const updatedProduits = [];
+
+          for (const e of data.produits) {
+            const produit = await Model.produitlabrairie.findByPk(
+              e.prodlaibrcommdetfk
+            );
+
+            if (produit) {
+              updatedProduits.push({
+                ...e,
+                comdetprodlabrfk: newCommande.id,
+              });
+
+              let updatedQte = produit.qte - e.Qte;
+              if (updatedQte < 0) {
+                updatedQte = 0;
+              }
+              await Model.produitlabrairie.update(
+                { qte: updatedQte },
+                { where: { id: e.prodlaibrcommdetfk } }
+              );
+            }
+          }
+
+          await Model.ProduitCommandeEnDetail.bulkCreate(updatedProduits);
+        }
       }
 
       return res.status(200).json({
@@ -1310,10 +1374,10 @@ const commandeDetailController = {
             exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
           },
           include: [
+            { model: Model.adresses },
             {
               model: Model.user,
               attributes: ["fullname", "avatar", "email", "telephone"],
-              include: [{ model: Model.adresses }],
             },
             { model: Model.produitlabrairie },
           ],

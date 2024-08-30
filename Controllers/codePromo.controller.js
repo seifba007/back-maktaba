@@ -433,6 +433,61 @@ const codePromo = {
     }
   },
 
+  findBypartenairecommande: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    let whereClause = { clienthiscodeprfk: req.params.id };
+    if (etat && etat === "tout") {
+      whereClause.etat = {
+        [Sequelize.Op.or]: ["Non_Confirmer", "Valider"],
+      };
+    } else if (etat && etat !== "tout") {
+      whereClause.etat = etat;
+    }
+
+    try {
+      const totalCount = await Model.historycodePromo.count({
+        where: whereClause,
+      });
+
+      Model.historycodePromo
+        .findAll({
+          order: order,
+          offset: offset,
+          limit: +pageSize,
+          where: whereClause,
+          group: ['parthiscodeprfk'], 
+          include: [
+            {
+              model: Model.partenaire,
+              //attributes: ["fullname", "avatar"],
+              include: [
+                {
+                  model: Model.user,
+                },
+              ],
+            },
+          ],
+        })
+        .then((response) => {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          if (response !== null) {
+            res.status(200).json({
+              success: true,
+              commandes: response,
+              totalPages: totalPages,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
   findBycode: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize, code, etat } = req.query;
     const offset = (page - 1) * pageSize;
