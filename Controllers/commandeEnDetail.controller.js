@@ -6,7 +6,7 @@ const codePromo = require("./codePromo.controller");
 const adresses = require("../Models/adresses");
 const commandeDetailController = {
   add: async (req, res) => {
-    const { commande, promoCode, clientid ,partenaireID} = req.body;
+    const { commande, promoCode, clientid, partenaireID } = req.body;
     try {
       let codePromoRecord = null;
 
@@ -126,9 +126,9 @@ const commandeDetailController = {
           await Model.historycodePromo.create({
             historypromocodeid: codePromoRecord.id,
             clienthiscodeprfk: clientid,
-            usedat : new Date(),
-            parthiscodeprfk:partenaireID,
-            totalachat:newTotal
+            usedat: new Date(),
+            parthiscodeprfk: partenaireID,
+            totalachat: newTotal,
           });
         }
 
@@ -176,6 +176,7 @@ const commandeDetailController = {
           return res.status(400).json({
             success: false,
             message: "Invalid promo code.",
+            commande:commande
           });
         }
       }
@@ -283,7 +284,7 @@ const commandeDetailController = {
         Description,
         email,
         telephone,
-        Nom,
+        fullname,
         identifiant,
         usercommdespectfk,
         labrcomdespectfk,
@@ -300,21 +301,85 @@ const commandeDetailController = {
       }
 
       let commande = null;
+      let addressestk = null;
+      if (Adresse == null) {
+        addressestk = 1;
+        if (!req.files || req.files.length === 0) {
+          commande = await Model.commandeSpecial.create({
+            etatClient: etatClient,
+            Adresse: addressestk,
+            Description: Description,
+            codepromo: codepromo,
+            email: email,
+            telephone: telephone,
+            identifiant: identifiant,
+            fullname: fullname,
+            usercommdespectfk: usercommdespectfk,
+            labrcomdespectfk: labrcomdespectfk,
+          });
+  
+          return res.status(200).json({
+            success: true,
+            message: "Commande created successfully without files",
+            commande,
+          });
+        }
+  
+        const uploadedFiles = await Promise.all(
+          req.files.map(async (file) => {
+            try {
+              const result = await cloudinary.uploader.upload(file.path);
+              return result.secure_url;
+            } catch (error) {
+              throw new Error(`File upload failed: ${error.message}`);
+            }
+          })
+        );
+  
+        commande = await Model.commandeSpecial.create({
+          etatClient: etatClient,
+          Adresse: addressestk,
+          Description: Description,
+          codepromo: codepromo,
+          email: email,
+          identifiant: identifiant,
+          telephone: telephone,
+          fullname: fullname,
+          Fichier: uploadedFiles.join(","),
+          usercommdespectfk: usercommdespectfk,
+          labrcomdespectfk: labrcomdespectfk,
+        });
+        
+      }
 
+      const addresseinv = await Model.adresses.create({Adresse:Adresse});
+      if (req.body.codepromo) {
+        codeExist = await Model.codePromo.findOne({
+          where: { code: codepromo, etat: "Valider" },
+        });
+        if (!codeExist) {
+          return res.status(400).json({ message: "Promo code does not exist" });
+        }
+      }
       if (!req.files || req.files.length === 0) {
         commande = await Model.commandeSpecial.create({
           etatClient: etatClient,
-          Adresse: Adresse,
+          Adresse: addresseinv.id,
           Description: Description,
           codepromo: codepromo,
           email: email,
           telephone: telephone,
           identifiant: identifiant,
-          Nom: Nom,
+          fullname: fullname,
           usercommdespectfk: usercommdespectfk,
           labrcomdespectfk: labrcomdespectfk,
         });
-
+        Model.adresses.update(
+          {
+            cspecaddressfk: commande.id,
+          },
+          { where: { id: addresseinv.id } }
+        );
         return res.status(200).json({
           success: true,
           message: "Commande created successfully without files",
@@ -335,17 +400,25 @@ const commandeDetailController = {
 
       commande = await Model.commandeSpecial.create({
         etatClient: etatClient,
-        Adresse: Adresse,
+        Adresse: addresseinv.id,
         Description: Description,
         codepromo: codepromo,
         email: email,
         identifiant: identifiant,
         telephone: telephone,
-        Nom: Nom,
+        fullname: fullname,
         Fichier: uploadedFiles.join(","),
         usercommdespectfk: usercommdespectfk,
         labrcomdespectfk: labrcomdespectfk,
       });
+
+
+      Model.adresses.update(
+        {
+          cspecaddressfk: commande.id,
+        },
+        { where: { id: addresseinv.id } }
+      );
 
       return res.status(200).json({
         success: true,
@@ -436,7 +509,6 @@ const commandeDetailController = {
             usercommdetfk: user.id,
             labrcomdetfk: data.labrcomdetfk,
           };
-          
 
           const newCommande = await Model.commandeEnDetail.create({
             total_ttc: data.total_ttc,
@@ -447,9 +519,9 @@ const commandeDetailController = {
             usercommdetfk: user.id,
             labrcomdetfk: data.labrcomdetfk,
           });
-           await Model.adresses.create({
-            Adresse:Adresse,
-            comaddressfk:newCommande.id
+          await Model.adresses.create({
+            Adresse: Adresse,
+            comaddressfk: newCommande.id,
           });
           if (!newCommande) {
             return res.status(400).json({
@@ -539,7 +611,7 @@ const commandeDetailController = {
             email: email,
             telephone: telephone,
             identifiant: identifiant,
-            Nom: Nom,
+            fullname: fullname,
             usercommdespectfk: user.id,
             labrcomdespectfk: labrcomdespectfk,
           });
@@ -570,7 +642,7 @@ const commandeDetailController = {
           email: email,
           identifiant: identifiant,
           telephone: telephone,
-          Nom: Nom,
+          fullname: fullname,
           Fichier: uploadedFiles.join(","),
           usercommdespectfk: user.id,
           labrcomdespectfk: labrcomdespectfk,
@@ -640,7 +712,12 @@ const commandeDetailController = {
         usercommdespectfk: user.id,
         labrcomdespectfk: labrcomdespectfk,
       });
-
+      Model.adresses.update(
+        {
+          cspecaddressfk: commande.id,
+        },
+        { where: { id: addresseinv.id } }
+      );
       return res.status(200).json({
         success: true,
         message: "Commande created successfully with files",
@@ -849,7 +926,7 @@ const commandeDetailController = {
       }
 
       if (username) {
-        whereClause.Nom = {
+        whereClause.fullname = {
           [Sequelize.Op.like]: `%${username}%`,
         };
       }
@@ -909,7 +986,7 @@ const commandeDetailController = {
       }
 
       if (username) {
-        whereClause.Nom = {
+        whereClause.fullname = {
           [Sequelize.Op.like]: `%${username}%`,
         };
       }
@@ -1217,6 +1294,9 @@ const commandeDetailController = {
 
         include: [
           {
+            model: Model.adresses,
+          },
+          {
             model: Model.user,
             attributes: ["fullname", "avatar", "telephone", "email"],
             include: [
@@ -1278,9 +1358,10 @@ const commandeDetailController = {
   findOneSpecCommande: async (req, res) => {
     try {
       Model.commandeSpecial
-        .findAll({
+        .findOne({
           where: { id: req.params.id },
           include: [
+            {model: Model.adresses},
             {
               model: Model.user,
               attributes: ["fullname", "avatar", "telephone", "email", "role"],
@@ -1291,6 +1372,7 @@ const commandeDetailController = {
                     {
                       model: Model.adresses,
                       attributes: {
+                        
                         exclude: [
                           "partenaireaddressfk",
                           "fournisseuraddressfk",

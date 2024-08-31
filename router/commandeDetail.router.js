@@ -4,10 +4,10 @@ const upload = require("../middleware/upload");
 
 const commandeDetailController = require("../Controllers/commandeEnDetail.controller");
 const { AuthorizationUser } = require("../middleware/auth/auth");
-router.post("/add", commandeDetailController.add);
+router.post("/add",AuthorizationUser,  commandeDetailController.add);
 router.post("/calculecommande", commandeDetailController.calculecommande);
 router.post("/addcommandeinviter", commandeDetailController.addcommandeinviter);
-router.post("/addcommandespecial",AuthorizationUser, upload.array("Fichier",1), commandeDetailController.addcommandespecial);
+router.post("/addcommandespecial", upload.array("Fichier",1), commandeDetailController.addcommandespecial);
 router.post("/addcommandespecialinviter", upload.array("Fichier",1), commandeDetailController.addcommandespecialinviter);
 router.get(
   "/findcommandebyuser/:id",
