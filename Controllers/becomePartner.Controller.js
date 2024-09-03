@@ -24,28 +24,23 @@ const BecomePartnerController = {
       pack,
       adminpartfk,
     } = req.body;
-
     if (!fullname || !email || !phone) {
       return res.status(400).json({
         success: false,
         message: "Fullname, email, and phone are required fields.",
       });
     }
-
     try {
       const existingEmail = await Model.user.findOne({
         where: { email: email },
       });
-
       if (existingEmail) {
         return res.status(400).json({
           success: false,
           message: "Email already exists. Please use a different email.",
         });
       }
-
       let result = "";
-
       req.files.forEach(async (file) => {
         result = file.filename;
       });

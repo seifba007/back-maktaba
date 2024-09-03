@@ -152,7 +152,7 @@ const commandeDetailController = {
     const { commande, promoCode, clientid } = req.body;
     try {
       let codePromoRecord = null;
-
+  
       if (promoCode) {
         codePromoRecord = await Model.codePromo.findOne({
           where: { code: promoCode },
@@ -163,25 +163,22 @@ const commandeDetailController = {
             },
           ],
         });
-
+  
         if (!codePromoRecord) {
           return res.status(400).json({
             success: false,
             message: "Invalid promo code.",
-            commande:commande
+            commande: commande,
           });
         }
       }
-
+  
       let totalHT = 0.0;
       let newTotal = 0.0;
       let newTotalremise = 0.0;
-      let newPricetva = 0.0;
       let totaltva = 0.0;
-      let price = 0.0;
-      let tva = 0.0;
       const updatedCommandeDetails = [];
-
+  
       for (const data of commande) {
         let commandes = {
           total_ttc: data.total_ttc,
@@ -194,21 +191,21 @@ const commandeDetailController = {
           usercommdetfk: data.usercommdetfk,
           labrcomdetfk: data.labrcomdetfk,
         };
-
+  
         const updatedProduits = [];
-
+  
         for (const e of data.produits) {
           const produit = await Model.produitlabrairie.findByPk(
             e.prodlaibrcommdetfk
           );
-
+  
           if (produit) {
-            tva = produit.tva;
-            price = produit.prix;
+            const tva = produit.tva;
+            let price = produit.prix;
             const oldPrice = price;
             let newPrice = oldPrice;
-            let eligibleCategory = null;
-
+  
+            // Apply product-specific discount if available
             if (produit.remise && produit.remise > 0) {
               newPrice = oldPrice * (1 - produit.remise / 100);
             } else if (codePromoRecord) {
@@ -216,49 +213,47 @@ const commandeDetailController = {
                 where: { promocodeid: codePromoRecord.dataValues.id },
               });
               for (const category of codePromocat) {
-                eligibleCategory =
-                  category.ctagorieid === produit.categprodlabfk;
-                if (eligibleCategory) {
+                if (category.ctagorieid === produit.categprodlabfk) {
                   const discount = category.discountPercentage;
                   newPrice = oldPrice * (1 - discount / 100);
                   break;
                 }
               }
             }
-
-            newPricetva = newPrice + newPrice * (tva / 100);
-
-            totalHT += oldPrice * e.Qte;
-            newTotalremise += newPrice * e.Qte;
-            newTotal += newPricetva * e.Qte;
-            totaltva = newTotal - totalHT;
-            if (totaltva < 0) {
-              totaltva = totaltva * -1;
-            }
-
+  
+            // Calculate the total HT, total remise, and total TVA
+            const lineTotalHT = oldPrice * e.Qte;
+            const lineTotalRemise = newPrice * e.Qte;
+            const lineTVA = (newPrice * tva / 100) * e.Qte;
+            const lineTotalTTC = (newPrice + (newPrice * tva / 100)) * e.Qte;
+  
+            totalHT += lineTotalHT;
+            newTotalremise += lineTotalRemise;
+            totaltva += lineTVA;
+            newTotal += lineTotalTTC;
+  
             updatedProduits.push({
               ...e,
               oldPrice,
               newPrice,
-              //newPricetva,
             });
           }
         }
-
+  
         updatedCommandeDetails.push({
           ...data,
           produits: updatedProduits,
         });
       }
-
+  
       return res.status(200).json({
         success: true,
         message: "Order calculated successfully!",
         commandeDetails: updatedCommandeDetails,
         totalHT,
-        newTotal,
-        newTotalremise,
-        totaltva,
+        newTotal,        // Total TTC (Including Tax)
+        newTotalremise,  // Total after applying discounts (excluding tax)
+        totaltva,        // Total TVA (Tax amount)
       });
     } catch (err) {
       return res.status(400).json({
@@ -267,6 +262,7 @@ const commandeDetailController = {
       });
     }
   },
+  
 
   addcommandespecial: async (req, res) => {
     try {
@@ -2697,6 +2693,12 @@ const commandeDetailController = {
               where: { id: req.params.id },
               include: [
                 {
+                  model: Model.adresses,
+                  attributes: ["Nom_de_adresse", "Code_postal", "Gouvernorat", "Ville"], // Include necessary address attributes
+                },
+                {
+             
+                 
                   model: Model.produitlabrairie,
                   attributes: ["titre", "description", "prix", "prix_en_Solde"],
                   include: [

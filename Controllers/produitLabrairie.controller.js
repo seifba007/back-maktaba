@@ -112,7 +112,7 @@ const produitController = {
 
   update: async (req, res) => {
     try {
-      const { qte, prix, prix_en_Solde, remise } = req.body;
+      const { qte, prix, prix_en_Solde, remise,tva } = req.body;
       if (prix_en_Solde !== undefined) {
         var etat = "remise";
       }
@@ -128,6 +128,7 @@ const produitController = {
         qte: qte,
         prix_en_Solde: prix_solde,
         remise: remise,
+        tva:tva
       };
       Model.produitlabrairie
         .update(produitData, { where: { id: req.params.id } })
@@ -142,13 +143,11 @@ const produitController = {
             }
 
             const uploadPromises = [];
-
             req.files.forEach((file) => {
               const uploadPromise = cloudinary.uploader
                 .upload(file.path)
                 .then((result) => {
                   const imageUrl = result.secure_url;
-
                   return Model.imageProduitLibrairie.create({
                     name_Image: imageUrl,
                     imageprodfk: req.params.id,
@@ -157,9 +156,7 @@ const produitController = {
 
               uploadPromises.push(uploadPromise);
             });
-
             Promise.all(uploadPromises);
-
             return res.status(200).json({
               success: true,
               message: "produit updated successfully",

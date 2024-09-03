@@ -38,7 +38,6 @@ const CatalogeFournisseurController = {
             .upload(file.path)
             .then((result) => {
               const imageUrl = result.secure_url;
-              console.log(imageUrl)
               return Model.imageCatalogeFournisseur.create({
                 name_Image: imageUrl,
                 imagecatalogefourfk: catalog.id,

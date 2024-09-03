@@ -313,8 +313,6 @@ const LabriarieController = {
         totalAvis: item.dataValues.totalAvis,
         produitlabrairie: item.produitlabrairie,
       }));
-      console.log(topProducts);
-      console.log(formattedProducts);
 
       return res.status(200).json({
         success: true,
@@ -383,7 +381,6 @@ const LabriarieController = {
     } else {
       days = days;
     }
-    console.log(days);
     try {
       const date = new Date();
       date.setDate(date.getDate() - days);

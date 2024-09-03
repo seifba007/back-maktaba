@@ -3,11 +3,10 @@ const BecomePartnerController = require("../Controllers/becomePartner.Controller
 const router = express.Router();
 const upload = require("../middleware/upload");
 const {
-  AuthorizationUser,
   AuthorizationAdmin,
 } = require("../middleware/auth/auth");
 router.post(
-  "/add",AuthorizationUser,
+  "/add",
   upload.array("file", 1),
   BecomePartnerController.add
 );

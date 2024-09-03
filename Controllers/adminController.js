@@ -685,7 +685,7 @@ const adminController = {
       };
 
       avisProduit.forEach((avis) => {
-        console.log(avis);
+
         etoileCounts[avis.dataValues.nbStart] += 1;
       });
 
@@ -1658,7 +1658,9 @@ const adminController = {
         order: order,
         limit: +pageSize,
         where: whereClause,
+     
         include: [
+          
           {
             model: Model.user,
             attributes: ["fullname", "avatar"],

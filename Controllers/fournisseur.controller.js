@@ -149,7 +149,6 @@ const fournisseurController = {
       Model.fournisseur
         .update(data, { where: { id: req.params.id } })
         .then((response) => {
-          console.log(response);
           if (response !== 0) {
             return res.status(200).json({
               success: true,
