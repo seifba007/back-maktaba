@@ -7,17 +7,26 @@ router.post(
   "/add",
   AuthorizationUser,
   upload.array("image", 3),
-  ProduitLabrairieController.add_produit_with_import_image
+  ProduitLabrairieController.add_produit
 );
-
-router.post("/addProdCataloge",
-AuthorizationUser,ProduitLabrairieController.add)
 
 router.put(
   "/update/:id",
   AuthorizationUser,
   upload.array("image", 3),
   ProduitLabrairieController.update
+);
+
+router.put(
+  "/updateTVA",
+
+  ProduitLabrairieController.updateTVA
+);
+
+router.put(
+  "/updateAllPrices",
+
+  ProduitLabrairieController.updateAllPrices
 );
 router.delete(
   "/delete",
@@ -29,17 +38,18 @@ router.get(
   "/findBylabrairie/:id",
   ProduitLabrairieController.findAllProduitByLabrairie
 );
-router.get("/findOneProduit/:id", ProduitLabrairieController.findOneProduit);
+router.get("/findOneProduit/:id", ProduitLabrairieController.findoneproduit);
 router.get(
-  "/findProduitsBycategorie/:categorieId",
+  "/findProduitsBycategorie/:categprodlabfk",
   ProduitLabrairieController.findProduitsBycategorie
 );
 
 
 router.get(
-  "/produit_mieux_notes",
+  "/produit_mieux_notes/:id",
   ProduitLabrairieController.produit_mieux_notes
 );
+router.get("/produit_mieux/:id",ProduitLabrairieController.produit_mieux);
 
 router.get("/produitfiltrage", ProduitLabrairieController.produitfiltreage);
 

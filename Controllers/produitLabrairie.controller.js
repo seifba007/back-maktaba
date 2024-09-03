@@ -1,123 +1,115 @@
 const Model = require("../Models/index");
 const { Sequelize } = require("sequelize");
-const {
-  produitlibrairieValidation,
-} = require("../middleware/auth/validationSchema");
-const produitController = {
-  add_produit_with_import_image: async (req, res) => {
-    const {
-      titre,
-      description,
-      image,
-      qte,
-      prix,
-      labrairieId,
-      categorieId,
-      SouscategorieId,
-    } = req.body;
+const cloudinary = require("../middleware/cloudinary");
 
-    try {
-      const { error } = produitlibrairieValidation(req.body);
-      if (error)
-        return res
-          .status(400)
-          .json({ success: false, err: error.details[0].message });
-      req.body["image"] = req.files;
+const updateProductNewState = async () => {
+  try {
+    const products = await Model.produitlabrairie.findAll({
+      where: {
+        etat: "Nouveau",
+      },
+    });
 
-      const produitData = {
-        titre: titre,
-        description: description,
-        prix: prix,
-        qte: qte,
-        categorieId: categorieId,
-        labrairieId: labrairieId,
-        SouscategorieId: SouscategorieId,
-      };
-      const images = [];
-      Model.produitlabrairie.create(produitData).then((response) => {
-        if (response !== null) {
-          image.map((e) => {
-            images.push({
-              name_Image: e.filename,
-              produitlabrairieId: response.id,
+    for (const product of products) {
+      product.etat = "ancien";
+      await product.save();
+    }
+  } catch (err) {
+    console.error(
+      "Erreur lors de la mise à jour de l'état des produits :",
+      err
+    );
+  }
+};
+const updateProductTopState = async () => {
+  try {
+    Model.ProduitCommandeEnDetail.findAll({
+      attributes: [
+        "prodlaibrcommdetfk",
+        [Sequelize.fn("COUNT", "prodlaibrcommdetfk"), "count"],
+      ],
+      group: ["prodlaibrcommdetfk"],
+      order: [[Sequelize.literal("count"), "DESC"]],
+      limit: 3,
+    })
+      .then((topProducts) => {
+        Model.produitlabrairie.update(
+          { etat: "ancien" },
+          { where: { etat: "plus ventes" } }
+        );
+        topProducts.forEach((product) => {
+          Model.produitlabrairie
+            .update(
+              { etat: "plus ventes" },
+              { where: { id: product.prodlaibrcommdetfk } }
+            )
+            .then(() => {
+              console.log(
+                `Produit ID: ${product.prodlaibrcommdetfk} mis à jour avec succès.`
+              );
+            })
+            .catch((err) => {
+              console.error(
+                `Erreur lors de la mise à jour du produit ID ${product.prodlaibrcommdetfk} :`,
+                err
+              );
             });
-          });
-          Model.imageProduitLibrairie.bulkCreate(images).then((response) => {
-            if (response !== null) {
-              return res.status(200).json({
-                success: true,
-                message: "add produit librairie Done !! ",
-              });
-            } else {
-              return res.status(400).json({
-                success: false,
-                error: err,
-              });
-            }
-          });
-        } else {
-          return res.status(400).json({
-            success: false,
-            error: err,
-          });
-        }
+        });
+      })
+      .catch((err) => {
+        console.error("Erreur lors de la récupération des produits :", err);
       });
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err,
-      });
+    //console.log('État des produits mis à jour.');
+  } catch (err) {
+    console.error(
+      "Erreur lors de la mise à jour de l'état des produits :",
+      err
+    );
+  }
+};
+const updateNewInterval = 24 * 60 * 60 * 1000;
+const updateTopInterval = 72 * 60 * 60 * 1000;
+setInterval(updateProductNewState, updateNewInterval);
+setInterval(updateProductTopState, updateTopInterval);
+const produitController = {
+  add_produit: async (req, res) => {
+    try {
+      const produits = [];
+
+      const produitsarr = req.body.products;
+
+      for (const productData of produitsarr) {
+        const produit = await Model.produitlabrairie.create({
+          titre: productData.titre,
+          description: productData.description,
+          etat: "Nouveau",
+          Visibilite:"Visible",
+          codebar:productData.codebar,
+          labrprodfk: productData.labrprodfk,
+          categprodlabfk: productData.categprodlabfk,
+          souscatprodfk: productData.souscatprodfk,
+        });
+
+        const image = await Model.imageProduitLibrairie.create({
+          name_Image: productData.image,
+          imageprodfk: produit.id,
+        });
+
+        produits.push({
+          produit: produit,
+          image: image,
+        });
+      }
+
+      res
+        .status(201)
+        .json({ message: "Products created successfully", produits });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Error creating products" });
     }
   },
-  add: async (req, res) => {
-    try {
-      const { titre, description, image, prix, labrairieId, categorieId,SouscategorieId,qte } =
-        req.body;
-      const produitData = {
-        titre: titre,
-        description: description,
-        prix: prix,
-        qte: qte,
-        categorieId: categorieId,
-        labrairieId: labrairieId,
-        SouscategorieId:SouscategorieId
-      };
-      const images = [];
-      Model.produitlabrairie.create(produitData).then((response) => {
-        if (response !== null) {
-          image.map((e) => {
-            images.push({
-              name_Image:e.name_Image,
-              produitlabrairieId: response.id,
-            });
-          });
-          Model.imageProduitLibrairie.bulkCreate(images).then((response) => {
-            if (response !== null) {
-              return res.status(200).json({
-                success: true,
-                message: "add produit librairie Done !! ",
-              });
-            } else {
-              return res.status(400).json({
-                success: false,
-                error: err,
-              });
-            }
-          });
-        } else {
-          return res.status(400).json({
-            success: false,
-            error: err,
-          });
-        }
-      });
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err,
-      });
-    }
-  },
+
   update: async (req, res) => {
     try {
       const { qte, prix, prix_en_Solde, remise } = req.body;
@@ -125,7 +117,7 @@ const produitController = {
         var etat = "remise";
       }
       if (remise == 0 || remise === undefined) {
-        var etat = "en_Stock";
+        var etat = "Nouveau";
         var prix_solde = 0;
       } else {
         var prix_solde = prix_en_Solde;
@@ -141,32 +133,42 @@ const produitController = {
         .update(produitData, { where: { id: req.params.id } })
         .then((response) => {
           if (response !== 0) {
-            if (req.files.length !== 0) {
-              req.body["image"] = req.files[0].filename;
-              Model.imageProduitLibrairie
-                .update(
-                  { name_Image: req.body.image },
-                  { where: { produitlabrairieId: req.params.id } }
-                )
-                .then((response) => {
-                  if (response !== 0) {
-                    return res.status(200).json({
-                      success: true,
-                      message: " update done ! ",
-                    });
-                  } else {
-                    return res.status(400).json({
-                      success: false,
-                      error: "error update ",
-                    });
-                  }
-                });
-            } else {
-              return res.status(200).json({
-                success: true,
-                message: "update done",
+            if (req.files.length > 0) {
+              Model.imageProduitLibrairie.destroy({
+                where: {
+                  imageprodfk: req.params.id,
+                },
               });
             }
+
+            const uploadPromises = [];
+
+            req.files.forEach((file) => {
+              const uploadPromise = cloudinary.uploader
+                .upload(file.path)
+                .then((result) => {
+                  const imageUrl = result.secure_url;
+
+                  return Model.imageProduitLibrairie.create({
+                    name_Image: imageUrl,
+                    imageprodfk: req.params.id,
+                  });
+                });
+
+              uploadPromises.push(uploadPromise);
+            });
+
+            Promise.all(uploadPromises);
+
+            return res.status(200).json({
+              success: true,
+              message: "produit updated successfully",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              error: err.message,
+            });
           }
         });
     } catch (err) {
@@ -178,7 +180,6 @@ const produitController = {
   },
   delete: async (req, res) => {
     const { ids } = req.body;
-    console.log(ids);
     try {
       Model.produitlabrairie
         .destroy({
@@ -201,52 +202,61 @@ const produitController = {
       });
     }
   },
-
-
   findAll: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize } = req.query;
-
+  
     const offset = (page - 1) * pageSize;
-
-    if ((sortBy, sortOrder)) {
+  
+    let order = [];
+    if (sortBy && sortOrder) {
       order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     }
+  
     try {
-      Model.produitlabrairie
-        .findAll({
-          limit: +pageSize,
-          offset: offset,
-          order: order,
-          include: [
-            {
-              model: Model.labrairie,
-              attributes: ["id", "imageStore", "nameLibrairie"],
-            },
-            {
-              model: Model.imageProduitLibrairie,
-              attributes: ["name_Image"],
-              separate: true,
-            },
-            {
-              model: Model.avisProduitlibraire,
-             
-            },
-            { model: Model.categorie, attributes: ["id", "name"] },
-          ],
-        })
-        .then((response) => {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              produit: response,
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              err: " zero produit",
-            });
-          }
+      const products = await Model.produitlabrairie.findAll({
+        limit: +pageSize,
+        offset: offset,
+        order: order,
+        where: {
+          qte: {
+            [Sequelize.Op.gt]: 0,
+          },
+        },
+        include: [
+          {
+            model: Model.imageProduitLibrairie,
+            attributes: ["name_Image"],
+          },
+          {
+            model: Model.labrairie,
+            attributes: ["id", "imageStore", "nameLibrairie"],
+          },
+          {
+            model: Model.avisProduitlibraire,
+          },
+          { model: Model.categorie, attributes: ["id", "name"] },
+        ],
+      });
+  
+      if (products && products.length > 0) {
+        const productsWithTTC = products.map(product => {
+          const ttc = Math.ceil(product.prix * (1 + product.tva / 100));
+          return {
+            ...product.toJSON(), 
+            ttc, 
+          };
         });
+  
+        return res.status(200).json({
+          success: true,
+          produit: productsWithTTC,
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "zero produit",
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -258,67 +268,104 @@ const produitController = {
   findAllProduitByLabrairie: async (req, res) => {
     const { page, pageSize, sortBy, sortOrder } = req.query;
     const offset = (page - 1) * pageSize;
+    const filters = req.query;
+    let whereClause = {};
 
-    if ((sortBy, sortOrder)) {
+    whereClause = {
+      labrprodfk: req.params.id,
+      //qte: {
+      // [Sequelize.Op.gt]: 0,
+      //},
+    };
+
+    if (filters.titre) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          titre: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
+          },
+        },
+        {
+          codebar: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
+          },
+        },
+      ];
+    }
+  
+    if (filters.codebar) {
+      whereClause.codebar = {
+        [Sequelize.Op.like]: `%${filters.codebar}%`,
+      };
+    }
+
+    if (sortBy && sortOrder) {
       order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     }
 
     try {
-      Model.produitlabrairie
-        .findAll({
-          order: order,
-          limit: +pageSize,
-          offset: offset,
-          where: { labrairieId: req.params.id },
-          
-          include: [
-            {
-              model: Model.labrairie,
-              attributes: ["imageStore", "nameLibrairie"],
-            },
-            {
-              model: Model.imageProduitLibrairie,
-              attributes: ["name_Image"],
-              separate: true,
-            },
-            {
-              model: Model.avisProduitlibraire,
-              
-            },
-          ],
+      const totalCount = await Model.produitlabrairie.count({
+        where: whereClause,
+      });
 
-          group: ["produitlabrairie.id"],
-        })
-        .then((response) => {
-          if (response.length !== 0) {
-            res.status(200).json({
-              success: true,
-              produit: response,
-            });
-          } else {
-            res.status(400).json({
-              success: false,
-              err: " labrairieId have zero produit",
-            });
-          }
+      const products = await Model.produitlabrairie.findAll({
+        order: order,
+        limit: +pageSize,
+        offset: offset,
+        where: whereClause,
+        include: [
+          {
+            model: Model.labrairie,
+            attributes: ["imageStore", "nameLibrairie"],
+          },
+          {
+            model: Model.categorie,
+            attributes: ["id", "name", "Description", "image"],
+          },
+          {
+            model: Model.imageProduitLibrairie,
+          },
+          {
+            model: Model.avisProduitlibraire,
+          },
+        ],
+        group: ["produitlabrairie.id"],
+      });
+
+      if (products.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return res.status(200).json({
+          success: true,
+          produit: products,
+          totalPages: totalPages,
         });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "Aucun produit trouv� pour cette labrairie.",
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
-        err: err,
+        error: err.message,
       });
     }
   },
 
-
-  findOneProduit: async (req, res) => {
+  findoneproduit: async (req, res) => {
     try {
       const { id } = req.params;
       Model.produitlabrairie
         .findOne({
-          where: { id: id },
+          where: {
+            id: id,
+            qte: {
+              [Sequelize.Op.gt]: 0,
+            },
+          },
           attributes: {
-            exclude: ["createdAt", "updatedAt", "labrairieId"],
+            exclude: ["createdAt", "updatedAt", "labrprodfk"],
           },
           include: [
             {
@@ -326,19 +373,18 @@ const produitController = {
               attributes: ["id", "nameLibrairie", "imageStore"],
             },
             {
+              model: Model.categorie,
+              attributes: ["id", "name", "Description", "image"],
+            },
+            {
               model: Model.imageProduitLibrairie,
               attributes: ["name_Image"],
               separate: true,
             },
             {
               model: Model.avisProduitlibraire,
-              attributes: [
-                [Sequelize.fn("max", Sequelize.col("nbStart")), "max_nb"],
-                [Sequelize.fn("SUM", Sequelize.col("nbStart")), "total_avis"],
-              ],
             },
           ],
-          group: ["produitlabrairie.id"],
         })
         .then((response) => {
           if (response !== null) {
@@ -349,7 +395,7 @@ const produitController = {
           } else {
             return res.status(400).json({
               success: false,
-              err: " error produit ne exist pas ",
+              err: " produit ne exist pas ",
             });
           }
         });
@@ -360,7 +406,6 @@ const produitController = {
       });
     }
   },
-
 
   findProduitsBycategorie: async (req, res) => {
     const { page, pageSize, sortBy, sortOrder } = req.query;
@@ -375,9 +420,14 @@ const produitController = {
           order: order,
           limit: +pageSize,
           offset: offset,
-          where: { categorieId: req.params.categorieId },
+          where: {
+            categprodlabfk: req.params.categprodlabfk,
+            qte: {
+              [Sequelize.Op.gt]: 0,
+            },
+          },
           attributes: {
-            exclude: ["categorieId", "description"],
+            exclude: ["categprodlabfk", "description"],
           },
           include: [
             {
@@ -386,12 +436,15 @@ const produitController = {
             },
             {
               model: Model.imageProduitLibrairie,
-              attributes: ["name_Image"],
-              separate: true,
+              where: {
+                name_image: {
+                  [Sequelize.Op.ne]:
+                    "https://res.cloudinary.com/doytw80zj/image/upload/v1693689652/27002_omkvdd.jpg",
+                },
+              },
             },
             {
               model: Model.avisProduitlibraire,
-             
             },
           ],
           order: order,
@@ -416,7 +469,6 @@ const produitController = {
       });
     }
   },
-
 
   produit_mieux_notes: async (req, res) => {
     const { page, pageSize, sortBy, sortOrder } = req.query;
@@ -443,9 +495,54 @@ const produitController = {
             },
           ],
           where: {
-            labrairieId: req.params.id,
+            labrprodfk: req.params.id,
+            qte: {
+              [Sequelize.Op.gt]: 0,
+            },
           },
-         
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              produit: response,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        err: err,
+      });
+    }
+  },
+
+  produit_mieux: async (req, res) => {
+    try {
+      Model.produitlabrairie
+        .findAll({
+          attributes: ["id", "titre"],
+          include: [
+            {
+              model: Model.avisProduitlibraire,
+              attributes: [
+                [Sequelize.fn("SUM", Sequelize.col("nbStart")), "total_stars"],
+                [Sequelize.fn("Max", Sequelize.col("nbStart")), "Max_avis"],
+              ],
+            },
+            {
+              model: Model.imageProduitLibrairie,
+              attributes: ["name_Image"],
+            },
+          ],
+          where: {
+            labrprodfk: req.params.id,
+            qte: {
+              [Sequelize.Op.gt]: 0,
+            },
+          },
+          group: ["produitlabrairie.id", "produitlabrairie.titre"],
+          having: Sequelize.literal("SUM(nbStart) >24"),
         })
         .then((response) => {
           if (response !== null) {
@@ -466,10 +563,14 @@ const produitController = {
   produitfiltreage: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize, namearticle } = req.query;
     const offset = (page - 1) * pageSize;
-    const wherec = {};
+    const wherec = {
+      qte: {
+        [Sequelize.Op.gt]: 0,
+      },
+    };
     order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     wherec.titre = namearticle;
-    
+
     try {
       Model.produitlabrairie
         .findAll({
@@ -477,6 +578,25 @@ const produitController = {
           limit: +pageSize,
           offset: offset,
           where: wherec,
+          include: [
+            {
+              model: Model.imageProduitLibrairie,
+              attributes: ["name_Image"],
+            },
+            {
+              model: Model.labrairie,
+              attributes: [
+                "id",
+                "adresse",
+                "telephone",
+                "nameLibrairie",
+                "facebook",
+                "instagram",
+                "imageStore",
+                "emailLib",
+              ],
+            },
+          ],
         })
         .then((response) => {
           if (response !== null) {
@@ -493,5 +613,120 @@ const produitController = {
       });
     }
   },
+
+  updateTVA: async (req, res) => {
+    try {
+        const tvaMappings = {
+            52: 0,
+            53: 19,
+            54: 0,
+            55: 19,
+            56: 19,
+            57: 0,
+            58: 0,
+            59: 19,
+            60: 0,
+            61: 19,
+            62: 19,
+            63: 19,
+            64: 19,
+            65: 19,
+            66: 19,
+            67: 19,
+            68: 19,
+            69: 19,
+            71: 19,
+            72: 19,
+            73: 19,
+            74: 19,
+            75: 19,
+            76: 7,
+            77: 19,
+            82: 19,
+            84: 19,
+            85: 19,
+            86: 19,
+            87: 19,
+            88: 19,
+            90: 19,
+            91: 19,
+            92: 19,
+            93: 19,
+            94: 19,
+            95: 19,
+            96: 19,
+            97: 19,
+            98: 19,
+            99: 19,
+            102: 19,
+            103: 19,
+            104: 19,
+            105: 19,
+            106: 19,
+            107: 19,
+            108: 19,
+            109: 19,
+            110: 19,
+            112: 19,
+            115: 19,
+            118: 19,
+            119: 19,
+            120: 19
+        };
+
+        const updatePromises = [];
+
+        for (const categoryId in tvaMappings) {
+            const newTva = tvaMappings[categoryId];
+            updatePromises.push(
+                Model.produitlabrairie.update(
+                    { tva: newTva },
+                    { where: { categprodlabfk: categoryId } }
+                )
+            );
+        }
+
+        await Promise.all(updatePromises);
+
+        return res.status(200).json({
+            success: true,
+            message: "TVA updated successfully for the specified categories."
+        });
+    } catch (err) {
+        return res.status(400).json({
+            success: false,
+            error: err.message,
+        });
+    }
+},
+
+updateAllPrices: async (req, res) => {
+  try {
+      const products = await Model.produitlabrairie.findAll();
+
+      const updatePromises = products.map(product => {
+          const currentPrice = product.prix; 
+          const tva = product.tva; 
+          
+          const newPrice = currentPrice / (1 + tva / 100);
+
+          return product.update({ prix: newPrice });
+      });
+
+      await Promise.all(updatePromises);
+
+      return res.status(200).json({
+          success: true,
+          message: "Prices updated successfully for all products."
+      });
+  } catch (err) {
+      return res.status(400).json({
+          success: false,
+          error: err.message,
+      });
+  }
+},
+
+
 };
 module.exports = produitController;

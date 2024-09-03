@@ -1,55 +1,60 @@
 const Model = require("../Models/index");
+const { Sequelize } = require("sequelize");
 const { bonAchatValidation } = require("../middleware/auth/validationSchema");
 const bonAchatController = {
-
   add: async (req, res) => {
-    const { solde, userId, partenaireId, nbpoint,fournisseurId ,labrairieId} = req.body;
+    const {
+      solde,
+      userbonachafk,
+      partbonachafk,
+      nbpoint,
+      fourbonachafk,
+      labbonachafk,
+    } = req.body;
     try {
-      const { error } = bonAchatValidation(req.body);
-      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
+      const user = await Model.user.findByPk(userbonachafk);
+      if (!user || user.point < nbpoint) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "L'utilisateur n'a pas suffisamment de points pour créer ce bon d'achat",
+        });
+      }
+
       function generateRandomCode() {
         let code = "#";
-
-        for (let i = 0; i < 7; i++) {
-          const randomDigit = Math.floor(Math.random() * 10);
-          code += randomDigit;
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        for (let i = 0; i < 9; i++) {
+            const randomIndex = Math.floor(Math.random() * characters.length);
+            code += characters[randomIndex];
         }
-
-        for (let i = 0; i < 2; i++) {
-          const randomDigit = Math.floor(Math.random() * 10);
-          code += randomDigit;
-        }
-
         return code;
-      }
+    }
+
       const data = {
         solde: solde,
-        etat: "Non Valide",
+        etat: "Valide",
+        nbpoint: nbpoint,
         code: generateRandomCode(),
-        userId: userId,
-        partenaireId: partenaireId,
-        fournisseurId:fournisseurId,
-        labrairieId:labrairieId
+        userbonachafk: userbonachafk,
+        partbonachafk: partbonachafk,
+        fourbonachafk: fourbonachafk,
+        labbonachafk: labbonachafk,
       };
-      Model.bonAchat.create(data).then((response) => {
-        if (response !== null) {
-          Model.user.findByPk(userId).then((user) => {
-            if (user) {
-              const updatedPoint = Number(user.point) - Number(nbpoint);
-              
-              Model.user.update(
-                { point: updatedPoint },
-                { where: { id: userId } }
-              );
-            }
-          });
-        }
-        return res.status(200).json({
-          success: true,
-          message: " bon d'Achat created",
-          bonAchat: response,
-          nbpoint: nbpoint,
-        });
+
+      const updatedPoint = Number(user.point) - Number(nbpoint);
+      await Model.user.update(
+        { point: updatedPoint },
+        { where: { id: userbonachafk } }
+      );
+
+      const response = await Model.bonAchat.create(data);
+
+      return res.status(200).json({
+        success: true,
+        message: "Bon d'achat créé",
+        bonAchat: response,
+        nbpoint: nbpoint,
       });
     } catch (err) {
       return res.status(400).json({
@@ -63,7 +68,7 @@ const bonAchatController = {
     try {
       Model.bonAchat
         .update(
-          { etat: "Valide" },
+          { etat: "Non Valide" },
           {
             where: {
               id: req.params.id,
@@ -92,11 +97,12 @@ const bonAchatController = {
   },
 
   delete: async (req, res) => {
+    const { idd } = req.body;
     try {
       Model.bonAchat
         .destroy({
           where: {
-            id: req.params.id,
+            id: idd,
           },
         })
         .then((reponse) => {
@@ -115,31 +121,24 @@ const bonAchatController = {
     }
   },
   findAll: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     try {
-      Model.bonAchat.findAll().then((response) => {
-        if (response !== null) {
-          res.status(200).json({
-            success: true,
-            bonAchat: response,
-          });
-        }
-      });
-    } catch (err) {
-      return res.status(400).json({
-        success: false,
-        error: err,
-      });
-    }
-  },
-  findOne: async (req, res) => {
-    try {
+      const bonachatcount = await Model.bonAchat.count();
       Model.bonAchat
-        .findOne({ where: { id: req.params.id } })
+        .findAll({
+          limit: +pageSize,
+          offset: offset,
+          order: order,
+        })
         .then((response) => {
           if (response !== null) {
+            const totalPages = Math.ceil(bonachatcount / pageSize);
             res.status(200).json({
               success: true,
               bonAchat: response,
+              totalPages: totalPages,
             });
           }
         });
@@ -151,18 +150,20 @@ const bonAchatController = {
     }
   },
 
-  findByuser: async (req, res) => {
+  findOne: async (req, res) => {
     try {
       Model.bonAchat
-        .findAll({
-          where: {
-            userId: req.params.id,
-          },
-          attributes: { exclude: ["updatedAt", "userId", "partenaireId"] },
+        .findOne({
+          where: { id: req.params.id },
           include: [
             {
               model: Model.partenaire,
               attributes: ["id", "nameetablissement"],
+              include: [{ model: Model.user, attributes: ["fullname"] }],
+            },
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie"],
               include: [{ model: Model.user, attributes: ["fullname"] }],
             },
           ],
@@ -182,13 +183,243 @@ const bonAchatController = {
       });
     }
   },
-  
+
+  findByuser: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    let whereClause = { userbonachafk: req.params.id };
+    try {
+      if (etat && etat === "tout") {
+        whereClause.etat = {
+          [Sequelize.Op.or]: ["Non_Valide", "Valide"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etat = etat;
+      }
+
+      const totalCount = await Model.bonAchat.count({
+        where: whereClause,
+      });
+
+      Model.bonAchat
+        .findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: whereClause,
+          include: [
+            {
+              model: Model.partenaire,
+              attributes: ["id", "nameetablissement"],
+              include: [
+                { model: Model.user, attributes: ["fullname", "avatar"] },
+              ],
+            },
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie"],
+              include: [
+                { model: Model.user, attributes: ["fullname", "avatar"] },
+              ],
+            },
+          ],
+        })
+        .then((response) => {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          if (response !== null) {
+            res.status(200).json({
+              success: true,
+              bonAchat: response,
+              totalPages: totalPages,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
   findBypartenaire: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat } = req.query;
+    const offset = (page - 1) * pageSize;
+  
+    // Default order to avoid issues
+    let order = [['createdAt', 'DESC']]; // Default to createdAt column
+  
+    // Validate sortBy and sortOrder
+    if (sortBy && sortOrder && ['ASC', 'DESC'].includes(sortOrder.toUpperCase())) {
+      try {
+        // Ensure sortBy is a valid column
+        if (Model.bonAchat.rawAttributes[sortBy]) {
+          order = [[sortBy, sortOrder.toUpperCase()]];
+        }
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid sort column: ${sortBy}`,
+        });
+      }
+    }
+  
+    let whereClause = { partbonachafk: req.params.id };
+    if (etat && etat === "tout") {
+      whereClause.etat = {
+        [Sequelize.Op.or]: ["Non_Valide", "Valide"],
+      };
+    } else if (etat && etat !== "tout") {
+      whereClause.etat = etat;
+    }
+  
+    try {
+      const totalCount = await Model.bonAchat.count({
+        where: whereClause,
+      });
+  
+      const response = await Model.bonAchat.findAll({
+        order: order,
+        offset: offset,
+        limit: +pageSize,
+        where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            attributes: ["fullname", "avatar"],
+            include: [Model.client, Model.fournisseur, Model.labrairie],
+          },
+        ],
+      });
+  
+      const totalPages = Math.ceil(totalCount / pageSize);
+      if (response !== null) {
+        res.status(200).json({
+          success: true,
+          bonAchat: response,
+          totalPages: totalPages,
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          message: "No records found",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message || "An error occurred while fetching data",
+      });
+    }
+  },
+
+  findBylibrairie: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize,etat } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    let whereClause = { labbonachafk: req.params.id };
+    try {
+
+      if (etat && etat === "tout") {
+        whereClause.etat = {
+          [Sequelize.Op.or]: ["Non_Valide", "Valide"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etat = etat;
+      }
+      const totalCount = await Model.bonAchat.count({
+        where: whereClause
+      });
+
+      Model.bonAchat
+        .findAll({
+          order: order,
+          offset: offset,
+          limit: +pageSize,
+          where: whereClause,
+          include: [
+            {
+              model: Model.user,
+              attributes: ["fullname", "avatar"],
+              include: [Model.labrairie],
+            },
+          ],
+        })
+        .then((response) => {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          if (response !== null) {
+            res.status(200).json({
+              success: true,
+              bonAchat: response,
+              totalPages: totalPages,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findByfournisseurs: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize ,etat} = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    let whereClause = { fourbonachafk: req.params.id };
+      if (etat && etat === "tout") {
+        whereClause.etat = {
+          [Sequelize.Op.or]: ["Non_Valide", "Valide"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etat = etat;
+      }
+
+    try {
+      const totalCount = await Model.bonAchat.count({
+        where: whereClause
+      });
+
+      Model.bonAchat
+        .findAll({
+          order: order,
+          offset: offset,
+          limit: +pageSize,
+          where: whereClause,
+          include: [
+            {
+              model: Model.user,
+              attributes: ["fullname", "avatar"],
+              include: [Model.client, Model.fournisseur, Model.labrairie],
+            },
+          ],
+        })
+        .then((response) => {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          if (response !== null) {
+            res.status(200).json({
+              success: true,
+              bonAchat: response,
+              totalPages: totalPages,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  find: async (req, res) => {
     try {
       Model.bonAchat
         .findAll({
           where: {
-            partenaireId: req.params.id,
+            partbonachafk: req.params.id,
           },
           include: [
             {

@@ -5,6 +5,7 @@ module.exports = (db, DataTypes) => {
       description:{type : DataTypes.STRING , allowNull: false},
       prix :{type : DataTypes.FLOAT},
       etat:{type : DataTypes.STRING ,allowNull: false},
+      codebar:{type : DataTypes.STRING ,allowNull: false},
       createdAt:{type : DataTypes.DATEONLY},
     });
 }

@@ -14,7 +14,19 @@ router.put(
   labriarieController.updateProfile
 );
 router.get("/findalllibrarie", labriarieController.findAlllibrarie);
-
+router.get("/findtopproduct/:id", labriarieController.findTopProducts);
+router.get("/gettoprevprod/:id", labriarieController.getToprevProd);
+router.get("/findAllcommandebyetat/:id", labriarieController.findAllcommandebyetat);
+router.get("/findCommandeinday/:id", labriarieController.findCommandeinday);
+router.get("/findLatestCommandes/:id", labriarieController.findLatestCommandes);
+router.get("/findAllproducts/:id", labriarieController.findAllproducts);
+router.get("/findAllCommands/:id", labriarieController.findAllCommandsByState);
+router.get("/findAllLivraison/:id", labriarieController.findAllLivraison);
+router.put("/livrercommande/:id",  AuthorizationUser, labriarieController.livrecommande);
+router.put("/annulercommande/:id",  AuthorizationUser, labriarieController.annulercommande);
+router.post("/addinventaire", labriarieController.addinventaire);
+router.get("/getinventaire/:id", labriarieController.allinventaire);
+router.get("/findCommandefiltre/:id", labriarieController.findCommandefiltre);
 router.get(
   "/findallproductbyFiltre/:id",
   labriarieController.findAllproduitbyfiltre

@@ -1,58 +1,751 @@
 const { response } = require("express");
 const Model = require("../Models/index");
-const { Sequelize, where, Op } = require("sequelize");
+const cloudinary = require("../middleware/cloudinary");
+const { Sequelize, where, Op, or } = require("sequelize");
+const codePromo = require("./codePromo.controller");
+const adresses = require("../Models/adresses");
 const commandeDetailController = {
   add: async (req, res) => {
-    const { commande } = req.body;
+    const { commande, promoCode, clientid, partenaireID } = req.body;
     try {
-      commande.map((data) => {
+      let codePromoRecord = null;
+
+      if (promoCode) {
+        codePromoRecord = await Model.codePromo.findOne({
+          where: { code: promoCode },
+          include: [
+            {
+              model: Model.codePromocategory,
+              include: [{ model: Model.categorie }],
+            },
+          ],
+        });
+
+        if (!codePromoRecord) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid promo code.",
+          });
+        }
+      }
+
+      let totalHT = 0.0;
+      let newTotal = 0.0;
+      let newTotalremise = 0.0;
+      let newPricetva = 0.0;
+      let totaltva = 0.0;
+      let price = 0.0;
+      let tva = 0.0;
+      const updatedCommandeDetails = [];
+
+      for (const data of commande) {
         let commandes = {
           total_ttc: data.total_ttc,
           etatClient: "en cours",
           etatVender: "Nouveau",
+          identifiant: data.identifiant,
           Adresse: data.Adresse,
           Mode_liv: data.Mode_liv,
           Mode_pay: data.Mode_pay,
-          userId: data.userId,
-          labrairieId: data.labrairieId,
+          usercommdetfk: data.usercommdetfk,
+          labrcomdetfk: data.labrcomdetfk,
         };
-        Model.commandeEnDetail.create(commandes).then((response) => {
-          if (response !== null) {
-            data.produits.map((e) => {
-              e.commandeEnDetailId = response.id;
-            });
-            Model.ProduitCommandeEnDetail.bulkCreate(data.produits).then(
-              (response) => {
-                data.produits.map((e) => {
-                  Model.produitlabrairie
-                    .findByPk(e.produitlabrairieId)
-                    .then((produit) => {
-                      if (produit !== null) {
-                        const updatedQte = produit.qte - e.Qte;
-                        if (updatedQte < 0) {
-                          updatedQte = 0;
-                        }
-                        return Model.produitlabrairie.update(
-                          { qte: updatedQte },
-                          { where: { id: e.produitlabrairieId } }
-                        );
-                      }
-                    });
-                });
+
+        const newCommande = await Model.commandeEnDetail.create(commandes);
+
+        if (!newCommande) {
+          return res.status(400).json({
+            success: false,
+            message: "Error adding the order.",
+          });
+        }
+
+        const updatedProduits = [];
+  
+        for (const e of data.produits) {
+          const produit = await Model.produitlabrairie.findByPk(
+            e.prodlaibrcommdetfk
+          );
+          if (produit) {
+            tva = produit.tva;
+            price = produit.prix;
+            const oldPrice = price;
+            let newPrice = oldPrice;
+            let eligibleCategory = null;
+            if (codePromoRecord) {
+              const codePromocat = await Model.codePromocategory.findAll({
+                where: { promocodeid: codePromoRecord.dataValues.id },
+              });
+
+              for (const category of codePromocat) {
+                eligibleCategory =
+                  category.ctagorieid === produit.categprodlabfk;
+                if (eligibleCategory) {
+                  const discount = category.discountPercentage;
+                  newPrice = oldPrice * (1 - discount / 100);
+                  newPricetva = newPrice + newPrice * (tva / 100);
+                  break;
+                }
               }
+            }
+            newPricetva = newPrice + newPrice * (tva / 100);
+            totalHT += oldPrice * e.Qte;
+            newTotalremise += newPrice * e.Qte;
+            newTotal += newPricetva * e.Qte;
+            totaltva = newTotal - totalHT;
+            if (totaltva < 0) {
+              totaltva = totaltva * -1;
+            }
+            updatedProduits.push({
+              ...e,
+              oldPrice,
+              newPrice,
+              newPricetva,
+              comdetprodlabrfk: newCommande.id,
+            });
+            let updatedQte = produit.qte - e.Qte;
+            if (updatedQte < 0) {
+              updatedQte = 0;
+            }
+            await Model.produitlabrairie.update(
+              { qte: updatedQte },
+              { where: { id: e.prodlaibrcommdetfk } }
             );
+          }
+        }
+        await Model.ProduitCommandeEnDetail.bulkCreate(updatedProduits);
+        if (codePromoRecord) {
+          await Model.historycodePromo.create({
+            historypromocodeid: codePromoRecord.id,
+            clienthiscodeprfk: clientid,
+            usedat: new Date(),
+            parthiscodeprfk: partenaireID,
+            totalachat: newTotal,
+          });
+        }
+
+        updatedCommandeDetails.push({
+          ...data,
+          produits: updatedProduits,
+          totalHT,
+          newTotal,
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Order added successfully!",
+        commandeDetails: updatedCommandeDetails,
+        totalHT,
+        newTotal,
+        newTotalremise,
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  calculecommande: async (req, res) => {
+    const { commande, promoCode, clientid } = req.body;
+    try {
+      let codePromoRecord = null;
+
+      if (promoCode) {
+        codePromoRecord = await Model.codePromo.findOne({
+          where: { code: promoCode },
+          include: [
+            {
+              model: Model.codePromocategory,
+              include: [{ model: Model.categorie }],
+            },
+          ],
+        });
+
+        if (!codePromoRecord) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid promo code.",
+            commande:commande
+          });
+        }
+      }
+
+      let totalHT = 0.0;
+      let newTotal = 0.0;
+      let newTotalremise = 0.0;
+      let newPricetva = 0.0;
+      let totaltva = 0.0;
+      let price = 0.0;
+      let tva = 0.0;
+      const updatedCommandeDetails = [];
+
+      for (const data of commande) {
+        let commandes = {
+          total_ttc: data.total_ttc,
+          etatClient: "en cours",
+          etatVender: "Nouveau",
+          identifiant: data.identifiant,
+          Adresse: data.Adresse,
+          Mode_liv: data.Mode_liv,
+          Mode_pay: data.Mode_pay,
+          usercommdetfk: data.usercommdetfk,
+          labrcomdetfk: data.labrcomdetfk,
+        };
+
+        const updatedProduits = [];
+
+        for (const e of data.produits) {
+          const produit = await Model.produitlabrairie.findByPk(
+            e.prodlaibrcommdetfk
+          );
+
+          if (produit) {
+            tva = produit.tva;
+            price = produit.prix;
+            const oldPrice = price;
+            let newPrice = oldPrice;
+            let eligibleCategory = null;
+
+            if (produit.remise && produit.remise > 0) {
+              newPrice = oldPrice * (1 - produit.remise / 100);
+            } else if (codePromoRecord) {
+              const codePromocat = await Model.codePromocategory.findAll({
+                where: { promocodeid: codePromoRecord.dataValues.id },
+              });
+              for (const category of codePromocat) {
+                eligibleCategory =
+                  category.ctagorieid === produit.categprodlabfk;
+                if (eligibleCategory) {
+                  const discount = category.discountPercentage;
+                  newPrice = oldPrice * (1 - discount / 100);
+                  break;
+                }
+              }
+            }
+
+            newPricetva = newPrice + newPrice * (tva / 100);
+
+            totalHT += oldPrice * e.Qte;
+            newTotalremise += newPrice * e.Qte;
+            newTotal += newPricetva * e.Qte;
+            totaltva = newTotal - totalHT;
+            if (totaltva < 0) {
+              totaltva = totaltva * -1;
+            }
+
+            updatedProduits.push({
+              ...e,
+              oldPrice,
+              newPrice,
+              //newPricetva,
+            });
+          }
+        }
+
+        updatedCommandeDetails.push({
+          ...data,
+          produits: updatedProduits,
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Order calculated successfully!",
+        commandeDetails: updatedCommandeDetails,
+        totalHT,
+        newTotal,
+        newTotalremise,
+        totaltva,
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  addcommandespecial: async (req, res) => {
+    try {
+      const {
+        etatClient,
+        Adresse,
+        Description,
+        email,
+        telephone,
+        fullname,
+        identifiant,
+        usercommdespectfk,
+        labrcomdespectfk,
+        codepromo,
+      } = req.body;
+      let codeExist = null;
+      if (req.body.codepromo) {
+        codeExist = await Model.codePromo.findOne({
+          where: { code: codepromo, etat: "Valider" },
+        });
+        if (!codeExist) {
+          return res.status(400).json({ message: "Promo code does not exist" });
+        }
+      }
+
+      let commande = null;
+      let addressestk = null;
+      if (Adresse == null) {
+        addressestk = 1;
+        if (!req.files || req.files.length === 0) {
+          commande = await Model.commandeSpecial.create({
+            etatClient: etatClient,
+            Adresse: addressestk,
+            Description: Description,
+            codepromo: codepromo,
+            email: email,
+            telephone: telephone,
+            identifiant: identifiant,
+            fullname: fullname,
+            usercommdespectfk: usercommdespectfk,
+            labrcomdespectfk: labrcomdespectfk,
+          });
+  
+          return res.status(200).json({
+            success: true,
+            message: "Commande created successfully without files",
+            commande,
+          });
+        }
+  
+        const uploadedFiles = await Promise.all(
+          req.files.map(async (file) => {
+            try {
+              const result = await cloudinary.uploader.upload(file.path);
+              return result.secure_url;
+            } catch (error) {
+              throw new Error(`File upload failed: ${error.message}`);
+            }
+          })
+        );
+  
+        commande = await Model.commandeSpecial.create({
+          etatClient: etatClient,
+          Adresse: addressestk,
+          Description: Description,
+          codepromo: codepromo,
+          email: email,
+          identifiant: identifiant,
+          telephone: telephone,
+          fullname: fullname,
+          Fichier: uploadedFiles.join(","),
+          usercommdespectfk: usercommdespectfk,
+          labrcomdespectfk: labrcomdespectfk,
+        });
+        
+      }
+
+      const addresseinv = await Model.adresses.create({Adresse:Adresse});
+      if (req.body.codepromo) {
+        codeExist = await Model.codePromo.findOne({
+          where: { code: codepromo, etat: "Valider" },
+        });
+        if (!codeExist) {
+          return res.status(400).json({ message: "Promo code does not exist" });
+        }
+      }
+      if (!req.files || req.files.length === 0) {
+        commande = await Model.commandeSpecial.create({
+          etatClient: etatClient,
+          Adresse: addresseinv.id,
+          Description: Description,
+          codepromo: codepromo,
+          email: email,
+          telephone: telephone,
+          identifiant: identifiant,
+          fullname: fullname,
+          usercommdespectfk: usercommdespectfk,
+          labrcomdespectfk: labrcomdespectfk,
+        });
+        Model.adresses.update(
+          {
+            cspecaddressfk: commande.id,
+          },
+          { where: { id: addresseinv.id } }
+        );
+        return res.status(200).json({
+          success: true,
+          message: "Commande created successfully without files",
+          commande,
+        });
+      }
+
+      const uploadedFiles = await Promise.all(
+        req.files.map(async (file) => {
+          try {
+            const result = await cloudinary.uploader.upload(file.path);
+            return result.secure_url;
+          } catch (error) {
+            throw new Error(`File upload failed: ${error.message}`);
+          }
+        })
+      );
+
+      commande = await Model.commandeSpecial.create({
+        etatClient: etatClient,
+        Adresse: addresseinv.id,
+        Description: Description,
+        codepromo: codepromo,
+        email: email,
+        identifiant: identifiant,
+        telephone: telephone,
+        fullname: fullname,
+        Fichier: uploadedFiles.join(","),
+        usercommdespectfk: usercommdespectfk,
+        labrcomdespectfk: labrcomdespectfk,
+      });
+
+
+      Model.adresses.update(
+        {
+          cspecaddressfk: commande.id,
+        },
+        { where: { id: addresseinv.id } }
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Commande created successfully with files",
+        commande,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(400).json({
+        success: false,
+        error: `Error creating the commande: ${error.message}`,
+      });
+    }
+  },
+  addcommandeinviter: async (req, res) => {
+    try {
+      const { email, telephone, fullname, commande, Adresse } = req.body;
+
+      const user = await Model.user.create({
+        fullname: fullname,
+        email: email,
+        password: null,
+        email_verifie: "verifie",
+        role: "inviter",
+        etatCompte: "active",
+        point: 0,
+        telephone: telephone,
+        verification_token: null,
+      });
+      const updatedCommandeDetails = [];
+
+      if (Adresse == null) {
+        for (const data of commande) {
+          let commandes = {
+            total_ttc: data.total_ttc,
+            etatClient: "en cours",
+            etatVender: "Nouveau",
+            Adresse: 1,
+            Mode_liv: data.Mode_liv,
+            Mode_pay: data.Mode_pay,
+            usercommdetfk: user.id,
+            labrcomdetfk: data.labrcomdetfk,
+          };
+
+          const newCommande = await Model.commandeEnDetail.create(commandes);
+
+          if (!newCommande) {
+            return res.status(400).json({
+              success: false,
+              message: "Error adding the order.",
+            });
+          }
+
+          const updatedProduits = [];
+
+          for (const e of data.produits) {
+            const produit = await Model.produitlabrairie.findByPk(
+              e.prodlaibrcommdetfk
+            );
+
+            if (produit) {
+              updatedProduits.push({
+                ...e,
+                comdetprodlabrfk: newCommande.id,
+              });
+
+              let updatedQte = produit.qte - e.Qte;
+              if (updatedQte < 0) {
+                updatedQte = 0;
+              }
+              await Model.produitlabrairie.update(
+                { qte: updatedQte },
+                { where: { id: e.prodlaibrcommdetfk } }
+              );
+            }
+          }
+
+          await Model.ProduitCommandeEnDetail.bulkCreate(updatedProduits);
+        }
+      } else {
+        for (const data of commande) {
+          let commandes = {
+            total_ttc: data.total_ttc,
+            etatClient: "en cours",
+            etatVender: "Nouveau",
+            Mode_liv: data.Mode_liv,
+            Mode_pay: data.Mode_pay,
+            usercommdetfk: user.id,
+            labrcomdetfk: data.labrcomdetfk,
+          };
+
+          const newCommande = await Model.commandeEnDetail.create({
+            total_ttc: data.total_ttc,
+            etatClient: "en cours",
+            etatVender: "Nouveau",
+            Mode_liv: data.Mode_liv,
+            Mode_pay: data.Mode_pay,
+            usercommdetfk: user.id,
+            labrcomdetfk: data.labrcomdetfk,
+          });
+          await Model.adresses.create({
+            Adresse: Adresse,
+            comaddressfk: newCommande.id,
+          });
+          if (!newCommande) {
+            return res.status(400).json({
+              success: false,
+              message: "Error adding the order.",
+            });
+          }
+
+          const updatedProduits = [];
+
+          for (const e of data.produits) {
+            const produit = await Model.produitlabrairie.findByPk(
+              e.prodlaibrcommdetfk
+            );
+
+            if (produit) {
+              updatedProduits.push({
+                ...e,
+                comdetprodlabrfk: newCommande.id,
+              });
+
+              let updatedQte = produit.qte - e.Qte;
+              if (updatedQte < 0) {
+                updatedQte = 0;
+              }
+              await Model.produitlabrairie.update(
+                { qte: updatedQte },
+                { where: { id: e.prodlaibrcommdetfk } }
+              );
+            }
+          }
+
+          await Model.ProduitCommandeEnDetail.bulkCreate(updatedProduits);
+        }
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Commande guest created successfully",
+        commande,
+        user: user,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(400).json({
+        success: false,
+        error: `Error creating the commande: ${error.message}`,
+      });
+    }
+  },
+
+  addcommandespecialinviter: async (req, res) => {
+    try {
+      const {
+        Adresse,
+        Description,
+        email,
+        telephone,
+        fullname,
+        identifiant,
+        labrcomdespectfk,
+        codepromo,
+      } = req.body;
+      let codeExist = null;
+      let addressestk = null;
+      let commande = null;
+
+      const user = await Model.user.create({
+        fullname: fullname,
+        email: email,
+        password: null,
+        email_verifie: "verifie",
+        role: "inviter",
+        etatCompte: "active",
+        point: 0,
+        telephone: telephone,
+        verification_token: null,
+      });
+      if (Adresse == null) {
+        addressestk = 1;
+        if (!req.files || req.files.length === 0) {
+          commande = await Model.commandeSpecial.create({
+            etatClient: "en_cours",
+            Adresse: addressestk,
+            Description: Description,
+            codepromo: codepromo,
+            email: email,
+            telephone: telephone,
+            identifiant: identifiant,
+            fullname: fullname,
+            usercommdespectfk: user.id,
+            labrcomdespectfk: labrcomdespectfk,
+          });
+
+          return res.status(200).json({
+            success: true,
+            message: "Commande created successfully without files",
+            commande,
+          });
+        }
+
+        const uploadedFiles = await Promise.all(
+          req.files.map(async (file) => {
+            try {
+              const result = await cloudinary.uploader.upload(file.path);
+              return result.secure_url;
+            } catch (error) {
+              throw new Error(`File upload failed: ${error.message}`);
+            }
+          })
+        );
+
+        commande = await Model.commandeSpecial.create({
+          etatClient: "en_cours",
+          Adresse: addressestk,
+          Description: Description,
+          codepromo: codepromo,
+          email: email,
+          identifiant: identifiant,
+          telephone: telephone,
+          fullname: fullname,
+          Fichier: uploadedFiles.join(","),
+          usercommdespectfk: user.id,
+          labrcomdespectfk: labrcomdespectfk,
+        });
+      }
+
+      const data = {
+        Adresse: Adresse,
+      };
+      const addresseinv = await Model.adresses.create(data);
+      if (req.body.codepromo) {
+        codeExist = await Model.codePromo.findOne({
+          where: { code: codepromo, etat: "Valider" },
+        });
+        if (!codeExist) {
+          return res.status(400).json({ message: "Promo code does not exist" });
+        }
+      }
+
+      if (!req.files || req.files.length === 0) {
+        commande = await Model.commandeSpecial.create({
+          etatClient: "en_cours",
+          Adresse: addresseinv.id,
+          Description: Description,
+          codepromo: codepromo,
+          email: email,
+          telephone: telephone,
+          identifiant: identifiant,
+          fullname: fullname,
+          usercommdespectfk: user.id,
+          labrcomdespectfk: labrcomdespectfk,
+        });
+        Model.adresses.update(
+          {
+            cspecaddressfk: commande.id,
+          },
+          { where: { id: addresseinv.id } }
+        );
+        return res.status(200).json({
+          success: true,
+          message: "Commande created successfully without files",
+          commande,
+        });
+      }
+
+      const uploadedFiles = await Promise.all(
+        req.files.map(async (file) => {
+          try {
+            const result = await cloudinary.uploader.upload(file.path);
+            return result.secure_url;
+          } catch (error) {
+            throw new Error(`File upload failed: ${error.message}`);
+          }
+        })
+      );
+
+      commande = await Model.commandeSpecial.create({
+        etatClient: "en_cours",
+        Adresse: addresseinv.id,
+        Description: Description,
+        codepromo: codepromo,
+        email: email,
+        identifiant: identifiant,
+        telephone: telephone,
+        fullname: fullname,
+        Fichier: uploadedFiles.join(","),
+        usercommdespectfk: user.id,
+        labrcomdespectfk: labrcomdespectfk,
+      });
+      Model.adresses.update(
+        {
+          cspecaddressfk: commande.id,
+        },
+        { where: { id: addresseinv.id } }
+      );
+      return res.status(200).json({
+        success: true,
+        message: "Commande created successfully with files",
+        commande,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(400).json({
+        success: false,
+        error: `Error creating the commande: ${error.message}`,
+      });
+    }
+  },
+
+  deleteCommandeSpec: async (req, res) => {
+    const { ids } = req.body;
+    try {
+      Model.commandeSpecial
+        .destroy({
+          where: {
+            id: ids,
+          },
+        })
+        .then((response) => {
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              message: "Commande Deleted",
+            });
           } else {
             return res.status(400).json({
               success: false,
-              message: " error lorsque l'ajoute de commande",
+              err: "Deleted Failed",
             });
           }
         });
-      });
-      return res.status(200).json({
-        success: true,
-        message: " add commande en  detail  Done !!",
-      });
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -61,13 +754,331 @@ const commandeDetailController = {
     }
   },
 
-  findCommandeByuser: async (req, res) => {
+  findSpecCommandeByuser: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat, username } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    const wherename = {};
+
     try {
-      Model.commandeEnDetail
+      let whereClause = { usercommdespectfk: req.params.id };
+      if (etat && etat === "tout") {
+        whereClause.etatClient = {
+          [Sequelize.Op.or]: ["en_cours", "livre", "Rejeter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etatClient = etat;
+      }
+
+      if (username) {
+        wherename.fullname = {
+          [Sequelize.Op.like]: `%${username}%`,
+        };
+
+        whereClause = { ...whereClause, "$user.fullname$": wherename.fullname };
+      }
+
+      const count = await Model.commandeSpecial.count({
+        where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            attributes: [],
+            where: wherename,
+          },
+        ],
+      });
+
+      Model.commandeSpecial
         .findAll({
-          where: { userId: req.params.id },
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: whereClause,
+          include: [
+            {
+              model: Model.user,
+              where: wherename,
+            },
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie", "imageStore"],
+            },
+          ],
+        })
+        .then((response) => {
+          if (response !== null) {
+            const totalPages = Math.ceil(count / pageSize);
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+              totalPages: totalPages,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "Aucune commande trouvée.",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findSpecCommandeBycodepromo: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat, codePromo } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    try {
+      let whereClause = { codePromo: codePromo };
+      if (etat && etat === "tout") {
+        whereClause.etatClient = {
+          [Sequelize.Op.or]: ["en_cours", "livre", "Rejeter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etatClient = etat;
+      }
+
+      const count = await Model.commandeSpecial.count({
+        where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            attributes: [],
+          },
+        ],
+      });
+
+      Model.commandeSpecial
+        .findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: whereClause,
+          include: [
+            {
+              model: Model.user,
+            },
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie", "imageStore"],
+            },
+          ],
+        })
+        .then((response) => {
+          if (response !== null) {
+            const totalPages = Math.ceil(count / pageSize);
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+              totalPages: totalPages,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "Aucune commande trouvée.",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findCommandeident: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat, username, identifiant } =
+      req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    const wherename = {};
+
+    try {
+      let whereClause = {};
+      if (etat && etat === "tout") {
+        whereClause.etatClient = {
+          [Sequelize.Op.or]: ["en_cours", "livre", "Rejeter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etatClient = etat;
+      }
+      if (identifiant) {
+        whereClause.identifiant = {
+          [Sequelize.Op.like]: `%${identifiant}%`,
+        };
+      }
+
+      if (username) {
+        whereClause.fullname = {
+          [Sequelize.Op.like]: `%${username}%`,
+        };
+      }
+
+      const count = await Model.commandeIdentifiant.count({
+        where: whereClause,
+      });
+
+      Model.commandeIdentifiant
+        .findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: whereClause,
+        })
+        .then((response) => {
+          if (response !== null) {
+            const totalPages = Math.ceil(count / pageSize);
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+              totalPages: totalPages,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "Aucune commande trouvée.",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+  findCommandespecident: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat, username, identifiant } =
+      req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    try {
+      let whereClause = {};
+      if (etat && etat === "tout") {
+        whereClause.etatClient = {
+          [Sequelize.Op.or]: ["en_cours", "livre", "Rejeter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etatClient = etat;
+      }
+      if (identifiant) {
+        whereClause.identifiant = {
+          [Sequelize.Op.like]: `%${identifiant}%`,
+        };
+      }
+
+      if (username) {
+        whereClause.fullname = {
+          [Sequelize.Op.like]: `%${username}%`,
+        };
+      }
+
+      const count = await Model.commandeSpecialidentifiant.count({
+        where: whereClause,
+      });
+
+      Model.commandeSpecialidentifiant
+        .findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: whereClause,
+        })
+        .then((response) => {
+          if (response !== null) {
+            const totalPages = Math.ceil(count / pageSize);
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+              totalPages: totalPages,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "Aucune commande trouvée.",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findOneCommandeident: async (req, res) => {
+    try {
+      const commandId = req.params.id;
+
+      const command = await Model.commandeIdentifiant.findAll({
+        where: {
+          id: commandId,
+        },
+
+        include: [
+          {
+            model: Model.produitlabrairie,
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
+        ],
+      });
+
+      if (!command) {
+        return res.status(404).json({
+          success: false,
+          error: "Command not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        commande: command,
+      });
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findCommandeByuser: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatcommande } = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    try {
+      if (etatcommande == "tout") {
+        const totalCounttout = await Model.commandeEnDetail.count({
+          where: {
+            usercommdetfk: req.params.id,
+          },
+        });
+        const commandes = await Model.commandeEnDetail.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            usercommdetfk: req.params.id,
+          },
           attributes: {
-            exclude: ["updatedAt", "userId", "labrairieId"],
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
           },
           include: [
             {
@@ -85,6 +1096,286 @@ const commandeDetailController = {
               ],
             },
           ],
+        });
+        if (commandes.length > 0) {
+          const totalPages = Math.ceil(totalCounttout / pageSize);
+          return res.status(200).json({
+            success: true,
+            commandes: commandes,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune commande trouvée pour cet utilisateur.",
+          });
+        }
+      } else {
+        const totalCount = await Model.commandeEnDetail.count({
+          where: {
+            usercommdetfk: req.params.id,
+            etatClient: etatcommande,
+          },
+        });
+        const commandes = await Model.commandeEnDetail.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            usercommdetfk: req.params.id,
+            etatClient: etatcommande,
+          },
+          attributes: {
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+          },
+          include: [
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie", "imageStore"],
+            },
+            {
+              model: Model.produitlabrairie,
+              attributes: ["id", "titre", "prix"],
+              include: [
+                {
+                  model: Model.imageProduitLibrairie,
+                  attributes: ["name_Image"],
+                },
+              ],
+            },
+          ],
+        });
+        if (commandes.length > 0) {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          return res.status(200).json({
+            success: true,
+            commandes: commandes,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune commande trouvée pour cet utilisateur.",
+          });
+        }
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+  findCommandeByidentifiant: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatcommande, identifiant } =
+      req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    try {
+      if (etatcommande == "tout") {
+        const totalCounttout = await Model.commandeEnDetail.count({
+          where: {
+            identifiant: identifiant,
+          },
+        });
+        const commandes = await Model.commandeEnDetail.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            identifiant: identifiant,
+          },
+          attributes: {
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+          },
+          include: [
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie", "imageStore"],
+            },
+            {
+              model: Model.produitlabrairie,
+              attributes: ["id", "titre", "prix"],
+              include: [
+                {
+                  model: Model.imageProduitLibrairie,
+                  attributes: ["name_Image"],
+                },
+              ],
+            },
+          ],
+        });
+        if (commandes.length > 0) {
+          const totalPages = Math.ceil(totalCounttout / pageSize);
+          return res.status(200).json({
+            success: true,
+            commandes: commandes,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune commande trouvée pour cet utilisateur.",
+          });
+        }
+      } else {
+        const totalCount = await Model.commandeEnDetail.count({
+          where: {
+            identifiant: identifiant,
+            etatClient: etatcommande,
+          },
+        });
+        const commandes = await Model.commandeEnDetail.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            identifiant: identifiant,
+            etatClient: etatcommande,
+          },
+          attributes: {
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+          },
+          include: [
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie", "imageStore"],
+            },
+            {
+              model: Model.produitlabrairie,
+              attributes: ["id", "titre", "prix"],
+              include: [
+                {
+                  model: Model.imageProduitLibrairie,
+                  attributes: ["name_Image"],
+                },
+              ],
+            },
+          ],
+        });
+        if (commandes.length > 0) {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          return res.status(200).json({
+            success: true,
+            commandes: commandes,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune commande trouvée pour cet utilisateur.",
+          });
+        }
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+  findOneCommande: async (req, res) => {
+    try {
+      const commandId = req.params.id;
+
+      const command = await Model.commandeEnDetail.findAll({
+        where: {
+          id: commandId,
+        },
+
+        include: [
+          {
+            model: Model.adresses,
+          },
+          {
+            model: Model.user,
+            attributes: ["fullname", "avatar", "telephone", "email"],
+            include: [
+              {
+                model: Model.client,
+                attributes: ["userclientfk"],
+                include: [
+                  {
+                    model: Model.adresses,
+                  },
+                ],
+              },
+              {
+                model: Model.partenaire,
+
+                include: [
+                  {
+                    model: Model.adresses,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie", "userlabfk"],
+          },
+          {
+            model: Model.produitlabrairie,
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
+        ],
+      });
+
+      if (!command) {
+        return res.status(404).json({
+          success: false,
+          error: "Command not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        commande: command,
+      });
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findOneSpecCommande: async (req, res) => {
+    try {
+      Model.commandeSpecial
+        .findOne({
+          where: { id: req.params.id },
+          include: [
+            {model: Model.adresses},
+            {
+              model: Model.user,
+              attributes: ["fullname", "avatar", "telephone", "email", "role"],
+              include: [
+                {
+                  model: Model.client,
+                  include: [
+                    {
+                      model: Model.adresses,
+                      attributes: {
+                        
+                        exclude: [
+                          "partenaireaddressfk",
+                          "fournisseuraddressfk",
+                        ],
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
         })
         .then((response) => {
           if (response !== null) {
@@ -95,81 +1386,36 @@ const commandeDetailController = {
           } else {
             return res.status(400).json({
               success: false,
-              err: "  zero commande trouve ",
+              err: "zero commande trouve",
             });
           }
         });
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        err: err,
       });
     }
   },
 
-  findOneCommande: async (req, res) => {
-    const { lim } = req.body;
+  findOneSpecidentCommande: async (req, res) => {
     try {
-      Model.commandeEnDetail
+      Model.commandeSpecialidentifiant
         .findAll({
-          limit: lim,
           where: { id: req.params.id },
-          attributes: {
-            exclude: ["updatedAt", "userId", "labrairieId"],
-          },
-          include: [
-            {
-              model: Model.user,
-              attributes: ["fullname", "avatar", "telephone", "email", "role"],
-            },
-          ],
-
-          order: [["createdAt", "ASC"]],
         })
         .then((response) => {
-          Model.commandeEnDetail
-            .findAll({
-              where: { id: req.params.id },
-              attributes: {
-                exclude: ["updatedAt", "userId", "labrairieId"],
-              },
-              include: [
-                {
-                  model: Model.produitlabrairie,
-                  attributes: ["titre", "description", "prix", "prix_en_Solde"],
-                  include: [
-                    {
-                      model: Model.imageProduitLibrairie,
-                    },
-                  ],
-                },
-                {
-                  model: Model.user,
-                  attributes: [
-                    "fullname",
-                    "avatar",
-                    "telephone",
-                    "email",
-                    "role",
-                  ],
-                  include: roleIsPartenaire(response[0].user.role),
-                },
-              ],
-              order: [["createdAt", "ASC"]],
-            })
-            .then((response) => {
-              if (response !== null) {
-                return res.status(200).json({
-                  success: true,
-                  commandes: response,
-                });
-              } else {
-                return res.status(400).json({
-                  success: false,
-                  err: "zero commande trouve",
-                });
-              }
+          if (response !== null) {
+            return res.status(200).json({
+              success: true,
+              commandes: response,
             });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "zero commande trouve",
+            });
+          }
         });
     } catch (err) {
       return res.status(400).json({
@@ -180,36 +1426,279 @@ const commandeDetailController = {
   },
 
   findCommandeBylibrairie: async (req, res) => {
-    const { lim } = req.body;
+    const { sortBy, sortOrder, page, pageSize, etatcommande } = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     try {
-      Model.commandeEnDetail
-        .findAll({
-          limit: lim,
-          where: { labrairieId: req.params.labrairieId },
-          attributes: ["id", "total_ttc", "etatVender", "createdAt"],
+      if (etatcommande == "tout") {
+        const totalCounttout = await Model.commandeEnDetail.count({
+          where: {
+            labrcomdetfk: req.params.id,
+          },
+        });
+        const commandes = await Model.commandeEnDetail.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            labrcomdetfk: req.params.id,
+          },
+          attributes: {
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+          },
+          include: [
+            { model: Model.adresses },
+            {
+              model: Model.user,
+              attributes: ["fullname", "avatar", "email", "telephone"],
+            },
+            { model: Model.produitlabrairie },
+          ],
+        });
+        if (commandes.length > 0) {
+          const totalPages = Math.ceil(totalCounttout / pageSize);
+          return res.status(200).json({
+            success: true,
+            commandes: commandes,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune commande trouvée pour cet librairie.",
+          });
+        }
+      } else {
+        const totalCount = await Model.commandeEnDetail.count({
+          where: {
+            labrcomdetfk: req.params.id,
+            etatVender: etatcommande,
+          },
+        });
+        const commandes = await Model.commandeEnDetail.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            labrcomdetfk: req.params.id,
+            etatVender: etatcommande,
+          },
+          attributes: {
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+          },
           include: [
             { model: Model.user, attributes: ["fullname", "avatar"] },
-
+            { model: Model.produitlabrairie },
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie", "imageStore"],
+            },
             {
               model: Model.produitlabrairie,
-              attributes: [
-                [Sequelize.fn("COUNT", Sequelize.col("titre")), "nb_Article"],
+              attributes: ["id", "titre", "prix"],
+              include: [
+                {
+                  model: Model.imageProduitLibrairie,
+                  attributes: ["name_Image"],
+                },
               ],
             },
           ],
-          group: ["commandeEnDetail.id"],
-          order: [["createdAt", "ASC"]],
+        });
+        if (commandes.length > 0) {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          return res.status(200).json({
+            success: true,
+            commandes: commandes,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune commande trouvée pour cet utilisateur.",
+          });
+        }
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findLivraisonBylibrairie: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatcommande } = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    try {
+      if (etatcommande == "tout") {
+        const totalCounttout = await Model.commandeEnDetail.count({
+          where: {
+            labrcomdetfk: req.params.id,
+          },
+        });
+        const commandes = await Model.commandeEnDetail.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            labrcomdetfk: req.params.id,
+          },
+          attributes: {
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+          },
+          include: [
+            { model: Model.user, attributes: ["fullname", "avatar"] },
+            { model: Model.produitlabrairie },
+          ],
+        });
+        if (commandes.length > 0) {
+          const totalPages = Math.ceil(totalCounttout / pageSize);
+          return res.status(200).json({
+            success: true,
+            commandes: commandes,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune commande trouvée pour cet librairie.",
+          });
+        }
+      } else {
+        const totalCount = await Model.commandeEnDetail.count({
+          where: {
+            labrcomdetfk: req.params.id,
+            etatVender: etatcommande,
+          },
+        });
+        const commandes = await Model.commandeEnDetail.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            labrcomdetfk: req.params.id,
+            etatVender: etatcommande,
+          },
+          attributes: {
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+          },
+          include: [
+            {
+              model: Model.labrairie,
+              attributes: ["id", "nameLibrairie", "imageStore"],
+            },
+            {
+              model: Model.produitlabrairie,
+              attributes: ["id", "titre", "prix"],
+              include: [
+                {
+                  model: Model.imageProduitLibrairie,
+                  attributes: ["name_Image"],
+                },
+              ],
+            },
+          ],
+        });
+        if (commandes.length > 0) {
+          const totalPages = Math.ceil(totalCount / pageSize);
+          return res.status(200).json({
+            success: true,
+            commandes: commandes,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune commande trouvée pour cet utilisateur.",
+          });
+        }
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findSpecCommandeBylibrairie: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat, username } = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const wherename = {};
+
+    try {
+      let whereClause = { labrcomdespectfk: req.params.id };
+      if (etat && etat === "tout") {
+        whereClause.etatClient = {
+          [Sequelize.Op.or]: ["en_cours", "livre", "Rejeter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etatClient = etat;
+      }
+
+      if (username) {
+        wherename.fullname = {
+          [Sequelize.Op.like]: `%${username}%`,
+        };
+
+        whereClause = { ...whereClause, "$user.fullname$": wherename.fullname };
+      }
+
+      const count = await Model.commandeSpecial.count({
+        where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            attributes: [],
+            where: wherename,
+          },
+        ],
+      });
+
+      Model.commandeSpecial
+        .findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: whereClause,
+          include: [
+            {
+              model: Model.adresses,
+              attributes: {
+                exclude: ["partenaireaddressfk", "fournisseuraddressfk"],
+              },
+            },
+            {
+              model: Model.user,
+
+              attributes: ["fullname", "avatar", "telephone", "email", "role"],
+              where: wherename,
+              include: [
+                {
+                  model: Model.client,
+                },
+              ],
+            },
+          ],
         })
         .then((response) => {
-          if (response.length != 0) {
+          if (response != 0) {
+            const totalPages = Math.ceil(count / pageSize);
             return res.status(200).json({
               success: true,
               commandes: response,
+              totalPages: totalPages,
             });
           } else {
             return res.status(400).json({
               success: false,
-              err: "  zero commande trouve ",
+              err: "zero commande trouve ",
             });
           }
         });
@@ -220,10 +1709,10 @@ const commandeDetailController = {
       });
     }
   },
+
   Annuler: async (req, res) => {
     try {
       const produits = req.body.produit;
-      console.log(produits);
       Model.commandeEnDetail
         .update(
           {
@@ -252,7 +1741,6 @@ const commandeDetailController = {
                     });
                   }
                 });
-              console.log("loop");
             });
             return res.status(200).json({
               success: true,
@@ -272,11 +1760,150 @@ const commandeDetailController = {
       });
     }
   },
+
+  Annulercommande: async (req, res) => {
+    try {
+      const produits = req.body.produit;
+      Model.commandeEnDetail
+        .update(
+          {
+            Data_rejetée: new Date(),
+            etatClient: "Annule",
+            etatVender: "Rejeter",
+          },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            produits?.map((e) => {
+              Model.produitlabrairie
+                .findOne({ where: { id: e.id } })
+                .then((response) => {
+                  if (response !== null) {
+                    const newQte = response.qte + Number(e.Qte);
+                    Model.produitlabrairie.update(
+                      { qte: newQte },
+                      { where: { id: e.id } }
+                    );
+                  } else {
+                    return res.status(400).json({
+                      success: false,
+                      message: " error to find produit ",
+                    });
+                  }
+                });
+            });
+            return res.status(200).json({
+              success: true,
+              message: "commande Annuler",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error Annuler commande ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  Annulercommandespecial: async (req, res) => {
+    try {
+      Model.commandeSpecial
+        .update(
+          {
+            etatClient: "Rejeter",
+          },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande special Annuler",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error Annuler commande special",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  AnnulercommandeIdentifiant: async (req, res) => {
+    try {
+      Model.commandeIdentifiant
+        .update(
+          {
+            etatClient: "Rejeter",
+          },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Identifiant Annuler",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error Annuler Identifiant special",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  AnnulercommandespecIdentifiant: async (req, res) => {
+    try {
+      Model.commandeSpecialidentifiant
+        .update(
+          {
+            etatClient: "Rejeter",
+          },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Identifiant Annuler",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error Annuler Identifiant special",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
   Accepter: async (req, res) => {
     try {
       Model.commandeEnDetail
         .update(
-          { data_acceptation: new Date(), etatVender: "En cours" },
+          { data_acceptation: new Date(), etatVender: "en_cours" },
           { where: { id: req.params.id } }
         )
         .then((response) => {
@@ -299,13 +1926,85 @@ const commandeDetailController = {
       });
     }
   },
+  AccepterCommandeSpecial: async (req, res) => {
+    try {
+      Model.commandeSpecial
+        .update({ etatClient: "en_cours" }, { where: { id: req.params.id } })
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Special acceptée",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error accepte commande Special ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  AccepterCommandeidentifiant: async (req, res) => {
+    try {
+      Model.commandeIdentifiant
+        .update({ etatClient: "en_cours" }, { where: { id: req.params.id } })
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Identifiant acceptée",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error accepte commande Identifiant ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  AccepterCommandespecidentifiant: async (req, res) => {
+    try {
+      Model.commandeSpecialidentifiant
+        .update({ etatClient: "en_cours" }, { where: { id: req.params.id } })
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Identifiant acceptée",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error accepte commande Identifiant ",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
   livre: async (req, res) => {
     try {
       Model.commandeEnDetail
         .update(
           {
             Date_préparée: new Date(),
-            etatClient: "livre",
+            etatClient: "Livre",
             etatVender: "Compléter",
           },
           { where: { id: req.params.id } }
@@ -330,31 +2029,118 @@ const commandeDetailController = {
       });
     }
   },
+  livreCommandeSpecial: async (req, res) => {
+    try {
+      Model.commandeSpecial
+        .update(
+          {
+            etatClient: "Livre",
+          },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Special livre",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error livre commande Special",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  livreCommandeIdentifiant: async (req, res) => {
+    try {
+      Model.commandeIdentifiant
+        .update(
+          {
+            etatClient: "Livre",
+          },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Identifiant livre",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error livre commande Identifiant",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+  livreCommandespecIdentifiant: async (req, res) => {
+    try {
+      Model.commandeSpecialidentifiant
+        .update(
+          {
+            etatClient: "Livre",
+          },
+          { where: { id: req.params.id } }
+        )
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "commande Identifiant livre",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "error livre commande Identifiant",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
   addArticle: async (req, res) => {
     try {
-      const { Qte, produitlabrairieId, commandeEnDetailId, prix } = req.body;
+      const { Qte, produitlabrcomdetfk, comdetprodlabrfk, prix } = req.body;
       const data = {
         Qte: Qte,
-        produitlabrairieId: produitlabrairieId,
-        commandeEnDetailId: commandeEnDetailId,
+        produitlabrcomdetfk: produitlabrcomdetfk,
+        comdetprodlabrfk: comdetprodlabrfk,
       };
       Model.ProduitCommandeEnDetail.findOne({
         where: {
-          produitlabrairieId: produitlabrairieId,
-          commandeEnDetailId: commandeEnDetailId,
+          produitlabrcomdetfk: produitlabrcomdetfk,
+          comdetprodlabrfk: comdetprodlabrfk,
         },
       }).then((response) => {
         if (response !== null) {
           const newQte = Number(response.Qte) + Number(Qte);
           Model.commandeEnDetail
-            .findOne({ where: { id: commandeEnDetailId } })
+            .findOne({ where: { id: comdetprodlabrfk } })
             .then((response) => {
               if (response !== null) {
                 const newPrix = response.total_ttc + Qte * prix;
                 Model.commandeEnDetail
                   .update(
                     { total_ttc: newPrix },
-                    { where: { id: commandeEnDetailId } }
+                    { where: { id: comdetprodlabrfk } }
                   )
                   .then((response) => {
                     if (response !== 0) {
@@ -362,8 +2148,8 @@ const commandeDetailController = {
                         { Qte: newQte },
                         {
                           where: {
-                            produitlabrairieId: produitlabrairieId,
-                            commandeEnDetailId: commandeEnDetailId,
+                            produitlabrcomdetfk: produitlabrcomdetfk,
+                            comdetprodlabrfk: comdetprodlabrfk,
                           },
                         }
                       ).then((response) => {
@@ -382,14 +2168,14 @@ const commandeDetailController = {
           Model.ProduitCommandeEnDetail.create(data).then((response) => {
             if (response !== null) {
               Model.commandeEnDetail
-                .findOne({ where: { id: commandeEnDetailId } })
+                .findOne({ where: { id: comdetprodlabrfk } })
                 .then((response) => {
                   if (response !== null) {
                     const newTot = Number(response.total_ttc) + prix * Qte;
                     Model.commandeEnDetail
                       .update(
                         { total_ttc: newTot },
-                        { where: { id: commandeEnDetailId } }
+                        { where: { id: comdetprodlabrfk } }
                       )
                       .then((response) => {
                         if (response !== 0) {
@@ -421,17 +2207,17 @@ const commandeDetailController = {
     try {
       Model.ProduitCommandeEnDetail.destroy({
         where: {
-          produitlabrairieId: req.params.produitlabrairieId,
-          commandeEnDetailId: req.params.commandeEnDetailId,
+          produitlabrcomdetfk: req.params.produitlabrcomdetfk,
+          comdetprodlabrfk: req.params.comdetprodlabrfk,
         },
       }).then((response) => {
         if (response !== 0) {
           Model.ProduitCommandeEnDetail.findAll({
-            where: { commandeEnDetailId: req.params.commandeEnDetailId },
+            where: { comdetprodlabrfk: req.params.comdetprodlabrfk },
           }).then((response) => {
             if (response.length === 0) {
               Model.commandeEnDetail.destroy({
-                where: { id: req.params.commandeEnDetailId },
+                where: { id: req.params.comdetprodlabrfk },
               });
             }
           });
@@ -454,16 +2240,11 @@ const commandeDetailController = {
     }
   },
   nb_commande_par_jour: async (req, res) => {
-    const { page, pageSize } = req.body;
-    const offset = (page - 1) * pageSize;
-
     try {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
       Model.commandeEnDetail
         .findAll({
-          limit: +pageSize,
-          offset: offset,
           attributes: [
             "createdAt",
             [
@@ -475,7 +2256,7 @@ const commandeDetailController = {
             createdAt: {
               [Op.gte]: sevenDaysAgo,
             },
-            labrairieId: req.params.id,
+            labrcomdetfk: req.params.id,
           },
           group: ["createdAt"],
           raw: true,
@@ -501,16 +2282,12 @@ const commandeDetailController = {
     }
   },
   produit_plus_vendus: async (req, res) => {
-    const { page, pageSize } = req.body;
-    const offset = (page - 1) * pageSize;
-
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       Model.commandeEnDetail
         .findAll({
-          limit: +pageSize,
-          offset: offset,
+          attributes: [],
           include: [
             {
               model: Model.produitlabrairie,
@@ -518,7 +2295,7 @@ const commandeDetailController = {
                 "titre",
                 [Sequelize.fn("COUNT", Sequelize.col("titre")), "total_ventes"],
               ],
-              through: { attributes: [] },
+
               include: [
                 {
                   model: Model.imageProduitLibrairie,
@@ -531,7 +2308,7 @@ const commandeDetailController = {
             createdAt: {
               [Op.gte]: thirtyDaysAgo,
             },
-            labrairieId: req.params.id,
+            labrcomdetfk: req.params.id,
           },
           group: ["id"],
           order: ["createdAt"],
@@ -557,17 +2334,12 @@ const commandeDetailController = {
     }
   },
   nb_commande: async (req, res) => {
-    const { page, pageSize } = req.body;
-    const offset = (page - 1) * pageSize;
-
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       Model.commandeEnDetail
         .findAll({
-          limit: +pageSize,
-          offset: offset,
           attributes: [
             [Sequelize.fn("COUNT", Sequelize.col("id")), "total_commandes"],
             [
@@ -611,7 +2383,7 @@ const commandeDetailController = {
             createdAt: {
               [Op.gte]: thirtyDaysAgo,
             },
-            labrairieId: req.params.id,
+            labrcomdetfk: req.params.id,
           },
         })
         .then((response) => {
@@ -660,8 +2432,9 @@ const commandeDetailController = {
   },
 
   findcommande30day: async (req, res) => {
-    const { page, pageSize } = req.body;
+    const { page, pageSize, sortBy, sortOrder } = req.query;
     const offset = (page - 1) * pageSize;
+    order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
 
     try {
       const daysAgo = new Date();
@@ -669,6 +2442,7 @@ const commandeDetailController = {
 
       Model.commandeEnDetail
         .findAll({
+          order: order,
           limit: +pageSize,
           offset: offset,
           where: {
@@ -750,7 +2524,7 @@ const commandeDetailController = {
           offset: offset,
           where: { id: req.params.id },
           attributes: {
-            exclude: ["updatedAt", "userId", "labrairieId"],
+            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
           },
           include: [
             {
@@ -766,7 +2540,7 @@ const commandeDetailController = {
             .findAll({
               where: { id: req.params.id },
               attributes: {
-                exclude: ["updatedAt", "userId", "labrairieId"],
+                exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
               },
               include: [
                 {
@@ -872,6 +2646,12 @@ const commandeDetailController = {
               model: Model.user,
               attributes: ["fullname", "avatar"],
             },
+            {
+              model: Model.produitlabrairie,
+            },
+            {
+              model: Model.labrairie,
+            },
           ],
         })
         .then((response) => {
@@ -937,7 +2717,25 @@ const commandeDetailController = {
                     "email",
                     "role",
                   ],
-                  //include: roleIsPartenaire(response[0].user.role),
+                  include: [
+                    {
+                      model: Model.client,
+                      attributes: ["userclientfk"],
+                      include: [
+                        {
+                          model: Model.adresses,
+                        },
+                      ],
+                    },
+                    {
+                      model: Model.partenaire,
+                      include: [
+                        {
+                          model: Model.adresses,
+                        },
+                      ],
+                    },
+                  ],
                 },
               ],
               order: [["createdAt", "ASC"]],
@@ -1156,7 +2954,7 @@ function roleIsPartenaire(role) {
     return [
       {
         model: Model.partenaire,
-        attributes: ["id"],
+        //attributes: ["id"],
         include: [{ model: Model.adresses }],
       },
     ];
@@ -1164,7 +2962,7 @@ function roleIsPartenaire(role) {
     return [
       {
         model: Model.client,
-        attributes: ["id"],
+        //attributes: ["id"],
         include: [{ model: Model.adresses }],
       },
     ];

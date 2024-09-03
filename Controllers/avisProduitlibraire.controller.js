@@ -7,10 +7,18 @@ const {
 } = require("../middleware/auth/validationSchema");
 const avisProduitlibraireController = {
   add: async (req, res) => {
-    const { nbStart, commenter, clientId, produitlabrairieId, partenaireId } =
-      req.body;
+    const {
+      nbStart,
+      commenter,
+      clientavisprodfk,
+      prodavisproduitsfk,
+      partavisprodfk,
+    } = req.body;
     try {
-      const { error } = addAvisProdValidation(req.body);
+      const { error } = addAvisProdValidation({
+        commenter: commenter,
+        nbStart: nbStart,
+      });
       if (error)
         return res
           .status(400)
@@ -18,18 +26,18 @@ const avisProduitlibraireController = {
       const dataclient = {
         nbStart: nbStart,
         commenter: commenter,
-        clientId: clientId,
-        partenaireId: partenaireId,
-        produitlabrairieId: produitlabrairieId,
+        clientavisprodfk: clientavisprodfk,
+        partavisprodfk: partavisprodfk,
+        prodavisproduitsfk: prodavisproduitsfk,
       };
       const datapartenaire = {
         nbStart: nbStart,
         commenter: commenter,
-        clientId: clientId,
-        partenaireId: partenaireId,
-        produitlabrairieId: produitlabrairieId,
+        clientavisprodfk: clientavisprodfk,
+        partavisprodfk: partavisprodfk,
+        prodavisproduitsfk: prodavisproduitsfk,
       };
-      if (clientId) {
+      if (clientavisprodfk) {
         Model.avisProduitlibraire.create(dataclient).then((response) => {
           if (response) {
             return res.status(200).json({
@@ -43,7 +51,7 @@ const avisProduitlibraireController = {
             });
           }
         });
-      } else if (partenaireId) {
+      } else if (partavisprodfk) {
         Model.avisProduitlibraire.create(datapartenaire).then((response) => {
           if (response) {
             return res.status(200).json({
@@ -99,6 +107,7 @@ const avisProduitlibraireController = {
       });
     }
   },
+
   delete: async (req, res) => {
     try {
       Model.avisProduitlibraire
@@ -130,9 +139,9 @@ const avisProduitlibraireController = {
     try {
       Model.avisProduitlibraire
         .findAll({
-          where: { clientId: req.params.clientId },
+          where: { clientavisprodfk: req.params.clientavisprodfk },
           attributes: {
-            exclude: ["updatedAt", "clientId", "produitlabrairieId"],
+            exclude: ["updatedAt", "clientavisprodfk", "prodavisproduitsfk"],
           },
           include: [
             {
@@ -165,14 +174,13 @@ const avisProduitlibraireController = {
         error: err,
       });
     }
-    
   },
   getAllAvisByPartnier: async (req, res) => {
     try {
       const response = await Model.avisProduitlibraire.findAll({
-        where: { partenaireId: req.params.partenaireId },
+        where: { partavisprodfk: req.params.partavisprodfk },
         attributes: {
-          exclude: ["updatedAt", "produitlabrairieId"],
+          exclude: ["updatedAt", "prodavisproduitsfk"],
         },
         include: [
           {
@@ -213,21 +221,19 @@ const avisProduitlibraireController = {
   getAllAvisByproduit: async (req, res) => {
     try {
       const avisOptions = {
-        where: { produitlabrairieId: req.params.produitlabrairieId },
+        where: { prodavisproduitsfk: req.params.prodavisproduitsfk },
         attributes: {
-          exclude: ["updatedAt", "clientId", "produitlabrairieId"],
+          exclude: ["updatedAt", "clientavisprodfk", "prodavisproduitsfk"],
         },
         include: [
           {
             model: Model.client,
-            attributes: ["id"],
             include: [
               { model: Model.user, attributes: ["fullname", "avatar"] },
             ],
           },
           {
-            model: Model.partenaire, // Include partenaire information directly
-            attributes: ["id", "nameetablissement", "image"],
+            model: Model.partenaire,
             include: [
               { model: Model.user, attributes: ["fullname", "avatar"] },
             ],
@@ -260,11 +266,11 @@ const avisProduitlibraireController = {
     try {
       const labrairieId = req.params.id;
 
-      const avisOptions = {
+      const response = await Model.avisProduitlibraire.findAll({
         include: [
           {
             model: Model.produitlabrairie,
-            attributes: ["titre"],
+            attributes: ["id", "titre", "prix"],
             include: [
               {
                 model: Model.imageProduitLibrairie,
@@ -272,11 +278,11 @@ const avisProduitlibraireController = {
               },
               {
                 model: Model.labrairie,
-                attributes: [],
-                where: { id: labrairieId },
+                attributes: ["nameLibrairie"],
               },
             ],
           },
+
           {
             model: Model.client,
             attributes: ["id"],
@@ -292,9 +298,7 @@ const avisProduitlibraireController = {
             ],
           },
         ],
-      };
-
-      const response = await Model.avisProduitlibraire.findAll(avisOptions);
+      });
 
       if (response.length !== 0) {
         return res.status(200).json({
@@ -321,7 +325,7 @@ const avisProduitlibraireController = {
       Model.avisProduitlibraire
         .findAll({
           attributes: {
-            exclude: ["updatedAt", "clientId", "produitlabrairieId"],
+            exclude: ["updatedAt", "clientavisprodfk", "prodavisproduitsfk"],
           },
           include: [
             {
@@ -368,16 +372,22 @@ const avisProduitlibraireController = {
                 "id",
                 "nbStart",
                 "commenter",
-                "clientId",
-                "produitlabrairieId",
+                "clientavisprodfk",
+                "prodavisproduitsfk",
               ],
               order: [["nbStart", "DESC"]],
               limit: 1,
               include: [
-                { model: Model.client, attributes: ["userId"] , include:[{
-                  model: Model.user,
-                  attributes: ["fullname","avatar"],
-                }]},
+                {
+                  model: Model.client,
+                  attributes: ["userclientfk"],
+                  include: [
+                    {
+                      model: Model.user,
+                      attributes: ["fullname", "avatar"],
+                    },
+                  ],
+                },
                 {
                   model: Model.produitlabrairie,
                   attributes: ["id"],

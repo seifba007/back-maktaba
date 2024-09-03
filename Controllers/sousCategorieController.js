@@ -6,11 +6,11 @@ const {
 } = require("../middleware/auth/validationSchema");
 const SousCategorieController = {
   add: async (req, res) => {
-    const { name, Description, categorieId } = req.body;
+    const { name, Description, catagsouscatafk } = req.body;
     const data = {
       name: name,
       Description: Description,
-      categorieId: categorieId,
+      catagsouscatafk: catagsouscatafk,
     };
     try {
       const { error } = subcategoryValidation(data);
@@ -99,7 +99,7 @@ const SousCategorieController = {
   findByCategorie: async (req, res) => {
     try {
       Model.Souscategorie.findAll({
-        where: { categorieId: req.params.id },
+        where: { catagsouscatafk: req.params.id },
       }).then((response) => {
         if (response !== null) {
           return res.status(200).json({

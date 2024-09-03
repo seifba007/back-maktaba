@@ -14,13 +14,13 @@ var upload = multer({ //multer settings
     storage: storage,
     fileFilter: function (req, file, callback) {
         var ext = path.extname(file.originalname);
-        if(ext !== '.png' && ext !== '.jpg' && ext !== '.pdf' && ext !== '.jpeg' && ext !=='.pdf') {
-            return callback(new Error('Only images are allowed'))
+        if(ext !== '.png' && ext !== '.jpg' && ext !== '.pdf' && ext !== '.jpeg' && ext !== '.doc' && ext !== '.docx' && ext !== '.txt') {
+            return callback(new Error('Only (.png ,.jpg, .pdf, .jpeg, .doc, .docx .txt) are allowed'))
         }
         callback(null, true)
     },
     limits:{
-        fileSize: 1024 * 1024
+        fileSize: 6 * 1024 * 1024
     }
 });
 module.exports=upload 

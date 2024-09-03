@@ -2,21 +2,24 @@ const categorie = require("../Models/categorie");
 const Model = require("../Models/index");
 const bcrypt = require("bcrypt");
 const { Op } = require("sequelize");
-const sequelize = require("sequelize");
-const sousCategorie = require("../Models/sousCategorie");
+const Sequelize = require("sequelize");
+const cloudinary = require("../middleware/cloudinary");
+
 const {
   addadminValidation,
   deletecategoryValidation,
   addcategoryValidation,
   filtercommandeValidation,
-  deletesuggestionValidation,
 } = require("../middleware/auth/validationSchema");
 const adminController = {
   add: async (req, res) => {
     const data = req.body;
     try {
       const { error } = addadminValidation(data);
-      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
+      if (error)
+        return res
+          .status(400)
+          .json({ success: false, err: error.details[0].message });
       const passwordHash = bcrypt.hashSync(req.body.password, 10);
       const datauser = {
         fullname: req.body.fullname,
@@ -77,7 +80,7 @@ const adminController = {
           {
             model: Model.labrairie,
             attributes: {
-              include: ["nameLibrairie"],
+              include: ["nameLibrairie", "imageStore"],
             },
             required: false,
           },
@@ -104,15 +107,98 @@ const adminController = {
   },
   findAllcategories: async (req, res) => {
     try {
+      const cat = await Model.categorie.findAll({
+        include: [
+          {
+            model: Model.Souscategorie,
+            //attributes: ["id", "name"],
+          },
+        ],
+      });
+      if (cat.length > 0) {
+        return res.status(200).json({
+          success: true,
+          categories: cat,
+        });
+      } else {
+        return res.status(400).json({
+          success: true,
+          err: "No categories founds",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findAllcategoriespagination: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    const filters = req.query;
+    const whereClause = {};
+
+    if (filters.name) {
+      whereClause.name = {
+        [Sequelize.Op.like]: `%${filters.name}%`,
+      };
+    }
+
+    try {
+      const catcount = await Model.categorie.count({
+        where: whereClause,
+      });
+      const cat = await Model.categorie.findAll({
+        offset: offset,
+        limit: +pageSize,
+        order: order,
+        where: whereClause,
+        include: [
+          {
+            model: Model.Souscategorie,
+            //attributes: ["id", "name"],
+          },
+        ],
+      });
+      if (cat.length > 0) {
+        const totalPages = Math.ceil(catcount / pageSize);
+        return res.status(200).json({
+          success: true,
+          categories: cat,
+          totalPages: totalPages,
+        });
+      } else {
+        return res.status(400).json({
+          success: true,
+          err: "No categories founds",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findOnecategory: async (req, res) => {
+    try {
       Model.categorie
         .findAll({
+          where: {
+            id: req.params.id,
+          },
           attributes: {
             include: ["id", "name"],
           },
           include: [
             {
               model: Model.Souscategorie,
-              attributes: ["id", "name"],
+              attributes: ["id", "name", "Description", "createdAt"],
             },
           ],
         })
@@ -125,7 +211,7 @@ const adminController = {
           } else {
             return res.status(400).json({
               success: false,
-              err: " zero category",
+              err: "zero category",
             });
           }
         });
@@ -136,23 +222,130 @@ const adminController = {
       });
     }
   },
+
   findAllproduits: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    const filters = req.query;
+    const whereClause = {};
+
+    if (filters.categprodlabfk) {
+      if (typeof filters.categprodlabfk === "string") {
+        filters.categprodlabfk = filters.categprodlabfk
+          .split(",")
+          .map((id) => parseInt(id, 10));
+      }
+      whereClause.categprodlabfk = filters.categprodlabfk;
+    }
+
+    if (filters.souscatprodfk) {
+      if (typeof filters.souscatprodfk === "string") {
+        filters.souscatprodfk = filters.souscatprodfk
+          .split(",")
+          .map((id) => parseInt(id, 10));
+      }
+      whereClause.souscatprodfk = filters.souscatprodfk;
+    }
+
+    if (filters.qteMin && filters.qteMax) {
+      whereClause.qte = {
+        [Sequelize.Op.between]: [filters.qteMin, filters.qteMax],
+        [Sequelize.Op.gt]: 0,
+      };
+    } else if (filters.qteMin) {
+      whereClause.qte = {
+        [Sequelize.Op.gte]: filters.qteMin,
+        [Sequelize.Op.gt]: 0,
+      };
+    } else if (filters.qteMax) {
+      whereClause.qte = {
+        [Sequelize.Op.lte]: filters.qteMax,
+        [Sequelize.Op.gt]: 0,
+      };
+    } else {
+      whereClause.qte = { [Sequelize.Op.gt]: 0 };
+    }
+
+    if (filters.etat) {
+      whereClause.etat = filters.etat;
+    }
+
+    if (filters.titre) {
+      whereClause.titre = {
+        [Sequelize.Op.like]: `%${filters.titre}%`,
+      };
+    }
+
+    if (filters.prixMin && filters.prixMax) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          prix: {
+            [Sequelize.Op.between]: [filters.prixMin, filters.prixMax],
+          },
+        },
+        {
+          prix_en_solde: {
+            [Sequelize.Op.between]: [filters.prixMin, filters.prixMax],
+          },
+        },
+      ];
+    } else if (filters.prixMin) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          prix: { [Sequelize.Op.gte]: filters.prixMin },
+        },
+        {
+          prix_en_solde: { [Sequelize.Op.gte]: filters.prixMin },
+        },
+      ];
+    } else if (filters.prixMax) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          prix: { [Sequelize.Op.lte]: filters.prixMax },
+        },
+        {
+          prix_en_solde: { [Sequelize.Op.lte]: filters.prixMax },
+        },
+      ];
+    }
     try {
-      Model.produitlabrairie.findAll().then((response) => {
-        try {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              produits: response,
+      const totalCount = await Model.produitlabrairie.count({
+        where: whereClause,
+      });
+
+      Model.produitlabrairie
+        .findAll({
+          offset: offset,
+          order: order,
+          where: whereClause,
+          limit: +pageSize,
+          where: whereClause,
+          include: [
+            {
+              model: Model.imageProduitLibrairie,
+              attributes: ["id", "name_Image"],
+            },
+          ],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              const totalPages = Math.ceil(totalCount / pageSize);
+              return res.status(200).json({
+                success: true,
+                produits: response,
+                totalPages: totalPages,
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err,
             });
           }
-        } catch (err) {
-          return res.status(400).json({
-            success: false,
-            error: err,
-          });
-        }
-      });
+        });
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -160,11 +353,37 @@ const adminController = {
       });
     }
   },
+
+  findAllproduitsnumber: async (req, res) => {
+    try {
+      const totalCount = await Model.produitlabrairie.count({
+      });
+
+      try {
+        if (totalCount !== null) {
+          return res.status(200).json({
+            success: true,
+            totalCount: totalCount,
+          });
+        }
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
+      }
+      
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
   deletecategory: async (req, res) => {
     const { ids } = req.body;
     try {
-      const { error } = deletecategoryValidation(req.body);
-      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
       Model.categorie
         .destroy({
           where: {
@@ -175,59 +394,171 @@ const adminController = {
           if (reponse !== 0) {
             return res.status(200).json({
               success: true,
-              message: " category deleted",
+              message: " categories deleted",
             });
           }
         });
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message,
       });
     }
   },
+
   addcategory: async (req, res) => {
-    const { error } = addcategoryValidation(req.body);
-    if (error) return res.status(400).json({ success: false, err: error.details[0].message });
-    try {
-      if (req.files.length !== 0) {
-        req.body["image"] = req.files[0].filename;
-      } else {
-        req.body["image"] == null;
-      }
-      const { image, subcategories } = req.body;
+  try {
+    req.files.forEach(async (file) => {
+      const result = await cloudinary.uploader.upload(file.path);
+      const imageUrl = result.secure_url;
+      const { subcategories } = req.body;
+
+      const subcategoriesArray = Array.isArray(subcategories)
+        ? subcategories
+        : subcategories ? [subcategories] : [];
+
       const data = {
         name: req.body.name,
         Description: req.body.Description,
-        image: image,
+        image: imageUrl,
       };
+
       const category = await Model.categorie.create(data);
-      const cat = eval(subcategories);
-      const souscategories = [];
-      for (const subcateName of cat) {
-        const subcategory = await await Model.Souscategorie.create({
-          name: subcateName.name,
-          categorieId: category.id,
-        });
-        souscategories.push(subcategory);
+      const souscategories = []; 
+
+      if (subcategoriesArray.length > 0) { 
+        for (const subcateName of subcategoriesArray) {
+          const subcategory = await Model.Souscategorie.create({
+            name: subcateName,
+            catagsouscatafk: category.id,
+          });
+          souscategories.push(subcategory);
+        }
       }
+
       res.status(200).json({
         success: true,
+        category: category,
+        souscategory: souscategories,
         message: "category and subcategories added",
+      });
+    });
+  } catch (err) {
+    return res.status(400).json({
+      success: false,
+      error: err,
+    });
+  }
+},
+
+
+  editCategory: async (req, res) => {
+    try {
+      const { name, description, subcategories } = req.body;
+
+      const existingCategory = await Model.categorie.findOne({
+        where: {
+          id: req.params.id,
+        },
+        include: [
+          {
+            model: Model.Souscategorie,
+            attributes: ["name", "description"],
+          },
+        ],
+      });
+
+      if (!existingCategory) {
+        return res.status(404).json({
+          success: false,
+          error: "Category not found",
+        });
+      }
+
+      if (name !== undefined) {
+        existingCategory.name = name;
+      }
+
+      if (description !== undefined) {
+        existingCategory.Description = description;
+      }
+
+      if (subcategories !== undefined) {
+        const subcategoriesArray = Array.isArray(subcategories)
+          ? subcategories
+          : [subcategories];
+
+        const souscategories = [];
+
+        Model.Souscategorie.destroy({
+          where: {
+            catagsouscatafk: req.params.id,
+          },
+        });
+
+        for (const subcateName of subcategoriesArray) {
+          const subcategory = await Model.Souscategorie.create({
+            name: subcateName.name,
+            Description: subcateName.description,
+            catagsouscatafk: req.params.id,
+          });
+          souscategories.push(subcategory);
+        }
+      }
+
+      await existingCategory.save();
+
+      const newcateg = await Model.categorie.findOne({
+        where: {
+          id: req.params.id,
+        },
+        include: [
+          {
+            model: Model.Souscategorie,
+            attributes: ["name", "description"],
+          },
+        ],
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: newcateg,
       });
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
-      });
-    }
-  },
+        error: err.message,
+      });
+    }
+  },
+
+  changeVisibilite: async (req, res) => {
+    try {
+      Model.produitlabrairie
+        .update({ Visibilite: req.body.etat }, { where: { id: req.params.id } })
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "etat changée",
+            });
+          } else {
+            return res.status(200).json({
+              success: false,
+              message: "erreur",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
 
   deletesuggestion: async (req, res) => {
     const { ids } = req.body;
-
-    const { error } = deletesuggestionValidation(req.body);
-    if (error) return res.status(400).json({ success: false, err: error.details[0].message });
     try {
       Model.suggestionProduit
         .destroy({
@@ -252,20 +583,20 @@ const adminController = {
   },
 
   findAllavis: async (req, res) => {
-    const clientId = req.params.id;
+    const clientavisprodfk = req.params.id;
 
     try {
       Model.avisProduitlibraire
         .findOne({
           attributes: [
-            "clientId",
+            "clientavisprodfk",
             [
               sequelize.fn("SUM", sequelize.col("nbStart")),
               "nombre_total_etoiles",
             ],
           ],
           where: {
-            clientId: clientId,
+            clientavisprodfk: clientavisprodfk,
           },
         })
         .then((response) => {
@@ -291,17 +622,182 @@ const adminController = {
     }
   },
 
-  findavgavis: async (req, res) => {
-    const clientId = req.params.id;
+  findavisproduit: async (req, res) => {
+    const produitid = req.params.id;
     try {
       Model.avisProduitlibraire
         .findOne({
           attributes: [
-            "clientId",
+            "nbStart",
+            [sequelize.fn("COUNT", sequelize.col("nbStart")), "nombre_avis"],
+          ],
+          where: {
+            prodavisproduitsfk: produitid,
+          },
+          group: ["nbStart"],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              return res.status(200).json({
+                success: true,
+                avis: response,
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findNbreAvisProduit: async (req, res) => {
+    const produitid = req.params.id;
+
+    try {
+      const avisProduit = await Model.avisProduitlibraire.findAll({
+        where: {
+          prodavisproduitsfk: produitid,
+        },
+      });
+
+      if (avisProduit.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Aucun avis trouvé pour ce produit.",
+        });
+      }
+
+      const etoileCounts = {
+        5: 0,
+        4: 0,
+        3: 0,
+        2: 0,
+        1: 0,
+      };
+
+      avisProduit.forEach((avis) => {
+        console.log(avis);
+        etoileCounts[avis.dataValues.nbStart] += 1;
+      });
+
+      const response = {
+        success: true,
+        avis: {
+          5: etoileCounts[5],
+          4: etoileCounts[4],
+          3: etoileCounts[3],
+          2: etoileCounts[2],
+          1: etoileCounts[1],
+        },
+      };
+
+      return res.status(200).json(response);
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findTotalAvisProduit: async (req, res) => {
+    const produitid = req.params.id;
+
+    try {
+      const allAvis = await Model.avisProduitlibraire.findAll({
+        where: {
+          prodavisproduitsfk: produitid,
+        },
+      });
+
+      if (allAvis.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Aucun avis trouvé pour ce produit.",
+        });
+      }
+
+      let totalStars = 0;
+
+      allAvis.forEach((avis) => {
+        totalStars += avis.dataValues.nbStart;
+      });
+
+      const response = {
+        success: true,
+        sommeStart: totalStars,
+      };
+
+      return res.status(200).json(response);
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findMoyeAvisProduit: async (req, res) => {
+    const produitid = req.params.id;
+
+    try {
+      const avisProduit = await Model.avisProduitlibraire.findAll({
+        where: {
+          prodavisproduitsfk: produitid,
+        },
+      });
+
+      if (avisProduit.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Aucun avis trouvé pour ce produit.",
+        });
+      }
+
+      let totalStars = 0;
+
+      const totalAvis = avisProduit.length;
+
+      avisProduit.forEach((avis) => {
+        totalStars += avis.dataValues.nbStart;
+      });
+
+      const moyenne = totalStars / totalAvis;
+
+      const response = {
+        success: true,
+        moyenneAvis: moyenne,
+      };
+
+      return res.status(200).json(response);
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findavgavis: async (req, res) => {
+    const clientavisprodfk = req.params.id;
+    try {
+      Model.avisProduitlibraire
+        .findOne({
+          attributes: [
+            "clientavisprodfk",
             [sequelize.fn("AVG", sequelize.col("nbStart")), "moyenne_avis"],
           ],
           where: {
-            clientId: clientId,
+            clientavisprodfk: clientavisprodfk,
           },
         })
         .then((response) => {
@@ -326,23 +822,57 @@ const adminController = {
       });
     }
   },
-
+  find: async (req, res) => {
+    const clientavisprodfk = req.params.id;
+    try {
+      Model.avisProduitlibraire
+        .findOne({
+          attributes: [
+            "clientavisprodfk",
+            [sequelize.fn("AVG", sequelize.col("nbStart")), "moyenne_avis"],
+          ],
+          where: {
+            clientavisprodfk: clientavisprodfk,
+          },
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              return res.status(200).json({
+                success: true,
+                avismoy: response,
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
   gettop10prod: async (req, res) => {
     try {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const topProducts = await Model.avisProduitlibraire.findAll({
         attributes: [
-          [sequelize.fn("SUM", sequelize.col("nbStart")), "totalAvis"],
-          "produitlabrairieId",
+          [Sequelize.fn("SUM", Sequelize.col("nbStart")), "totalAvis"],
+          "prodavisproduitsfk",
         ],
         where: {
           createdAt: {
             [Op.gte]: thirtyDaysAgo,
           },
         },
-        group: ["produitlabrairieId"],
-        order: [[sequelize.literal("totalAvis"), "DESC"]],
+        group: ["prodavisproduitsfk"],
+        order: [[Sequelize.literal("totalAvis"), "DESC"]],
         limit: 10,
         include: [
           {
@@ -377,8 +907,18 @@ const adminController = {
     try {
       Model.user
         .findAll({
-          attributes:["id","email","email_verifie","role","fullname","avatar","Date_de_naissance","telephone","point"],
-          
+          attributes: [
+            "id",
+            "email",
+            "email_verifie",
+            "role",
+            "fullname",
+            "avatar",
+            "Date_de_naissance",
+            "telephone",
+            "point",
+          ],
+
           include: [
             {
               model: Model.partenaire,
@@ -390,7 +930,7 @@ const adminController = {
             },
             {
               model: Model.labrairie,
-              attributes: ["nameLibrairie"],
+              attributes: ["nameLibrairie", "imageStore"],
             },
           ],
         })
@@ -422,57 +962,355 @@ const adminController = {
     }
   },
 
-  findCommandefiltre: async (req, res) => {
+  findAll: async (req, res) => {
+    const { page, pageSize, sortBy, sortOrder } = req.query;
+    const offset = (page - 1) * pageSize;
     const filters = req.query;
-    const whereClause = {};
-    if (filters.categorieId) {
-      whereClause.categorieId = filters.categorieId;
+    let whereClause = {};
+  
+    if (sortBy && sortOrder) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     }
-    if (filters.SouscategorieId) {
-      whereClause.SouscategorieId = filters.SouscategorieId;
+  
+    if (filters.category) {
+      whereClause.categoriecatalogefk = filters.category;
     }
-    if (filters.prixMin && filters.prixMax) {
-      whereClause.prix = {
-        [sequelize.Op.between]: [filters.prixMin, filters.prixMax],
+  
+    if (filters.subcategory) {
+      whereClause.souscatalogefk = filters.subcategory;
+    }
+  
+    if (filters.titre) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          titre: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
+          },
+        },
+        {
+          codebar: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
+          },
+        },
+      ];
+    }
+  
+    if (filters.codebar) {
+      whereClause.codebar = {
+        [Sequelize.Op.like]: `%${filters.codebar}%`,
       };
-    } else if (filters.prixMin) {
-      whereClause.prix = { [sequelize.Op.gte]: filters.prixMin };
-    } else if (filters.prixMax) {
-      whereClause.prix = { [sequelize.Op.lte]: filters.prixMax };
+    }
+  
+  
+    const totalCount = await Model.cataloge.count({
+      where: whereClause,
+    });
+  
+    try {
+      const catalogue = await Model.cataloge.findAll({
+        order: order,
+        limit: +pageSize,
+        offset: offset,
+        where: whereClause,
+        attributes: {},
+        include: [
+          { model: Model.imageCataloge, attributes: ["id", "name_Image"] },
+          { model: Model.categorie },
+          { model: Model.Souscategorie },
+        ],
+      });
+  
+      if (catalogue.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return res.status(200).json({
+          success: true,
+          catalogue: catalogue,
+          totalPages: totalPages,
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "il n'y a pas des catalogues",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findAllFournisseur: async (req, res) => {
+    const { page, pageSize, sortBy, sortOrder } = req.query;
+    const offset = (page - 1) * pageSize;
+    const filters = req.query;
+    let whereClause = {};
+
+    if (sortBy && sortOrder) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     }
 
+    if (filters.category) {
+      whereClause.categoriecatalogefourfk = filters.category;
+    }
+    if (filters.subcategory) {
+      whereClause.souscatalogefourfk = filters.subcategory;
+    }
+
+    if (filters.titre) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          titre: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
+          },
+        },
+        {
+          codebar: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
+          },
+        },
+      ];
+    }
+
+    if (filters.codebar) {
+      whereClause.codebar = {
+        [Sequelize.Op.like]: `%${filters.codebar}%`,
+      };
+    }
+
+    const totalCount = await Model.catalogefournisseur.count({
+      where: whereClause,
+    });
+
+    try {
+      const catalogue = await Model.catalogefournisseur.findAll({
+        order: order,
+        limit: +pageSize,
+        offset: offset,
+        where: whereClause,
+        attributes: {
+          exclude: ["updatedAt", "admincatalogefourfk", "categoriecatalogefourfk"],
+        },
+        include: [
+          { model: Model.imageCatalogeFournisseur, attributes: ["id", "name_Image"] },
+          { model: Model.categorie },
+          { model: Model.Souscategorie },
+        ],
+      });
+
+      if (catalogue.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return res.status(200).json({
+          success: true,
+          catalogue: catalogue,
+          totalPages: totalPages,
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "il n y 'a pas des catalogues",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findCommandefiltre: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, librairieName, librairieAddress } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+  
+    const filters = req.query;
+    const wherenamelibararie = {};
+    const whereClause = {
+      qte: {
+        [Sequelize.Op.gt]: 0,
+      },
+      Visibilite: {
+        [Sequelize.Op.ne]: "Invisible",
+      },
+    };
+  
+    if (librairieName) {
+      wherenamelibararie.nameLibrairie = {
+        [Sequelize.Op.like]: `%${librairieName}%`,
+      };
+    }
+  
+    if (librairieAddress) {
+      wherenamelibararie.adresse = {
+        [Sequelize.Op.like]: `%${librairieAddress}%`,
+      };
+    }
+  
+    if (filters.categprodlabfk) {
+      if (typeof filters.categprodlabfk === "string") {
+        filters.categprodlabfk = filters.categprodlabfk.split(",").map((id) => parseInt(id, 10));
+      }
+      whereClause.categprodlabfk = filters.categprodlabfk;
+    }
+  
+    if (filters.souscatprodfk) {
+      if (typeof filters.souscatprodfk === "string") {
+        filters.souscatprodfk = filters.souscatprodfk.split(",").map((id) => parseInt(id, 10));
+      }
+      whereClause.souscatprodfk = filters.souscatprodfk;
+    }
+  
     if (filters.qteMin && filters.qteMax) {
       whereClause.qte = {
-        [sequelize.Op.between]: [filters.qteMin, filters.qteMax],
+        [Sequelize.Op.between]: [filters.qteMin, filters.qteMax],
+        [Sequelize.Op.gt]: 0,
       };
     } else if (filters.qteMin) {
-      whereClause.qte = { [sequelize.Op.gte]: filters.qteMin };
+      whereClause.qte = {
+        [Sequelize.Op.gte]: filters.qteMin,
+        [Sequelize.Op.gt]: 0,
+      };
     } else if (filters.qteMax) {
-      whereClause.qte = { [sequelize.Op.lte]: filters.qteMax };
+      whereClause.qte = {
+        [Sequelize.Op.lte]: filters.qteMax,
+        [Sequelize.Op.gt]: 0,
+      };
+    } else {
+      whereClause.qte = { [Sequelize.Op.gt]: 0 };
     }
-
+  
     if (filters.etat) {
       whereClause.etat = filters.etat;
     }
+  
     if (filters.titre) {
-      whereClause.titre = filters.titre;
+      whereClause.titre = {
+        [Sequelize.Op.like]: `%${filters.titre}%`,
+      };
     }
+  
+    if (filters.codebar) {
+      whereClause.codebar = {
+        [Sequelize.Op.like]: `%${filters.codebar}%`,
+      };
+    }
+  
+    if (filters.prixMin && filters.prixMax) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          prix: {
+            [Sequelize.Op.between]: [filters.prixMin, filters.prixMax],
+          },
+        },
+        {
+          prix_en_solde: {
+            [Sequelize.Op.between]: [filters.prixMin, filters.prixMax],
+          },
+        },
+      ];
+    } else if (filters.prixMin) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          prix: { [Sequelize.Op.gte]: filters.prixMin },
+        },
+        {
+          prix_en_solde: { [Sequelize.Op.gte]: filters.prixMin },
+        },
+      ];
+    } else if (filters.prixMax) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          prix: { [Sequelize.Op.lte]: filters.prixMax },
+        },
+        {
+          prix_en_solde: { [Sequelize.Op.lte]: filters.prixMax },
+        },
+      ];
+    }
+  
     try {
-      const { error } = filtercommandeValidation(req.body);
-      if (error) return res.status(400).json({ success: false, err: error.details[0].message });
+      const totalCount = await Model.produitlabrairie.count({
+        where: whereClause,
+      });
+  
+      const produits = await Model.produitlabrairie.findAll({
+        offset: offset,
+        order: order,
+        where: whereClause,
+        limit: +pageSize,
+        include: [
+          {
+            model: Model.categorie,
+            attributes: ["name"],
+          },
+          {
+            model: Model.Souscategorie,
+            attributes: ["name"],
+          },
+          {
+            model: Model.imageProduitLibrairie,
+          },
+          {
+            model: Model.avisProduitlibraire,
+          },
+          {
+            model: Model.labrairie,
+            attributes: [
+              "id",
+              "adresse",
+              "telephone",
+              "nameLibrairie",
+              "facebook",
+              "instagram",
+              "imageStore",
+              "emailLib",
+            ],
+            where: wherenamelibararie,
+          },
+        ],
+      });
+  
+      if (produits.length > 0) {
+        const produitsWithTTC = produits.map((produit) => {
+          const ttc = produit.prix * (1 + produit.tva / 100);
+          return {
+            ...produit.toJSON(), 
+            ttc,
+          };
+        });
+  
+        const totalPages = Math.ceil(totalCount / pageSize);
+  
+        return res.status(200).json({
+          success: true,
+          produits: produitsWithTTC,
+          totalPages: totalPages,
+        });
+      } else {
+        return res.status(200).json({
+          success: true,
+          message: "Aucun produit trouvé avec ces filtres.",
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+  
+
+  findproduitbyname: async (req, res) => {
+    const { name } = req.query;
+    try {
       Model.produitlabrairie
         .findAll({
-          where: whereClause,
-          include: [
-            {
-              model: Model.categorie,
-              attributes: ["name"],
-            },
-            {
-              model: Model.Souscategorie,
-              attributes: ["name"],
-            },
-          ],
+          where: {
+            titre: name,
+          },
         })
         .then((response) => {
           try {
@@ -481,10 +1319,262 @@ const adminController = {
                 success: true,
                 produits: response,
               });
-            } else {
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findAllEchangeLibrarie: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatechange } = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const filters = req.query;
+    const whereClause = {};
+
+    if (filters.name) {
+      whereClause.nameLibrairie = {
+        [Sequelize.Op.like]: `%${filters.name}%`,
+      };
+    }
+
+    if (etatechange == "tout") {
+      try {
+        const echanges = await Model.echange.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          include: [
+            {
+              model: Model.produitaechange,
+            },
+            {
+              model: Model.produitechange,
+            },
+            {
+              model: Model.labrairie,
+              where: whereClause,
+            },
+          ],
+          attributes: {
+            exclude: ["updatedAt"],
+          },
+        });
+        if (echanges.length > 0) {
+          const totalPages = Math.ceil(echanges.length / pageSize);
+          return res.status(200).json({
+            success: true,
+            echanges: echanges,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune echange trouvée pour cette laibrairie.",
+          });
+        }
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
+      }
+    } else {
+      try {
+        const echanges = await Model.echange.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            Etat: etatechange,
+          },
+          include: [
+            {
+              model: Model.produitaechange,
+            },
+            {
+              model: Model.produitechange,
+            },
+            {
+              model: Model.labrairie,
+              where: whereClause,
+            },
+          ],
+          attributes: {
+            exclude: ["updatedAt"],
+          },
+        });
+        if (echanges.length > 0) {
+          const totalPages = Math.ceil(echanges.length / pageSize);
+          return res.status(200).json({
+            success: true,
+            echanges: echanges,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune echange trouvée pour cette laibrairie.",
+          });
+        }
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
+      }
+    }
+  },
+
+  findAllEchangeClient: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatechange } = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const filters = req.query;
+    const whereClause = {};
+
+    if (filters.name) {
+      whereClause.fullname = {
+        [sequelize.Op.like]: `%${filters.name}%`,
+      };
+    }
+
+    if (etatechange == "tout") {
+      try {
+        const echanges = await Model.echange.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          include: [
+            {
+              model: Model.produitaechange,
+            },
+            {
+              model: Model.produitechange,
+            },
+            {
+              model: Model.client,
+              include: [
+                {
+                  model: Model.user,
+                  where: whereClause,
+                  attributes: {
+                    exclude: ["updatedAt"],
+                  },
+                },
+              ],
+            },
+          ],
+          attributes: {
+            exclude: ["updatedAt"],
+          },
+        });
+        if (echanges.length > 0) {
+          const totalPages = Math.ceil(echanges.length / pageSize);
+          return res.status(200).json({
+            success: true,
+            echanges: echanges,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune echange trouvée pour ce client.",
+          });
+        }
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
+      }
+    } else {
+      try {
+        const echanges = await Model.echange.findAll({
+          offset: offset,
+          order: order,
+          limit: +pageSize,
+          where: {
+            Etat: etatechange,
+          },
+          include: [
+            {
+              model: Model.produitaechange,
+            },
+            {
+              model: Model.produitechange,
+            },
+            {
+              model: Model.client,
+              include: [
+                {
+                  model: Model.user,
+                  where: whereClause,
+                  attributes: {
+                    exclude: ["updatedAt"],
+                  },
+                },
+              ],
+            },
+          ],
+          attributes: {
+            exclude: ["updatedAt"],
+          },
+        });
+        if (echanges.length > 0) {
+          const totalPages = Math.ceil(echanges.length / pageSize);
+          return res.status(200).json({
+            success: true,
+            echanges: echanges,
+            totalPages: totalPages,
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            err: "Aucune echange trouvée pour ce client.",
+          });
+        }
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
+      }
+    }
+  },
+
+  findfournissbyname: async (req, res) => {
+    const { name } = req.query;
+    try {
+      Model.fournisseur
+        .findAll({
+          where: {
+            nameetablissement: name,
+          },
+          include: [
+            {
+              model: Model.user,
+            },
+          ],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
               return res.status(200).json({
                 success: true,
-                message: "il n'y a pas des produits",
+                fournisseur: response,
               });
             }
           } catch (err) {
@@ -504,43 +1594,489 @@ const adminController = {
 
   getAllAvis: async (req, res) => {
     try {
-      Model.avisProduitlibraire
-        .findAll({
-          attributes: {
-            exclude: ["updatedAt", "clientId", "produitlabrairieId"],
-          },
-          include: [
-            {
-              model: Model.client,
-              attributes: ["id","userId"],
-              include: [
-                {
-                  model: Model.user,
-                  attributes: ["fullname"],
-                },
-              ]
-            },
-            {
-              model: Model.produitlabrairie,
-              attributes: ["id", "titre", "prix"],
-              include: [
-                {
-                  model: Model.imageProduitLibrairie,
-                  attributes: ["name_Image"],
-                },
-                {
-                  model: Model.labrairie,
-                  attributes: ["nameLibrairie"],
-                },
-              ],
-            },
-          ],
-        })
-        .then((response) => {
+      Model.avisProduitlibraire.findAll({}).then((response) => {
+        try {
           if (response !== null) {
             return res.status(200).json({
               success: true,
               avis: response,
+            });
+          }
+        } catch (err) {
+          return res.status(400).json({
+            success: false,
+            error: err,
+          });
+        }
+      });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
+    }
+  },
+
+  findAllCommandes: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat, username } = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const wherename = {};
+    try {
+      let whereClause = {};
+
+      if (etat && etat === "tout") {
+        whereClause.etatVender = {
+          [Sequelize.Op.or]: ["en_cours", "livre", "Nouveau", "Rejeter","Compléter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etatVender = etat;
+      }
+
+      if (username) {
+        wherename.fullname = {
+          [Sequelize.Op.like]: `%${username}%`,
+        };
+
+        whereClause = { ...whereClause, "$user.fullname$": wherename.fullname };
+      }
+
+      const count = await Model.commandeEnDetail.count({
+        where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            attributes: [],
+            where: wherename,
+          },
+        ],
+      });
+
+      const commandes = await Model.commandeEnDetail.findAll({
+        offset: offset,
+        order: order,
+        limit: +pageSize,
+        where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            attributes: ["fullname", "avatar"],
+            where: wherename,
+            include: [
+              {
+                model: Model.client,
+                attributes: ["userclientfk"],
+                include: [
+                  {
+                    model: Model.adresses,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie", "imageStore"],
+          },
+          { model: Model.produitlabrairie },
+        ],
+      });
+
+      if (commandes) {
+        const totalPages = Math.ceil(count / pageSize);
+        return res.status(200).json({
+          success: true,
+          commandes: commandes,
+          totalPages: totalPages,
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findCommandes: async (req, res) => {
+    try {
+      const commandes = await Model.commandeEnDetail.findAll({
+        include: [
+          {
+            model: Model.user,
+            attributes: ["fullname", "avatar"],
+          },
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie", "imageStore"],
+          },
+          { model: Model.produitlabrairie },
+        ],
+      });
+
+      if (commandes) {
+        return res.status(200).json({
+          success: true,
+          commandes: commandes,
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findAllLivraison: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etat, username } = req.query;
+
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const wherename = {};
+    try {
+      let whereClause = {};
+
+      if (etat && etat === "tout") {
+        whereClause.etatVender = {
+          [Sequelize.Op.or]: ["en_cours", "Compléter"],
+        };
+      } else if (etat && etat !== "tout") {
+        whereClause.etatVender = etat;
+      }
+
+      if (username) {
+        wherename.fullname = {
+          [Sequelize.Op.like]: `%${username}%`,
+        };
+
+        whereClause = { ...whereClause, "$user.fullname$": wherename.fullname };
+      }
+
+      const count = await Model.commandeEnDetail.count({
+        where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            where: wherename,
+          },
+        ],
+      });
+
+      const commandes = await Model.commandeEnDetail.findAll({
+        offset: offset,
+        order: order,
+        limit: +pageSize,
+        where: whereClause,
+        include: [
+          {
+            model: Model.user,
+            attributes: ["fullname", "avatar"],
+            where: wherename,
+            include: [
+              {
+                model: Model.client,
+                attributes: ["userclientfk"],
+                include: [
+                  {
+                    model: Model.adresses,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie", "userlabfk", "imageStore"],
+          },
+          { model: Model.produitlabrairie },
+        ],
+      });
+
+      if (commandes) {
+        const totalPages = Math.ceil(count / pageSize);
+        return res.status(200).json({
+          success: true,
+          livraison: commandes,
+          totalPages: totalPages,
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findLivraison: async (req, res) => {
+    try {
+      const commandes = await Model.commandeEnDetail.findAll({
+        where: {
+          etatVender: {
+            [Sequelize.Op.or]: ["en_cours", "Compléter"],
+          },
+        },
+        include: [
+          {
+            model: Model.user,
+            attributes: ["fullname", "avatar", "telephone", "email", "role"],
+            include: [
+              {
+                model: Model.client,
+                attributes: ["userclientfk"],
+                include: [
+                  {
+                    model: Model.adresses,
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            model: Model.labrairie,
+            attributes: ["nameLibrairie", "userlabfk", "imageStore"],
+            include: [
+              {
+                model: Model.user,
+                attributes: [
+                  "fullname",
+                  "avatar",
+                  "telephone",
+                  "email",
+                  "role",
+                ],
+                include: [
+                  {
+                    model: Model.client,
+                    attributes: ["userclientfk"],
+                    include: [
+                      {
+                        model: Model.adresses,
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            model: Model.produitlabrairie,
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+              },
+            ],
+          },
+        ],
+      });
+
+      if (commandes) {
+        return res.status(200).json({
+          success: true,
+          livraison: commandes,
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  updatecategoryimages: async (req, res) => {
+    try {
+      const catgoriId = req.params.id;
+
+      if (req.files.length > 0) {
+        const uploadPromises = [];
+
+        req.files.forEach((file) => {
+          const uploadPromise = cloudinary.uploader
+            .upload(file.path)
+            .then((result) => {
+              const imageUrl = result.secure_url;
+              return Model.categorie.update(
+                { image: imageUrl },
+                {
+                  where: {
+                    id: catgoriId,
+                  },
+                }
+              );
+            });
+
+          uploadPromises.push(uploadPromise);
+        });
+
+        await Promise.all(uploadPromises);
+
+        return res.status(200).json({
+          success: true,
+          message: "category updated successfully",
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findTopProducts: async (req, res) => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const topProducts = await Model.ProduitCommandeEnDetail.findAll({
+        attributes: [
+          "prodlaibrcommdetfk",
+          [Sequelize.fn("COUNT", "prodlaibrcommdetfk"), "count"],
+        ],
+        group: ["prodlaibrcommdetfk"],
+        order: [[Sequelize.literal("count"), "DESC"]],
+        limit: 5,
+      });
+
+      const productPromises = topProducts.map(async (product) => {
+        const productDetails = await Model.produitlabrairie.findOne({
+          order: [["id", "DESC"]],
+          where: {
+            id: product.prodlaibrcommdetfk,
+          },
+          include: [
+            {
+              model: Model.imageProduitLibrairie,
+              attributes: ["name_Image"],
+            },
+          ],
+        });
+        return productDetails;
+      });
+      const productPromisescount = topProducts.map(async (product) => {
+        const productDetails = await Model.produitlabrairie.findOne({
+          order: [["id", "DESC"]],
+          where: {
+            id: product.prodlaibrcommdetfk,
+          },
+          include: [
+            {
+              model: Model.imageProduitLibrairie,
+              attributes: ["name_Image"],
+            },
+          ],
+        });
+        return product.dataValues.count;
+      });
+
+      const products = await Promise.all(productPromises);
+
+      const productscount = await Promise.all(productPromisescount);
+
+      return res.status(200).json({
+        success: true,
+        produits: products,
+        count:productscount
+      });
+    } catch (err) {
+      console.error("Error fetching top products:", err);
+      return res.status(500).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  getToprevProd: async (req, res) => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const topProducts = await Model.avisProduitlibraire.findAll({
+        attributes: [
+          [Sequelize.fn("SUM", Sequelize.col("nbStart")), "totalAvis"],
+          "prodavisproduitsfk",
+        ],
+        //where: {
+        //createdAt: {
+        //[Sequelize.Op.gte]: thirtyDaysAgo,
+        //},
+        //},
+        group: ["prodavisproduitsfk"],
+        order: [[Sequelize.literal("totalAvis"), "DESC"]],
+        limit: 5,
+        include: [
+          {
+            model: Model.produitlabrairie,
+
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
+        ],
+      });
+
+      const formattedProducts = topProducts.map((item) => ({
+        totalAvis: item.dataValues.totalAvis,
+        produitlabrairie: item.produitlabrairie,
+      }));
+
+      return res.status(200).json({
+        success: true,
+        produit: formattedProducts,
+      });
+    } catch (error) {
+      console.error(error);
+      return res.status(400).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  },
+
+  findAlluser: async (req, res) => {
+    try {
+      Model.user
+        .findAll({
+          attributes: [
+            "id",
+            "fullname",
+            "email",
+            "avatar",
+            "role",
+            "telephone",
+            "createdAt",
+            "etatCompte",
+          ],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              return res.status(200).json({
+                success: true,
+                users: response,
+              });
+            } else {
+              return res.status(200).json({
+                success: true,
+                users: [],
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err,
             });
           }
         });
@@ -552,70 +2088,331 @@ const adminController = {
     }
   },
 
-  findproduitbyname: async (req, res) => {
-    const {name} = req.query
+  findAllUsersAdmin: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatCompte } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    let whereClause = {
+      role: "client",
+    };
+    if (etatCompte && etatCompte === "tout") {
+      whereClause.etatCompte = {
+        [Sequelize.Op.or]: ["active", "bloque"],
+      };
+    } else if (etatCompte && etatCompte !== "tout") {
+      whereClause.etatCompte = etatCompte;
+    }
+
     try {
-      Model.produitlabrairie.findAll({
-        where: {
-      
-          titre: name, 
-        },
-    
-      }).then((response) => {
-        try {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              produits: response,
+      const userCount = await Model.user.count({
+        where: whereClause,
+      });
+
+      Model.user
+        .findAll({
+          limit: +pageSize,
+          offset: offset,
+          order: order,
+          where: whereClause,
+          attributes: [
+            "id",
+            "fullname",
+            "email",
+            "avatar",
+            "role",
+            "telephone",
+            "createdAt",
+            "etatCompte",
+          ],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              const totalPages = Math.ceil(userCount / pageSize);
+              return res.status(200).json({
+                success: true,
+                users: response,
+                totalPages: totalPages,
+              });
+            } else {
+              return res.status(200).json({
+                success: true,
+                users: [],
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err.message,
             });
           }
-        } catch (err) {
-          return res.status(400).json({
-            success: false,
-            error: err,
-          });
-        }
-      });
+        });
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message,
       });
     }
   },
 
-  
-  findfournissbyname: async (req, res) => {
-    const {name} = req.query
+  findAllFournisseurAdmin: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatCompte } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    let whereClause = {
+      role: "fournisseur",
+    };
+    if (etatCompte && etatCompte === "tout") {
+      whereClause.etatCompte = {
+        [Sequelize.Op.or]: ["active", "bloque"],
+      };
+    } else if (etatCompte && etatCompte !== "tout") {
+      whereClause.etatCompte = etatCompte;
+    }
     try {
-      Model.fournisseur.findAll({
-        where:{
-          nameetablissement:name
-        },
-        include: [
-          {
-            model: Model.user,
-          },
-        ]
-      }).then((response) => {
-        try {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              produits: response,
+      const fournisseurCount = await Model.user.count({
+        where: whereClause,
+      });
+
+      Model.fournisseur
+        .findAll({
+          limit: +pageSize,
+          offset: offset,
+          order: order,
+          include: [
+            {
+              model: Model.user,
+              where: whereClause,
+              attributes: [
+                "id",
+                "fullname",
+                "email",
+                "avatar",
+                "role",
+                "telephone",
+                "createdAt",
+                "etatCompte",
+              ],
+            },
+          ],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              const totalPages = Math.ceil(fournisseurCount / pageSize);
+              return res.status(200).json({
+                success: true,
+                fournisseur: response,
+                totalPages: totalPages,
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err.message,
             });
           }
-        } catch (err) {
-          return res.status(400).json({
-            success: false,
-            error: err,
-          });
-        }
-      });
+        });
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message,
+      });
+    }
+  },
+
+  findAllLaibrairieAdmin: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatCompte } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    let whereClause = {
+      role: "labrairie",
+    };
+    if (etatCompte && etatCompte === "tout") {
+      whereClause.etatCompte = {
+        [Sequelize.Op.or]: ["active", "bloque"],
+      };
+    } else if (etatCompte && etatCompte !== "tout") {
+      whereClause.etatCompte = etatCompte;
+    }
+    try {
+      const Laibrairiecount = await Model.user.count({
+        where: whereClause,
+      });
+
+      Model.labrairie
+        .findAll({
+          limit: +pageSize,
+          offset: offset,
+          order: order,
+          include: [
+            {
+              model: Model.user,
+              where: whereClause,
+              attributes: [
+                "id",
+                "fullname",
+                "email",
+                "avatar",
+                "role",
+                "telephone",
+                "createdAt",
+                "etatCompte",
+              ],
+            },
+          ],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              const totalPages = Math.ceil(Laibrairiecount / pageSize);
+              return res.status(200).json({
+                success: true,
+                Laibrairie: response,
+                totalPages: totalPages,
+              });
+            } else {
+              return res.status(200).json({
+                success: true,
+                Laibrairie: [],
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err.message,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findAllpartenaireAdmin: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize, etatCompte } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+
+    let whereClause = {
+      role: "partenaire",
+    };
+    if (etatCompte && etatCompte === "tout") {
+      whereClause.etatCompte = {
+        [Sequelize.Op.or]: ["active", "bloque"],
+      };
+    } else if (etatCompte && etatCompte !== "tout") {
+      whereClause.etatCompte = etatCompte;
+    }
+    try {
+      const partenairecount = await Model.user.count({
+        where: whereClause,
+      });
+
+      Model.partenaire
+        .findAll({
+          limit: +pageSize,
+          offset: offset,
+          order: order,
+          include: [
+            {
+              model: Model.user,
+              where: whereClause,
+              attributes: [
+                "id",
+                "fullname",
+                "email",
+                "avatar",
+                "role",
+                "telephone",
+                "createdAt",
+                "etatCompte",
+              ],
+            },
+          ],
+        })
+        .then((response) => {
+          try {
+            if (response !== null) {
+              const totalPages = Math.ceil(partenairecount / pageSize);
+              return res.status(200).json({
+                success: true,
+                Partenaire: response,
+                totalPages: totalPages,
+              });
+            } else {
+              return res.status(200).json({
+                success: true,
+                Partenaire: [],
+              });
+            }
+          } catch (err) {
+            return res.status(400).json({
+              success: false,
+              error: err.message,
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findLastCommande: async (req, res) => {
+
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+      Model.commandeEnDetail
+        .findAll({
+          limit: 10,
+          order : [["createdAt", "DESC"]],
+          attributes: ["id", "total_ttc", "etatVender", "createdAt"],
+          include: [
+            {
+              model: Model.user,
+              attributes: ["fullname", "avatar"],
+            },
+            {
+              model: Model.produitlabrairie,
+            },
+            {
+              model: Model.labrairie,
+            },
+          ],
+          where: {
+            createdAt: {
+              [Op.gte]: thirtyDaysAgo,
+            },
+          },
+        })
+        .then((response) => {
+          if (response.length !== 0) {
+            return res.status(200).json({
+              success: true,
+              commandes: response,
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              err: "No commands found in the last 30 days",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
       });
     }
   },

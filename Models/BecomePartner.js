@@ -1,5 +1,5 @@
 module.exports = (db, DataTypes) => {
-    return  db.define('BecomePartner',{
+    return  db.define('becomepartner',{
       id: { type: DataTypes.INTEGER,autoIncrement: true,primaryKey: true },
       fullname : {type : DataTypes.STRING},
       email :{type : DataTypes.STRING},

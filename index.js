@@ -2,9 +2,16 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const passport = require("passport");
 const session = require("express-session");
-var cors = require('cors') 
 const app = express()
-app.use(cors("*"))
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, PATCH, DELETE"
+  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  next();
+});
 const db = require('./config/database') ;
 require('dotenv').config()
 const port = process.env.PORT 
@@ -23,6 +30,7 @@ app.use('/uploads',express.static("uploads"))
 require('./security/passport')(passport)
 /** les router */
 const userRouter= require("./router/user.router")
+const mediarouter= require("./router/media.router")
 const clientRouter = require ("./router/client.router")
 const codePromoRouter = require ("./router/codePromo.router")
 const bonAchatRouter = require("./router/bonAchat.router")
@@ -30,21 +38,29 @@ const labrairieRouter = require("./router/labriarie.router")
 const partenaireRouter = require("./router/partenaire.router")
 const fournisseurRouter = require("./router/fournisseur.router")
 const categorieRouter = require ("./router/categorie.router")
-const produitRouter = require ("./router/produit.router")
 const produitLabrairieRouter = require ("./router/produitLabrairie.router")
+const produitFournisseurRouter = require ("./router/produitfournisseur.router")
 const commandeEnGrosRouter = require("./router/commandeGros.router")
 const commandeEnDetail = require("./router/commandeDetail.router")
+const serviceInformatiqueRouter = require("./router/serviceInformatique.router")
+const DonRouter = require("./router/don.router")
+const EchangeRouter = require("./router/echange.router")
+const OffreRouter = require("./router/offre.router")
 const codeClient = require("./router/codeClient.router")
 const avisProduitlibraire = require ("./router/avisProduitlibraire.router")
+const avisProduitfournisseur = require ("./router/avisProduitfournisseur.router")
 const signalerProduitlibraire = require ("./router/signalerProduitlibraire.router")
 const adresses = require("./router/adresses.router")
 const produitFavorie= require("./router/produitFavorie.router")
 const adminRouter=require("./router/admin.router")
 const BecomePartner = require ("./router/becomePartner.router")
 const Cataloge=require("./router/cataloge.router")
+const Catalogefournisseur=require("./router/catalogefournisseur.router")
 const sousCategorie = require("./router/sousCategorie.router")
-const suggestionProduit = require("./router/suggestionProduit.router")
+const suggestionProduit = require("./router/suggestionProduit.router");
+const suggestionProduitFournisseur = require("./router/suggestionProduitFournisseur.router");
 app.use("/user",userRouter)
+app.use("/media",mediarouter)
 app.use("/client",clientRouter)
 app.use("/codePromo",codePromoRouter)
 app.use("/bonAchat",bonAchatRouter)
@@ -52,12 +68,16 @@ app.use("/labrairie",labrairieRouter)
 app.use("/partenaire",partenaireRouter)
 app.use("/fournisseur",fournisseurRouter)
 app.use("/categorie",categorieRouter)
-app.use("/produit",produitRouter)
 app.use("/produitLabrairie",produitLabrairieRouter)
-app.use("/commandeengros",commandeEnGrosRouter)
 app.use("/commandeDetail",commandeEnDetail)
+app.use("/commandeengros",commandeEnGrosRouter)
+app.use("/serviceInformatique",serviceInformatiqueRouter)
+app.use("/don",DonRouter)
+app.use("/echange",EchangeRouter)
+app.use("/offre",OffreRouter)
 app.use("/codeClient",codeClient)
 app.use("/avisProduitlibraire",avisProduitlibraire)
+app.use("/avisProduitfournisseur",avisProduitfournisseur)
 app.use("/signalerProduitlibraire",signalerProduitlibraire)
 app.use("/adresses",adresses)
 app.use("/produitFavorie",produitFavorie)
@@ -66,13 +86,22 @@ app.use("/BecomePartner",BecomePartner)
 app.use("/cataloge",Cataloge)
 app.use("/sousCategorie",sousCategorie)
 app.use("/suggestionProduit",suggestionProduit)
+app.use("/suggestionproduitfournisseur",suggestionProduitFournisseur)
+app.use("/catalogefournisseur",Catalogefournisseur)
+app.use("/produitfournisseur",produitFournisseurRouter)
+
+
+
 /** end  */
 /** connection avec DB */
+/** end  */
+/** connection avec DB */          
+
 db.authenticate().then(() => {
-    console.log("Connection has been established successfully.")
-  })
-  .catch(err => {
-    console.error("Unable to connect to the database:", err)
-  })
+  console.log("Connection has been established successfully.")
+})
+.catch(err => {
+  console.error("Unable to connect to the database:", err)
+})
 /**end  */  
 app.listen(port, () => console.log(`server running on port ${port}`)) 
