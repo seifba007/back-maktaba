@@ -6,96 +6,94 @@ const codePromo = require("./codePromo.controller");
 const adresses = require("../Models/adresses");
 const commandeDetailController = {
   add: async (req, res) => {
-    const { commande, promoCode, clientid, partenaireID } = req.body;
+    const { commande, promoCode, partenaireID } = req.body;
     try {
       let codePromoRecord = null;
-
+  
       if (promoCode) {
+        // Fetch promo code record
         codePromoRecord = await Model.codePromo.findOne({
           where: { code: promoCode },
-          include: [
-            {
-              model: Model.codePromocategory,
-              include: [{ model: Model.categorie }],
-            },
-          ],
         });
-
+  
         if (!codePromoRecord) {
           return res.status(400).json({
             success: false,
             message: "Invalid promo code.",
           });
         }
+  
+        if (codePromoRecord.etat === 'Confirmer') {
+          return res.status(400).json({
+            success: false,
+            message: "Promo code has already been used.",
+          });
+        }
       }
 
-      let totalHT = 0.0;
-      let newTotal = 0.0;
-      let newTotalremise = 0.0;
-      let newPricetva = 0.0;
-      let totaltva = 0.0;
-      let price = 0.0;
-      let tva = 0.0;
+  
+      let overallTotalHT = 0.0;
+      let overallNewTotal = 0.0;
+      let overallNewTotalremise = 0.0;
       const updatedCommandeDetails = [];
-
+  
       for (const data of commande) {
-        let commandes = {
-          total_ttc: data.total_ttc,
+        const { usercommdetfk, total_ttc, Adresse, Mode_liv, Mode_pay, labrcomdetfk,parthiscodeprfk, produits } = data;
+  
+        const commandes = {
+          total_ttc,
+          parthiscodeprfk,
           etatClient: "en cours",
           etatVender: "Nouveau",
           identifiant: data.identifiant,
-          Adresse: data.Adresse,
-          Mode_liv: data.Mode_liv,
-          Mode_pay: data.Mode_pay,
-          usercommdetfk: data.usercommdetfk,
-          labrcomdetfk: data.labrcomdetfk,
+          Adresse,
+          Mode_liv,
+          Mode_pay,
+          usercommdetfk,
+          labrcomdetfk,
         };
-
+  
         const newCommande = await Model.commandeEnDetail.create(commandes);
-
+  
         if (!newCommande) {
           return res.status(400).json({
             success: false,
             message: "Error adding the order.",
           });
         }
-
-        const updatedProduits = [];
   
-        for (const e of data.produits) {
-          const produit = await Model.produitlabrairie.findByPk(
-            e.prodlaibrcommdetfk
-          );
+        const updatedProduits = [];
+        let totalHT = 0.0;
+        let newTotal = 0.0;
+        let newTotalremise = 0.0;
+  
+        for (const e of produits) {
+          const produit = await Model.produitlabrairie.findByPk(e.prodlaibrcommdetfk);
           if (produit) {
-            tva = produit.tva;
-            price = produit.prix;
+            const tva = produit.tva;
+            const price = produit.prix;
             const oldPrice = price;
             let newPrice = oldPrice;
-            let eligibleCategory = null;
+  
             if (codePromoRecord) {
               const codePromocat = await Model.codePromocategory.findAll({
-                where: { promocodeid: codePromoRecord.dataValues.id },
+                where: { promocodeid: codePromoRecord.id },
               });
-
+  
               for (const category of codePromocat) {
-                eligibleCategory =
-                  category.ctagorieid === produit.categprodlabfk;
-                if (eligibleCategory) {
+                if (category.ctagorieid === produit.categprodlabfk) {
                   const discount = category.discountPercentage;
                   newPrice = oldPrice * (1 - discount / 100);
-                  newPricetva = newPrice + newPrice * (tva / 100);
                   break;
                 }
               }
             }
-            newPricetva = newPrice + newPrice * (tva / 100);
+  
+            const newPricetva = newPrice + newPrice * (tva / 100);
             totalHT += oldPrice * e.Qte;
             newTotalremise += newPrice * e.Qte;
             newTotal += newPricetva * e.Qte;
-            totaltva = newTotal - totalHT;
-            if (totaltva < 0) {
-              totaltva = totaltva * -1;
-            }
+  
             updatedProduits.push({
               ...e,
               oldPrice,
@@ -103,10 +101,9 @@ const commandeDetailController = {
               newPricetva,
               comdetprodlabrfk: newCommande.id,
             });
+  
             let updatedQte = produit.qte - e.Qte;
-            if (updatedQte < 0) {
-              updatedQte = 0;
-            }
+            updatedQte = updatedQte < 0 ? 0 : updatedQte;
             await Model.produitlabrairie.update(
               { qte: updatedQte },
               { where: { id: e.prodlaibrcommdetfk } }
@@ -117,13 +114,22 @@ const commandeDetailController = {
         if (codePromoRecord) {
           await Model.historycodePromo.create({
             historypromocodeid: codePromoRecord.id,
-            clienthiscodeprfk: clientid,
+            clienthiscodeprfk: usercommdetfk?usercommdetfk:null,
+            parthiscodeprfk:parthiscodeprfk?parthiscodeprfk:null,
             usedat: new Date(),
-            parthiscodeprfk: partenaireID,
             totalachat: newTotal,
           });
+  
+          await Model.codePromo.update(
+            { etat: 'Confirmer', usedBy: usercommdetfk?usercommdetfk:parthiscodeprfk },
+            { where: { id: codePromoRecord.id } }
+          );
         }
-
+  
+        overallTotalHT += totalHT;
+        overallNewTotal += newTotal;
+        overallNewTotalremise += newTotalremise;
+  
         updatedCommandeDetails.push({
           ...data,
           produits: updatedProduits,
@@ -131,22 +137,27 @@ const commandeDetailController = {
           newTotal,
         });
       }
-
+  
       return res.status(200).json({
         success: true,
         message: "Order added successfully!",
         commandeDetails: updatedCommandeDetails,
-        totalHT,
-        newTotal,
-        newTotalremise,
+        totalHT: overallTotalHT,
+        newTotal: overallNewTotal,
+        newTotalremise: overallNewTotalremise,
       });
     } catch (err) {
+      console.error('Error:', err);
       return res.status(400).json({
         success: false,
         error: err.message,
       });
     }
-  },
+  }
+  
+  
+  ,
+  
 
   calculecommande: async (req, res) => {
     const { commande, promoCode, clientid } = req.body;

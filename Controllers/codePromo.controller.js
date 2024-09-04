@@ -380,10 +380,11 @@ const codePromo = {
   },
 
   findBypartenaire: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize, etat } = req.query;
+    const { sortBy, sortOrder, page = 1, pageSize = 10, etat, search } = req.query;
     const offset = (page - 1) * pageSize;
-    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const order = [[sortBy || 'createdAt', sortOrder === "desc" ? "DESC" : "ASC"]];
     let whereClause = { partcodeprfk: req.params.id };
+  
     if (etat && etat === "tout") {
       whereClause.etat = {
         [Sequelize.Op.or]: ["Non_Confirmer", "Valider"],
@@ -391,48 +392,86 @@ const codePromo = {
     } else if (etat && etat !== "tout") {
       whereClause.etat = etat;
     }
-
+  
+    if (search) {
+      whereClause.code = {
+        [Sequelize.Op.like]: `%${search}%`
+      };
+    }
+  
     try {
+      // Count total records that match the criteria
       const totalCount = await Model.codePromo.count({
         where: whereClause,
       });
-
-      Model.codePromo
-        .findAll({
-          order: order,
-          offset: offset,
-          limit: +pageSize,
-          where: whereClause,
-          include: [
-            {
-              model: Model.partenaire,
-              //attributes: ["fullname", "avatar"],
-              include: [
-                {
-                  model: Model.user,
-                },
-              ],
-            },
-          ],
-        })
-        .then((response) => {
-          const totalPages = Math.ceil(totalCount / pageSize);
-          if (response !== null) {
-            res.status(200).json({
-              success: true,
-              bonAchat: response,
-              totalPages: totalPages,
-            });
-          }
-        });
+  
+      // Fetch paginated results with user and total achat
+      const promos = await Model.codePromo.findAll({
+        order: order,
+        offset: offset,
+        limit: +pageSize,
+        where: whereClause,
+        include: [
+          {
+            model: Model.partenaire,
+            include: [
+              {
+                model: Model.user,
+                attributes: ["id", "fullname", "avatar"], 
+              },
+            ],
+          },
+          {
+            model: Model.historycodePromo,
+            attributes: ['totalachat', 'usedat'],
+            include: [
+              {
+                model: Model.partenaire,
+                include: [
+                  {
+                    model: Model.user,
+                    attributes: ["id", "fullname", "avatar"], 
+                  },
+                ],
+              },
+              {
+                model: Model.client,
+                include: [
+                  {
+                    model: Model.user,
+                    attributes: ["id", "fullname", "avatar"], 
+                  },
+                ],
+              },
+            ],
+            required: false,
+          },
+        ],
+      });
+  
+      const totalAchat = promos.reduce((sum, promo) => {
+        const histories = promo.historycodePromos || [];
+        const total = histories.reduce((acc, history) => acc + (history.totalachat || 0), 0);
+        return sum + total;
+      }, 0);
+  
+      const totalPages = Math.ceil(totalCount / pageSize);
+  
+      res.status(200).json({
+        success: true,
+        bonAchat: promos,
+        totalPages: totalPages,
+        totalAchat: totalAchat,
+      });
     } catch (err) {
+      console.error('Error:', err);
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message,
       });
     }
   },
-
+  
   findBypartenairecommande: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize, etat } = req.query;
     const offset = (page - 1) * pageSize;
