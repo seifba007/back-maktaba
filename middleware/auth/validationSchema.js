@@ -12,15 +12,20 @@ const loginValidation = (data) => {
 };
 const registerValidation = (data) => {
   const schema = Joi.object({
+    telephone: Joi.string()
+      .pattern(/^\+?[1-9]\d{1,14}$/)  // Adjust regex based on phone number format you expect
+      .required(),  // You can remove .required() if telephone is not mandatory
     email: Joi.string().required().email(),
     fullname: Joi.string().required().max(100),
     password: Joi.string()
       .min(6)
-
-      .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$")),
+      .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
+      .required(),  // Added .required() to ensure password is mandatory
   });
+
   return schema.validate(data);
 };
+
 
 const addadminValidation = (data) => {
   const schema = Joi.object({

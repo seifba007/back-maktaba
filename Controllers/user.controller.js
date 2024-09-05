@@ -143,7 +143,6 @@ const userController = {
       });
     }
   },
-
   emailVerification: async (req, res) => {
     try {
       Model.user

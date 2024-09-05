@@ -121,7 +121,8 @@ const commandeDetailController = {
           });
   
           await Model.codePromo.update(
-            { etat: 'Confirmer', usedBy: usercommdetfk?usercommdetfk:parthiscodeprfk },
+            { 
+               usedBy: usercommdetfk?usercommdetfk:parthiscodeprfk },
             { where: { id: codePromoRecord.id } }
           );
         }
@@ -434,7 +435,7 @@ const commandeDetailController = {
   },
   addcommandeinviter: async (req, res) => {
     try {
-      const { email, telephone, fullname, commande, Adresse } = req.body;
+      const { email, telephone, fullname, commande, Adresse} = req.body;
 
       const user = await Model.user.create({
         fullname: fullname,
@@ -452,6 +453,7 @@ const commandeDetailController = {
       if (Adresse == null) {
         for (const data of commande) {
           let commandes = {
+            identifiant:data.identifiant,
             total_ttc: data.total_ttc,
             etatClient: "en cours",
             etatVender: "Nouveau",
@@ -463,14 +465,12 @@ const commandeDetailController = {
           };
 
           const newCommande = await Model.commandeEnDetail.create(commandes);
-
           if (!newCommande) {
             return res.status(400).json({
               success: false,
               message: "Error adding the order.",
             });
           }
-
           const updatedProduits = [];
 
           for (const e of data.produits) {
@@ -517,6 +517,8 @@ const commandeDetailController = {
             Mode_pay: data.Mode_pay,
             usercommdetfk: user.id,
             labrcomdetfk: data.labrcomdetfk,
+            identifiant:data.identifiant,
+
           });
           await Model.adresses.create({
             Adresse: Adresse,

@@ -16,7 +16,6 @@ router.post("/loginsocial", userController.authWithSocialMedia);
 router.put("/updatePassword/:id", AuthorizationUser,userController.updatePassword);
 router.put(
   "/updateIdentite/:id",
-  AuthorizationUser,
   upload.array("image", 1),
   userController.updateIdentite
 );

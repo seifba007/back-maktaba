@@ -157,6 +157,7 @@ const partenaireController = {
         Instagram: instagram,
         email: email,
       };
+      console.log(data)
 
       Model.partenaire
         .update(data, { where: { id: req.params.id } })

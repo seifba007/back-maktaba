@@ -40,7 +40,7 @@ router.put(
 );
 
 router.put(
-  "/changevisibiliter/:id",AuthorizationUser,
+  "/changevisibiliter/:id",
   adminController.changeVisibilite
 );
 router.delete(

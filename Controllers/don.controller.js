@@ -114,90 +114,50 @@ const donController = {
 
   findAllDon: async (req, res) => {
     const { sortBy, sortOrder, page, pageSize, etatdon } = req.query;
-
+  
     const offset = (page - 1) * pageSize;
     const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
-    if (etatdon == "tout") {
-      try {
-        const totalCounttout = await Model.don.count({});
-        const dons = await Model.don.findAll({
-          offset: offset,
-          order: order,
-          limit: +pageSize,
-          include:[
-            {
-                model: Model.imageDon,
-                attributes: ["Image"],
-              },
-          ],
-          attributes: {
-            exclude: ["updatedAt"],
+  
+    try {
+      const whereCondition = etatdon === "tout" ? {} : { Etatdon: etatdon };
+      const totalCount = await Model.don.count({ where: whereCondition });
+      const dons = await Model.don.findAll({
+        offset: offset,
+        order: order,
+        limit: +pageSize,
+        where: whereCondition,
+        include: [
+          {
+            model: Model.imageDon,
+            attributes: ["Image"],
           },
+        ],
+        attributes: {
+          exclude: ["updatedAt"],
+        },
+      });
+  
+      if (dons.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return res.status(200).json({
+          success: true,
+          dons: dons,
+          totalPages: totalPages,
         });
-        if (dons.length > 0) {
-          const totalPages = Math.ceil(totalCounttout / pageSize);
-          return res.status(200).json({
-            success: true,
-            dons: dons,
-            totalPages: totalPages,
-          });
-        } else {
-          return res.status(400).json({
-            success: false,
-            err: "Aucune don trouvée.",
-          });
-        }
-      } catch (err) {
+      } else {
         return res.status(400).json({
           success: false,
-          error: err.message,
+          err: "Aucun don trouvé.",
         });
       }
-    } else {
-      try {
-        const totalCounttout = await Model.don.count({
-          where: {
-            Etatdon: etatdon,
-          },
-        });
-        const dons = await Model.don.findAll({
-          offset: offset,
-          order: order,
-          limit: +pageSize,
-          where: {
-            Etatdon: etatdon,
-          },
-          include:[
-            {
-                model: Model.imageDon,
-                attributes: ["Image"],
-              },
-          ],
-          attributes: {
-            exclude: ["updatedAt"],
-          },
-        });
-        if (dons.length > 0) {
-          const totalPages = Math.ceil(totalCounttout / pageSize);
-          return res.status(200).json({
-            success: true,
-            dons: dons,
-            totalPages: totalPages,
-          });
-        } else {
-          return res.status(400).json({
-            success: false,
-            err: "Aucune don trouvée.",
-          });
-        }
-      } catch (err) {
-        return res.status(400).json({
-          success: false,
-          error: err.message,
-        });
-      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: `Erreur lors de la récupération des dons: ${err.message}`,
+      });
     }
   },
+  
 
   deleteDon: async (req, res) => {
     const { ids } = req.body;

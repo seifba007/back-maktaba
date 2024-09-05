@@ -2,24 +2,33 @@
 const jwt = require("jsonwebtoken");
 const Model = require("../../Models/index");
 
-const AuthorizationUser = (req, res, next) => {
+const AuthorizationUser = async (req, res, next) => {
   const bearerHeader = req.headers["authorization"];
   if (typeof bearerHeader !== "undefined") {
     const bearer = bearerHeader.split(" ")[1];
     jwt.verify(bearer, process.env.TOKEN_ACCESS_SECRET, async (err, user) => {
-      if (err) return res.status(404).json({ msg: "Not Authorized" });
+      if (err) return res.status(403).json({ msg: "Not Authorized" });
+
       req.user = user;
-      const userAuth = await Model.user.findOne({ where: { id: user.user.id } });
-      if (userAuth.etatCompte === "bloque")
-        return res.status(404).json({ msg: "Not Authorized" });
+
+      try {
+        const userAuth = await Model.user.findOne({ where: { id: user.user.id } });
+
+        if (!userAuth || userAuth.etatCompte === "bloque") {
+          return res.status(403).json({ msg: "Not Authorized" });
+        }
+
+        // If everything is fine, proceed to the next middleware
+        next();
+      } catch (error) {
+        return res.status(500).json({ msg: "Internal Server Error" });
+      }
     });
-
-    next();
   } else {
-
-    return res.status(402).json({ msg: "Access Denied" });
+    return res.status(401).json({ msg: "Access Denied" });
   }
 };
+
 
 const AuthorizationAdmin = async (req, res, next) => {
   try {
