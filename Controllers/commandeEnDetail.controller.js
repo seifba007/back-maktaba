@@ -23,12 +23,13 @@ const commandeDetailController = {
           });
         }
   
-        if (codePromoRecord.etat === 'Confirmer') {
+        if (codePromoRecord.etat === 'Confirmer'||codePromoRecord.etat === 'bloque') {
           return res.status(400).json({
             success: false,
             message: "Promo code has already been used.",
           });
         }
+
       }
 
   
@@ -1175,107 +1176,78 @@ const commandeDetailController = {
       });
     }
   },
-  findCommandeByidentifiant: async (req, res) => {
-    const { sortBy, sortOrder, page, pageSize, etatcommande, identifiant } =
-      req.query;
-
+  findCommandeByIdentifiant: async (req, res) => {
+    const { sortBy = 'id', sortOrder = 'DESC', page = 1, pageSize = 20, etatcommande, search } = req.query;
+  
     const offset = (page - 1) * pageSize;
-    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    const order = [[sortBy, sortOrder.toUpperCase() === 'DESC' ? 'DESC' : 'ASC']];
+  
     try {
-      if (etatcommande == "tout") {
-        const totalCounttout = await Model.commandeEnDetail.count({
-          where: {
-            identifiant: identifiant,
+      const whereClause = {};
+  
+      // Add search functionality if search parameter is provided
+      if (search) {
+        whereClause['$identifiant$'] = {
+          [Op.like]: `%${search}%`,  // Use Op.like for MySQL compatibility
+        };
+      }
+  
+      // Filter by 'etatcommande' if provided and not 'tout'
+      if (etatcommande && etatcommande !== "tout") {
+        whereClause['etatClient'] = etatcommande;
+      }
+  
+      // Filter to exclude commandes with null or empty string as Identifiant
+      whereClause['identifiant'] = {
+        [Op.ne]: "",  // Exclude empty string
+        [Op.not]: null  // Exclude null
+      };
+  
+      // Fetch total count of commandes
+      const totalCount = await Model.commandeEnDetail.count({
+        where: whereClause,
+      });
+  
+      // Fetch commandes with pagination, sorting, and filtering
+      const commandes = await Model.commandeEnDetail.findAll({
+        offset: +offset,
+        order: order,
+        limit: +pageSize,
+        where: whereClause,
+        attributes: {
+          exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
+        },
+        include: [
+          {
+            model: Model.labrairie,
+            attributes: ["id", "nameLibrairie", "imageStore"],
           },
+          {
+            model: Model.produitlabrairie,
+            attributes: ["id", "titre", "prix"],
+            include: [
+              {
+                model: Model.imageProduitLibrairie,
+                attributes: ["name_Image"],
+              },
+            ],
+          },
+        ],
+      });
+  
+      // Handle the response based on whether commandes were found
+      if (commandes.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return res.status(200).json({
+          success: true,
+          commandes: commandes,
+          totalPages: totalPages,
         });
-        const commandes = await Model.commandeEnDetail.findAll({
-          offset: offset,
-          order: order,
-          limit: +pageSize,
-          where: {
-            identifiant: identifiant,
-          },
-          attributes: {
-            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
-          },
-          include: [
-            {
-              model: Model.labrairie,
-              attributes: ["id", "nameLibrairie", "imageStore"],
-            },
-            {
-              model: Model.produitlabrairie,
-              attributes: ["id", "titre", "prix"],
-              include: [
-                {
-                  model: Model.imageProduitLibrairie,
-                  attributes: ["name_Image"],
-                },
-              ],
-            },
-          ],
-        });
-        if (commandes.length > 0) {
-          const totalPages = Math.ceil(totalCounttout / pageSize);
-          return res.status(200).json({
-            success: true,
-            commandes: commandes,
-            totalPages: totalPages,
-          });
-        } else {
-          return res.status(400).json({
-            success: false,
-            err: "Aucune commande trouvée pour cet utilisateur.",
-          });
-        }
       } else {
-        const totalCount = await Model.commandeEnDetail.count({
-          where: {
-            identifiant: identifiant,
-            etatClient: etatcommande,
-          },
+        return res.status(404).json({
+          success: false,
+          err: "Aucune commande trouvée pour cet utilisateur.",
         });
-        const commandes = await Model.commandeEnDetail.findAll({
-          offset: offset,
-          order: order,
-          limit: +pageSize,
-          where: {
-            identifiant: identifiant,
-            etatClient: etatcommande,
-          },
-          attributes: {
-            exclude: ["updatedAt", "usercommdetfk", "labrcomdetfk"],
-          },
-          include: [
-            {
-              model: Model.labrairie,
-              attributes: ["id", "nameLibrairie", "imageStore"],
-            },
-            {
-              model: Model.produitlabrairie,
-              attributes: ["id", "titre", "prix"],
-              include: [
-                {
-                  model: Model.imageProduitLibrairie,
-                  attributes: ["name_Image"],
-                },
-              ],
-            },
-          ],
-        });
-        if (commandes.length > 0) {
-          const totalPages = Math.ceil(totalCount / pageSize);
-          return res.status(200).json({
-            success: true,
-            commandes: commandes,
-            totalPages: totalPages,
-          });
-        } else {
-          return res.status(400).json({
-            success: false,
-            err: "Aucune commande trouvée pour cet utilisateur.",
-          });
-        }
       }
     } catch (err) {
       return res.status(400).json({
@@ -1284,6 +1256,9 @@ const commandeDetailController = {
       });
     }
   },
+  
+  
+  
   findOneCommande: async (req, res) => {
     try {
       const commandId = req.params.id;

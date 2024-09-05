@@ -4,7 +4,7 @@ const jwt = require("jsonwebtoken");
 const sendMail = require("../config/Noemailer.config");
 const { response } = require("express");
 const cloudinary = require("../middleware/cloudinary");
-
+const { Op } = require('sequelize');
 const { where } = require("sequelize");
 const { createAccessToken, createRefreshToken } = require("../services/jwt");
 const {
@@ -84,7 +84,10 @@ const userController = {
         return res
           .status(400)
           .json({ success: false, err: error.details[0].message });
-      Model.user.findOne({ where: { email: email } }).then((user) => {
+      Model.user.findOne({ where: { 
+        email: email,
+        role: { [Op.ne]: 'inviter' }
+       } }).then((user) => {
         if (user !== null) {
           return res.status(400).json({
             success: false,
@@ -206,7 +209,6 @@ const userController = {
       });
     }
   },
-
   sendMailforgotPassword: async (req, res) => {
     try {
       Model.user

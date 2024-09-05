@@ -219,7 +219,7 @@ const codePromo = {
         });
     }
 },
- updateEtat : async (req, res) => {
+updateEtat: async (req, res) => {
   const { id } = req.params;
   const { etat } = req.body;
 
@@ -237,6 +237,80 @@ const codePromo = {
       return res.status(400).json({
         success: false,
         message: "Invalid etat value. It must be 'Confirmer' or 'Non_Confirmer'.",
+      });
+    }
+
+    // Find the codepromo by id
+    const codePromo = await Model.codePromo.findOne({
+      where: { id: id },
+    });
+
+    // Check if the codepromo exists
+    if (!codePromo) {
+      return res.status(404).json({
+        success: false,
+        message: "Code not found.",
+      });
+    }
+
+    // Prevent status change if the current status is 'bloque'
+    if (codePromo.etat === 'bloque') {
+      return res.status(400).json({
+        success: false,
+        message: "Status cannot be changed because the codePromo is blocked.",
+      });
+    }
+
+    // Update the etat of the codepromo
+    const [affectedRows] = await Model.codePromo.update(
+      { etat: etat },
+      { where: { id: id } }
+    );
+
+    // Check if any rows were updated
+    if (affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Code not found or etat is the same as current.",
+      });
+    }
+
+    // Fetch the updated codepromo
+    const updatedCodePromo = await Model.codePromo.findOne({
+      where: { id: id },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Code status updated successfully",
+      codePromo: updatedCodePromo,
+    });
+
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
+},
+updateEtatAdmin: async (req, res) => {
+  const { id } = req.params;
+  const { etat } = req.body;
+
+  try {
+    // Validate inputs
+    if (!id || !etat) {
+      return res.status(400).json({
+        success: false,
+        message: "ID and etat are required.",
+      });
+    }
+
+    // Check if etat is valid for admin change
+    if (!['active', 'bloque'].includes(etat)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid etat value. It must be 'active' or 'bloque'.",
       });
     }
 
@@ -274,7 +348,7 @@ const codePromo = {
 
     return res.status(200).json({
       success: true,
-      message: "Code status updated successfully",
+      message: "Code status updated successfully by admin",
       codePromo: updatedCodePromo,
     });
 

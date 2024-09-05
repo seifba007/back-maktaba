@@ -12,6 +12,7 @@ router.get("/findBypartenaire/:id", codePromoController.findBypartenaire)
 router.get("/findBypartenairecommande/:id", codePromoController.findBypartenairecommande)
 router.get("/findBycode", codePromoController.findBycode)
 router.put("/updateEtat", codePromoController.updateEtat)
+router.put("/updateEtatAdmin/:id" , codePromoController.updateEtatAdmin)
 router.put("/updateEtat/:id" , codePromoController.updateEtat)
 
 module.exports = router

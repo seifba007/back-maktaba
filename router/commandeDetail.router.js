@@ -16,7 +16,7 @@ router.get(
 
 router.get(
   "/findCommandeByidentifiant",
-  commandeDetailController.findCommandeByidentifiant
+  commandeDetailController.findCommandeByIdentifiant
 );
 
 router.get(

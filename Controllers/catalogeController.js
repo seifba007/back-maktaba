@@ -73,11 +73,14 @@ const CatalogeController = {
     const offset = (page - 1) * pageSize;
     const filters = req.query;
     let whereClause = {};
+    let order = [];
   
+    // Sorting logic
     if (sortBy && sortOrder) {
       order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     }
   
+    // Filters
     if (filters.category) {
       whereClause.categoriecatalogefk = filters.category;
     }
@@ -107,13 +110,16 @@ const CatalogeController = {
       };
     }
   
+    // Ensure the catalog entry is visible
     whereClause.etat = "visible";
   
-    const totalCount = await Model.cataloge.count({
-      where: whereClause,
-    });
-  
     try {
+      // Count total matching records
+      const totalCount = await Model.cataloge.count({
+        where: whereClause,
+      });
+  
+      // Fetch catalog entries with pagination and filters
       const catalogue = await Model.cataloge.findAll({
         order: order,
         limit: +pageSize,
@@ -121,12 +127,17 @@ const CatalogeController = {
         where: whereClause,
         attributes: {},
         include: [
-          { model: Model.imageCataloge, attributes: ["id", "name_Image"] },
+          {
+            model: Model.imageCataloge,
+            attributes: ["id", "name_Image"],
+            required: true, // Ensures only entries with imageCataloge are returned
+          },
           { model: Model.categorie },
           { model: Model.Souscategorie },
         ],
       });
   
+      // Check if catalog entries were found
       if (catalogue.length > 0) {
         const totalPages = Math.ceil(totalCount / pageSize);
         return res.status(200).json({
@@ -147,6 +158,7 @@ const CatalogeController = {
       });
     }
   },
+  
   
   findOne: async (req, res) => {
     try {
