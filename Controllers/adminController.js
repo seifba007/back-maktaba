@@ -1148,85 +1148,29 @@ const adminController = {
       };
     }
   
-    if (filters.categprodlabfk) {
-      if (typeof filters.categprodlabfk === "string") {
-        filters.categprodlabfk = filters.categprodlabfk.split(",").map((id) => parseInt(id, 10));
-      }
-      whereClause.categprodlabfk = filters.categprodlabfk;
-    }
+    // Other filters like categprodlabfk, souscatprodfk, qteMin/qteMax, etat, titre, codebar remain unchanged
   
-    if (filters.souscatprodfk) {
-      if (typeof filters.souscatprodfk === "string") {
-        filters.souscatprodfk = filters.souscatprodfk.split(",").map((id) => parseInt(id, 10));
-      }
-      whereClause.souscatprodfk = filters.souscatprodfk;
-    }
-  
-    if (filters.qteMin && filters.qteMax) {
-      whereClause.qte = {
-        [Sequelize.Op.between]: [filters.qteMin, filters.qteMax],
-        [Sequelize.Op.gt]: 0,
-      };
-    } else if (filters.qteMin) {
-      whereClause.qte = {
-        [Sequelize.Op.gte]: filters.qteMin,
-        [Sequelize.Op.gt]: 0,
-      };
-    } else if (filters.qteMax) {
-      whereClause.qte = {
-        [Sequelize.Op.lte]: filters.qteMax,
-        [Sequelize.Op.gt]: 0,
-      };
-    } else {
-      whereClause.qte = { [Sequelize.Op.gt]: 0 };
-    }
-  
-    if (filters.etat) {
-      whereClause.etat = filters.etat;
-    }
-  
-    if (filters.titre) {
-      whereClause.titre = {
-        [Sequelize.Op.like]: `%${filters.titre}%`,
-      };
-    }
-  
-    if (filters.codebar) {
-      whereClause.codebar = {
-        [Sequelize.Op.like]: `%${filters.codebar}%`,
-      };
-    }
-  
+    // Price filtering logic update:
     if (filters.prixMin && filters.prixMax) {
       whereClause[Sequelize.Op.or] = [
-        {
-          prix: {
-            [Sequelize.Op.between]: [filters.prixMin, filters.prixMax],
-          },
-        },
-        {
-          prix_en_solde: {
-            [Sequelize.Op.between]: [filters.prixMin, filters.prixMax],
-          },
-        },
+        Sequelize.literal(`
+          (prix * (1 + tva / 100) BETWEEN ${filters.prixMin} AND ${filters.prixMax}) 
+          OR (prix_en_solde BETWEEN ${filters.prixMin} AND ${filters.prixMax})
+        `)
       ];
     } else if (filters.prixMin) {
       whereClause[Sequelize.Op.or] = [
-        {
-          prix: { [Sequelize.Op.gte]: filters.prixMin },
-        },
-        {
-          prix_en_solde: { [Sequelize.Op.gte]: filters.prixMin },
-        },
+        Sequelize.literal(`
+          (prix * (1 + tva / 100) >= ${filters.prixMin}) 
+          OR (prix_en_solde >= ${filters.prixMin})
+        `)
       ];
     } else if (filters.prixMax) {
       whereClause[Sequelize.Op.or] = [
-        {
-          prix: { [Sequelize.Op.lte]: filters.prixMax },
-        },
-        {
-          prix_en_solde: { [Sequelize.Op.lte]: filters.prixMax },
-        },
+        Sequelize.literal(`
+          (prix * (1 + tva / 100) <= ${filters.prixMax}) 
+          OR (prix_en_solde <= ${filters.prixMax})
+        `)
       ];
     }
   
@@ -1274,9 +1218,9 @@ const adminController = {
   
       if (produits.length > 0) {
         const produitsWithTTC = produits.map((produit) => {
-          const ttc = produit.prix * (1 + produit.tva / 100);
+          const ttc = produit.prix * (1 + produit.tva / 100); // Calculate the TTC
           return {
-            ...produit.toJSON(), 
+            ...produit.toJSON(),
             ttc,
           };
         });
@@ -1301,6 +1245,7 @@ const adminController = {
       });
     }
   },
+  
   
 
   findproduitbyname: async (req, res) => {

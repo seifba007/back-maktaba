@@ -401,7 +401,7 @@ const commandeDetailController = {
 
       commande = await Model.commandeSpecial.create({
         etatClient: etatClient,
-        Adresse: addresseinv.id,
+        Adresse: Adresse,
         Description: Description,
         codepromo: codepromo,
         email: email,
@@ -1666,6 +1666,11 @@ const commandeDetailController = {
               include: [
                 {
                   model: Model.client,
+                  include: [
+                    {
+                      model: Model.adresses,
+                    },
+                  ],
                 },
               ],
             },

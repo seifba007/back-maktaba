@@ -1,6 +1,5 @@
 const { response } = require("express");
 const Model = require("../Models/index");
-const { catalogeValidation } = require("../middleware/auth/validationSchema");
 const { Sequelize, where } = require("sequelize");
 const cloudinary = require("../middleware/cloudinary");
 
