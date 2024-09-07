@@ -7,9 +7,6 @@ const cloudinary = require("../middleware/cloudinary");
 
 const {
   addadminValidation,
-  deletecategoryValidation,
-  addcategoryValidation,
-  filtercommandeValidation,
 } = require("../middleware/auth/validationSchema");
 const adminController = {
   add: async (req, res) => {
@@ -1152,27 +1149,44 @@ const adminController = {
   
     // Price filtering logic update:
     if (filters.prixMin && filters.prixMax) {
-      whereClause[Sequelize.Op.or] = [
+      whereClause[Sequelize.Op.and] = [
         Sequelize.literal(`
-          (prix * (1 + tva / 100) BETWEEN ${filters.prixMin} AND ${filters.prixMax}) 
-          OR (prix_en_solde BETWEEN ${filters.prixMin} AND ${filters.prixMax})
-        `)
+          (
+            (prix_en_solde > 0 AND prix_en_solde BETWEEN ${filters.prixMin} AND ${filters.prixMax}) 
+            OR 
+            (prix_en_solde = 0 AND (prix * (1 + tva / 100)) BETWEEN ${filters.prixMin} AND ${filters.prixMax})
+            OR
+            (prix_en_solde = 0 AND tva IS NULL AND prix BETWEEN ${filters.prixMin} AND ${filters.prixMax})
+          )
+        `),
       ];
     } else if (filters.prixMin) {
-      whereClause[Sequelize.Op.or] = [
+      whereClause[Sequelize.Op.and] = [
         Sequelize.literal(`
-          (prix * (1 + tva / 100) >= ${filters.prixMin}) 
-          OR (prix_en_solde >= ${filters.prixMin})
-        `)
+          (
+            (prix_en_solde > 0 AND prix_en_solde >= ${filters.prixMin}) 
+            OR 
+            (prix_en_solde = 0 AND (prix * (1 + tva / 100)) >= ${filters.prixMin})
+            OR
+            (prix_en_solde = 0 AND tva IS NULL AND prix >= ${filters.prixMin})
+          )
+        `),
       ];
     } else if (filters.prixMax) {
-      whereClause[Sequelize.Op.or] = [
+      whereClause[Sequelize.Op.and] = [
         Sequelize.literal(`
-          (prix * (1 + tva / 100) <= ${filters.prixMax}) 
-          OR (prix_en_solde <= ${filters.prixMax})
-        `)
+          (
+            (prix_en_solde > 0 AND prix_en_solde <= ${filters.prixMax}) 
+            OR 
+            (prix_en_solde = 0 AND (prix * (1 + tva / 100)) <= ${filters.prixMax})
+            OR
+            (prix_en_solde = 0 AND tva IS NULL AND prix <= ${filters.prixMax})
+          )
+        `),
       ];
     }
+    
+    
   
     try {
       const totalCount = await Model.produitlabrairie.count({
