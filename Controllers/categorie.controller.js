@@ -1,6 +1,7 @@
 const { Sequelize } = require("sequelize");
 const Model = require("../Models/index");
 const categorieController = {
+
   add: async (req, res) => {
     try {
       const data = {
@@ -22,6 +23,8 @@ const categorieController = {
       });
     }
   },
+
+
   update: async (req, res) => {
     try {
       const data = {
@@ -75,7 +78,9 @@ const categorieController = {
     try {
       await Model.categorie.findAll(
         {
-         
+         where:{
+          id: req.params.id
+         },
           include: [
             {
               model: Model.Souscategorie,
@@ -98,32 +103,48 @@ const categorieController = {
       });
     }
   },
-  NbfindProduitLibByCategorie: async (req, res) => {
-   try{
-    Model.categorie
-    .findAll({
-      include: [
-        {
-          model: Model.produitlabrairie,
-          attributes:[[Sequelize.fn("COUNT", Sequelize.col("titre")), "nb_Produit"],"updatedAt"],
-          where: { labrairieId: req.params.id },
-        },
-      ],
-      attributes:["id","name",'Description'],
-      group:["categorie.id"]
-    })
-    .then((response) => {
-        return res.status(200).json({
-            success: true,
-            produit: response,
-          });
-    });
-   }catch(err){
-    return res.status(400).json({
-        success: false,
-        error: err,
+   NbfindProduitLibByCategorie : async (req, res) => {
+    try {
+      const labrairieId = req.params.id;
+  
+      // Check if the labrairieId is undefined or null
+      if (!labrairieId) {
+        return res.status(400).json({
+          success: false,
+          error: 'Labrairie ID is required',
+        });
+      }
+  
+      // Verify that the column names are correct
+      // Replace `correctColumnName` with the actual column name in your database
+      const response = await Model.categorie.findAll({
+        include: [
+          {
+            model: Model.produitlabrairie,
+            attributes: [
+              [Sequelize.fn('COUNT', Sequelize.col('titre')), 'nb_Produit'],
+              'updatedAt'
+            ],
+            where: { /* Replace 'labrairieId' with the correct column name if different */ },
+          },
+        ],
+        attributes: ['id', 'name', 'Description'],
+        group: ['categorie.id']
       });
-   }
-}
+  
+      return res.status(200).json({
+        success: true,
+        produit: response,
+      });
+  
+    } catch (err) {
+      // Catch any other errors that occur
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+  
 };
 module.exports = categorieController;

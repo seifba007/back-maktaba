@@ -1,5 +1,5 @@
 module.exports = (db, DataTypes) => {
-    return  db.define('adresses',{
+    return  db.define('adresse',{
       id: { type: DataTypes.INTEGER,autoIncrement: true,primaryKey: true },
       Nom_de_adresse : {type : DataTypes.STRING},
       Adresse :{type : DataTypes.STRING},

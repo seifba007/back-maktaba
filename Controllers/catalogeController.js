@@ -1,83 +1,155 @@
 const { response } = require("express");
 const Model = require("../Models/index");
-const { catalogeValidation } = require("../middleware/auth/validationSchema");
+const { Sequelize, where } = require("sequelize");
+const cloudinary = require("../middleware/cloudinary");
+
 const CatalogeController = {
-  
   add: async (req, res) => {
     try {
-      req.body["image"] = req.files;
-      const { titre, description, prix, image,etat, AdminId, categorieId,SouscategorieId} =
-        req.body;
+      const {
+        titre,
+        description,
+        prix,
+        etat,
+        codebar,
+        admincatalogefk,
+        categoriecatalogefk,
+        souscatalogefk,
+      } = req.body;
+
       const data = {
         titre: titre,
         description: description,
-        prix: prix,
         etat: etat,
-        AdminId: AdminId,
-        categorieId: categorieId,
-        SouscategorieId:SouscategorieId
+        codebar: codebar,
+        admincatalogefk: admincatalogefk,
+        categoriecatalogefk: categoriecatalogefk,
+        souscatalogefk: souscatalogefk,
       };
-      const images = [];
-      Model.cataloge.create(data).then((response) => {
-        if (response !== null) {
-          image.map((e) => {
-            images.push({
-              name_Image: e.filename,
-              catalogeId: response.id,
+
+      const catalog = await Model.cataloge.create(data);
+
+      if (catalog != null) {
+        const uploadPromises = [];
+
+        req.files.forEach((file) => {
+          const uploadPromise = cloudinary.uploader
+            .upload(file.path)
+            .then((result) => {
+              const imageUrl = result.secure_url;
+
+              return Model.imageCataloge.create({
+                name_Image: imageUrl,
+                imagecatalogefk: catalog.id,
+              });
             });
-          });
-          Model.imageCataloge.bulkCreate(images).then((response) => {
-            if (response !== null) {
-              return res.status(200).json({
-                success: true,
-                message: "Done !! ",
-              });
-            } else {
-              return res.status(400).json({
-                success: false,
-                error: "error",
-              });
-            }
-          });
-        } else {
-          return res.status(400).json({
-            success: false,
-            message: "error to create cataloge",
-          });
-        }
-      });
+
+          uploadPromises.push(uploadPromise);
+        });
+
+        await Promise.all(uploadPromises);
+
+        return res.status(200).json({
+          success: true,
+          message: "Catalog created successfully",
+          catalog:catalog
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: "Error creating catalog",
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
-      });
-    }
-  },
+        error: err.message,
+      });
+    }
+  },
   findAll: async (req, res) => {
-    try {
-      Model.cataloge
-        .findAll({
-          attributes: {
-            exclude: ["updatedAt", "AdminId","categorieId"],
+    const { page, pageSize, sortBy, sortOrder } = req.query;
+    const offset = (page - 1) * pageSize;
+    const filters = req.query;
+    let whereClause = {};
+    let order = [];
+  
+    // Sorting logic
+    if (sortBy && sortOrder) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
+  
+    // Filters
+    if (filters.category) {
+      whereClause.categoriecatalogefk = filters.category;
+    }
+  
+    if (filters.subcategory) {
+      whereClause.souscatalogefk = filters.subcategory;
+    }
+  
+    if (filters.titre) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          titre: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
           },
-          include: [
-            { model: Model.imageCataloge, attributes: ["id","name_Image"]},
-            { model: Model.categorie, attributes: ["id", "name"]},
-          ],
-        })
-        .then((response) => {
-          if (response !== null) {
-            return res.status(200).json({
-              success: true,
-              produits: response,
-            });
-          } else {
-            return res.status(200).json({
-              success: false,
-              produits: [],
-            });
-          }
+        },
+        {
+          codebar: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
+          },
+        },
+      ];
+    }
+  
+    if (filters.codebar) {
+      whereClause.codebar = {
+        [Sequelize.Op.like]: `%${filters.codebar}%`,
+      };
+    }
+  
+    // Ensure the catalog entry is visible
+    whereClause.etat = "visible";
+  
+    try {
+      // Count total matching records
+      const totalCount = await Model.cataloge.count({
+        where: whereClause,
+      });
+  
+      // Fetch catalog entries with pagination and filters
+      const catalogue = await Model.cataloge.findAll({
+        order: order,
+        limit: +pageSize,
+        offset: offset,
+        where: whereClause,
+        attributes: {},
+        include: [
+          {
+            model: Model.imageCataloge,
+            attributes: ["id", "name_Image"],
+            required: true, // Ensures only entries with imageCataloge are returned
+          },
+          { model: Model.categorie },
+          { model: Model.Souscategorie },
+        ],
+      });
+  
+      // Check if catalog entries were found
+      if (catalogue.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return res.status(200).json({
+          success: true,
+          catalogue: catalogue,
+          totalPages: totalPages,
         });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "il n'y a pas des catalogues",
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -85,15 +157,17 @@ const CatalogeController = {
       });
     }
   },
+  
+  
   findOne: async (req, res) => {
     try {
       Model.cataloge
         .findOne({
           where: { id: req.params.id },
           include: [
-            { model: Model.imageCataloge, attributes: ["id","name_Image"] },
-            { model: Model.categorie, attributes: ["id", "name"] },
-            { model: Model.Souscategorie, attributes: ["id", "name"] },
+            { model: Model.imageCataloge, attributes: ["id", "name_Image"] },
+            { model: Model.categorie },
+            { model: Model.Souscategorie },
           ],
         })
         .then((response) => {
@@ -116,49 +190,52 @@ const CatalogeController = {
       });
     }
   },
-  delete : async (req,res)=>{
-    try{
-        Model.cataloge.destroy({
-            where: {
-              id: req.params.id,
-            },
-          }).then((response)=>{
-            if(response!=0){
-                return res.status(200).json({
-                    success: true,
-                    message: " produit deleted",
-                  });
-            }else{
-                return res.status(400).json({
-                    success: false,
-                    message: " produit deleted",
-                  });
-            }
-          })
-    }catch(err){
-        return res.status(400).json({
-            success: false,
-            error: err,
-          });
+  delete: async (req, res) => {
+    try {
+      Model.cataloge
+        .destroy({
+          where: {
+            id: req.params.id,
+          },
+        })
+        .then((response) => {
+          if (response != 0) {
+            return res.status(200).json({
+              success: true,
+              message: " cataloge deleted",
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "delete failed",
+            });
+          }
+        });
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err,
+      });
     }
   },
-
-  changeVisibilite : async(req,res)=>{
-    try{
-      Model.cataloge.update({etat:req.body.etat},{where:{id:req.params.id}}).then((response)=>{
-        if(response!==0){
-          return res.status(200).json({
-            success: true,
-            message: "  change etat produi tDone",
-          });
-        }else{
-          return res.status(200).json({
-            success: false,
-            message : "error to change etat "
-          });
-        }
-      })
-    }catch(err){
+  changeVisibilite: async (req, res) => {
+    try {
+      Model.cataloge
+        .update({ etat: req.body.etat }, { where: { id: req.params.id } })
+        .then((response) => {
+          if (response !== 0) {
+            return res.status(200).json({
+              success: true,
+              message: "  change etat cataloge tDone",
+            });
+          } else {
+            return res.status(200).json({
+              success: false,
+              message: "error to change etat ",
+            });
+          }
+        });
+    } catch (err) {
       return res.status(400).json({
         success: false,
         error: err,
@@ -167,51 +244,151 @@ const CatalogeController = {
   },
   update: async (req, res) => {
     try {
-      const { titre, description, etat,categorieId,SouscategorieId,image} =
-      req.body;
+      const catalogId = req.params.id;
+      const {
+        titre,
+        description,
+        prix,
+        etat,
+        codebar,
+        admincatalogefk,
+        categoriecatalogefk,
+        souscatalogefk,
+      } = req.body;
+
       const data = {
-        titre : titre,
-        description : description , 
-        categorieId : categorieId ,
-        SouscategorieId:SouscategorieId,
-        etat:etat}
-       Model.cataloge
-        .update(data, { where: { id: req.params.id } })
-        .then((response) => {
-          if (response !== 0) {
-            if (req.files.length !== 0) {
-              req.body["image"] = req.files[0].filename;
-              Model.imageCataloge
-                .update(
-                  { name_Image:req.body.image },
-                  { where: { catalogeId:req.params.id } }
-                )
-                .then((response) => {
-                  if (response !== 0) {
-                    return res.status(200).json({
-                      success: true,
-                      message: " update done ! ",
-                    });
-                  } else {
-                    return res.status(400).json({
-                      success: false,
-                      error: "error update ",
-                    });
-                  }
-                }).catch ((err) => {
-                  return res.status(400).json({
-                    success: false,
-                    error: err,
-                  });
-                });
-            } else {
-              return res.status(200).json({
-                success: true,
-                message: "update done",
-              });
-            }
-          }
+        titre: titre,
+        description: description,
+        prix: prix,
+        etat: etat,
+        codebar:codebar,
+        admincatalogefk: admincatalogefk,
+        categoriecatalogefk: categoriecatalogefk,
+        souscatalogefk: souscatalogefk,
+      };
+
+      const updatedCatalog = await Model.cataloge.update(data, {
+        where: { id: catalogId },
+      });
+
+      if (req.files.length > 0) {
+        Model.imageCataloge.destroy({
+          where: {
+            imagecatalogefk: catalogId,
+          },
         });
+      }
+
+      if (updatedCatalog != null) {
+        const uploadPromises = [];
+
+        req.files.forEach((file) => {
+          const uploadPromise = cloudinary.uploader
+            .upload(file.path)
+            .then((result) => {
+              const imageUrl = result.secure_url;
+
+              return Model.imageCataloge.create({
+                name_Image: imageUrl,
+                imagecatalogefk: catalogId,
+              });
+            });
+
+          uploadPromises.push(uploadPromise);
+        });
+
+        await Promise.all(uploadPromises);
+
+        return res.status(200).json({
+          success: true,
+          message: "Catalog updated successfully",
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: err.message,
+        });
+      }
+    } catch (err) {
+      return res.status(400).json({
+        success: false,
+        error: err.message,
+      });
+    }
+  },
+
+  findAllCatalogue: async (req, res) => {
+    const { page, pageSize, sortBy, sortOrder } = req.query;
+    const offset = (page - 1) * pageSize;
+    const filters = req.query;
+    let whereClause = {etat: "Visible"};
+
+    if (sortBy && sortOrder) {
+      order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
+    }
+
+    if (filters.category) {
+      whereClause.categoriecatalogefk = filters.category;
+    }
+
+    if (filters.subcategory) {
+      whereClause.souscatalogefk = filters.subcategory;
+    }
+
+    if (filters.titre) {
+      whereClause[Sequelize.Op.or] = [
+        {
+          titre: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
+          },
+        },
+        {
+          codebar: {
+            [Sequelize.Op.like]: `%${filters.titre}%`,
+          },
+        },
+      ];
+    }
+
+    if (filters.codebar) {
+      whereClause.codebar = {
+        [Sequelize.Op.like]: `%${filters.codebar}%`,
+      };
+    }
+
+    const totalCount = await Model.cataloge.count({
+      where: whereClause,
+    });
+
+    try {
+      const catalogue = await Model.cataloge.findAll({
+        order: order,
+        limit: +pageSize,
+        offset: offset,
+        where: whereClause,
+        attributes: {
+          exclude: ["updatedAt", "admincatalogefk", "categoriecatalogefk"],
+        },
+        include: [
+          { model: Model.imageCataloge, attributes: ["id", "name_Image"] },
+          { model: Model.categorie },
+          { model: Model.Souscategorie },
+        ],
+      });
+
+      if (catalogue.length > 0) {
+        const totalPages = Math.ceil(totalCount / pageSize);
+        return res.status(200).json({
+          success: true,
+          catalogue: catalogue,
+          totalPages: totalPages,
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          err: "il n y 'a pas des catalogues",
+        });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -220,4 +397,5 @@ const CatalogeController = {
     }
   },
 };
+
 module.exports = CatalogeController;

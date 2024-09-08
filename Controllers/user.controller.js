@@ -3,6 +3,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const sendMail = require("../config/Noemailer.config");
 const { response } = require("express");
+const cloudinary = require("../middleware/cloudinary");
+const { Op } = require('sequelize');
 const { where } = require("sequelize");
 const { createAccessToken, createRefreshToken } = require("../services/jwt");
 const {
@@ -17,7 +19,6 @@ const userController = {
   login: async (req, res) => {
     const data = req.body;
     const { email, password } = req.body;
-
     try {
       const { error } = loginValidation(data);
       if (error)
@@ -29,7 +30,7 @@ const userController = {
         if (User === null) {
           return res.status(400).json({
             success: false,
-            err: "email is not correct",
+            err: "l'email n'existe pas",
           });
         } else {
           if (User.etatCompte !== "bloque") {
@@ -38,10 +39,10 @@ const userController = {
                 if (!isMatch) {
                   return res.status(400).json({
                     success: false,
-                    err: "password is not correct",
+                    err: "le mot de passe n'est pas correct",
                   });
                 } else {
-                  const accessToken = createAccessToken({ id: User.id });
+                  const accessToken = createAccessToken({ id: User.id});
                   const refreshToken = createRefreshToken({ id: User.id });
                   refreshTokens.push(refreshToken);
                   res.status(200).json({
@@ -49,14 +50,14 @@ const userController = {
                     message: "success",
                     accessToken: accessToken,
                     refreshToken: refreshToken,
-                    user: User 
+                    user: User,
                   });
                 }
               });
             } else {
               return res.status(400).json({
                 success: false,
-                accessToken: "email",
+                err: "verifie votre compte s'il vous plait",
               });
             }
           } else {
@@ -76,15 +77,17 @@ const userController = {
   },
   register: async (req, res) => {
     const data = req.body;
-    const { fullname, email, password } = req.body;
+    const { fullname, email, password,telephone } = req.body;
     try {
-      //------------------------------- REGISTER VALIDATION HANDLER------------------------//
       const { error } = registerValidation(data);
       if (error)
         return res
           .status(400)
           .json({ success: false, err: error.details[0].message });
-      Model.user.findOne({ where: { email: email } }).then((user) => {
+      Model.user.findOne({ where: { 
+        email: email,
+        role: { [Op.ne]: 'inviter' }
+       } }).then((user) => {
         if (user !== null) {
           return res.status(400).json({
             success: false,
@@ -92,6 +95,19 @@ const userController = {
           });
         } else {
           const passwordHash = bcrypt.hashSync(password, 10);
+          function generateVerificationToken(length) {
+            const characters =
+              "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            let token = "";
+
+            for (let i = 0; i < length; i++) {
+              const randomIndex = Math.floor(Math.random() * characters.length);
+              token += characters.charAt(randomIndex);
+            }
+
+            return token;
+          }
+          const verificationToken = generateVerificationToken(32);
           const datauser = {
             fullname: fullname,
             email: email,
@@ -99,16 +115,19 @@ const userController = {
             email_verifie: "non_verifie",
             role: "client",
             etatCompte: "active",
+            point: 0,
+            telephone:telephone,
+            verification_token: verificationToken,
           };
           Model.user.create(datauser).then((user) => {
             if (user !== null) {
               const dataClient = {
                 id: user.id,
-                userId: user.id,
+                userclientfk: user.id,
               };
               Model.client.create(dataClient).then((client) => {
                 if (client !== null) {
-                  let link = `${process.env.URL_BACK}/user/verif/${req.body.email}`;
+                  let link = `${process.env.URL_BACK}/user/verif/${verificationToken}`;
                   sendMail.sendEmailVerification(req.body.email, link);
                   res.status(200).json({
                     success: true,
@@ -130,7 +149,7 @@ const userController = {
   emailVerification: async (req, res) => {
     try {
       Model.user
-        .findOne({ where: { email: req.params.email } })
+        .findOne({ where: { verification_token: req.params.email } })
         .then(async (user) => {
           if (user !== null) {
             await Model.user
@@ -138,7 +157,7 @@ const userController = {
                 { email_verifie: "verifie" },
                 {
                   where: {
-                    email: req.params.email,
+                    verification_token: req.params.email,
                   },
                 }
               )
@@ -238,7 +257,7 @@ const userController = {
       Model.user.findOne({ where: { id: id } }).then((olduser) => {
         if (olduser !== null) {
           const secret = process.env.forget_key + olduser.password;
-          jwt.verify(token, secret, async (err, User) => {
+          jwt.verify(token, secret, async (err, olduser) => {
             if (!err) {
               const newPassword = bcrypt.hashSync(password, 10);
               await Model.user
@@ -299,34 +318,15 @@ const userController = {
       const { email, fullname } = req.body;
       Model.user.findOne({ where: { email: email } }).then((user) => {
         if (user !== null) {
-          var accessToken = jwt.sign(
-            {
-              id: user.id,
-              fullname: user.fullname,
-              role: user.role,
-              avatar: user.avatar,
-              etatCompte: user.etatCompte,
-            },
-            process.env.PRIVATE_KEY,
-            { expiresIn: "1h" }
-          );
-          var refreshToken = jwt.sign(
-            {
-              id: user.id,
-              fullname: user.fullname,
-              role: user.role,
-              avatar: user.avatar,
-              etatCompte: user.etatCompte,
-            },
-            process.env.REFRESH_KEY,
-            { expiresIn: "30d" }
-          );
+          const accessToken = createAccessToken({ id: user.id });
+          const refreshToken = createRefreshToken({ id: user.id });
           refreshTokens.push(refreshToken);
           return res.status(200).json({
             success: true,
             message: "success login",
             accessToken: accessToken,
             refreshToken: refreshToken,
+            user:user
           });
         } else {
           const characters =
@@ -349,36 +349,20 @@ const userController = {
             if (user !== null) {
               const dataClient = {
                 id: user.id,
-                userId: user.id,
+                userclientfk: user.id,
               };
               Model.client.create(dataClient).then((client) => {
                 if (client !== null) {
-                  var accessToken = jwt.sign(
-                    {
-                      id: user.id,
-                      fullname: fullname,
-                      role: user.role,
-                      etatCompte: user.etatCompte,
-                    },
-                    process.env.PRIVATE_KEY,
-                    { expiresIn: "1h" }
-                  );
-                  var refreshToken = jwt.sign(
-                    {
-                      id: user.id,
-                      fullname: fullname,
-                      role: user.role,
-                      etatCompte: user.etatCompte,
-                    },
-                    process.env.REFRESH_KEY,
-                    { expiresIn: "30d" }
-                  );
+                  const accessToken = createAccessToken({ id: user.id });
+                  const refreshToken = createRefreshToken({ id: user.id });
                   refreshTokens.push(refreshToken);
                   return res.status(200).json({
                     success: true,
                     message: "success create and login ",
                     accessToken: accessToken,
                     refreshToken: refreshToken,
+                    passwordor: Password,
+                    client: client,
                   });
                 }
               });
@@ -389,7 +373,7 @@ const userController = {
     } catch (err) {
       return res.status(400).json({
         success: false,
-        error: err,
+        error: err.message,
       });
     }
   },
@@ -437,37 +421,64 @@ const userController = {
   },
   updateIdentite: async (req, res) => {
     try {
-      if (req.files.length !== 0) {
-        req.body["image"] = req.files[0].filename;
-      } else {
-        req.body["image"] == null;
-      }
-
-      const { Date_de_naissance, image, telephone, fullname, email } = req.body;
-      const data = {
-        Date_de_naissance:
-          Date_de_naissance === "0000-00-00" ? null : Date_de_naissance,
-        avatar: image,
-        telephone: telephone,
-        fullname: fullname,
-        email: email,
-      };
-
-      Model.user
-        .update(data, { where: { id: req.params.id } })
-        .then((response) => {
-          if (response !== 0) {
-            return res.status(200).json({
-              success: true,
-              message: "update indentite Done !!! ",
-            });
-          } else {
-            return res.status(400).json({
-              success: false,
-              message: "error update identite",
-            });
-          }
+      const { Date_de_naissance, telephone, fullname, email } = req.body;
+      if (req.files && req.files.length > 0) {
+        const filePromises = req.files.map(async (file) => {
+          const result = await cloudinary.uploader.upload(file.path);
+          return result.secure_url;
         });
+
+        Promise.all(filePromises).then((imageUrls) => {
+          const data = {
+            Date_de_naissance:
+              Date_de_naissance === "0000-00-00" ? null : Date_de_naissance,
+            avatar: imageUrls[0],
+            telephone: telephone,
+            fullname: fullname,
+            email: email,
+          };
+
+          Model.user
+            .update(data, { where: { id: req.params.id } })
+            .then((response) => {
+              if (response[0] !== 0) {
+                return res.status(200).json({
+                  success: true,
+                  message: "Update identity successful!",
+                });
+              } else {
+                return res.status(400).json({
+                  success: false,
+                  message: "Error updating identity",
+                });
+              }
+            });
+        });
+      } else {
+        const data = {
+          Date_de_naissance:
+            Date_de_naissance === "0000-00-00" ? null : Date_de_naissance,
+          telephone: telephone,
+          fullname: fullname,
+          email: email,
+        };
+
+        Model.user
+          .update(data, { where: { id: req.params.id } })
+          .then((response) => {
+            if (response[0] !== 0) {
+              return res.status(200).json({
+                success: true,
+                message: "Update identity successful!",
+              });
+            } else {
+              return res.status(400).json({
+                success: false,
+                message: "Error updating identity",
+              });
+            }
+          });
+      }
     } catch (err) {
       return res.status(400).json({
         success: false,
@@ -475,6 +486,7 @@ const userController = {
       });
     }
   },
+
   addPoint: async (req, res) => {
     try {
       Model.user.findByPk(req.params.id).then((user) => {
@@ -528,10 +540,18 @@ const userController = {
       });
     }
   },
+
   findAlluser: async (req, res) => {
+    const { sortBy, sortOrder, page, pageSize } = req.query;
+    const offset = (page - 1) * pageSize;
+    const order = [[sortBy, sortOrder === "desc" ? "DESC" : "ASC"]];
     try {
+      const usercount = await Model.user.count({});
       Model.user
         .findAll({
+          limit: +pageSize,
+          offset: offset,
+          order: order,
           attributes: [
             "id",
             "fullname",
@@ -546,9 +566,11 @@ const userController = {
         .then((response) => {
           try {
             if (response !== null) {
+              const totalPages = Math.ceil(usercount / pageSize);
               return res.status(200).json({
                 success: true,
                 users: response,
+                totalPages: totalPages,
               });
             } else {
               return res.status(200).json({
@@ -570,6 +592,7 @@ const userController = {
       });
     }
   },
+  
   delete: async (req, res) => {
     try {
       Model.user

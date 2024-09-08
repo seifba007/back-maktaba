@@ -10,4 +10,6 @@ router.post(
   suggestionProduitController.add
 );
 router.get("/findAll", suggestionProduitController.find);
+router.put("/accepter/:id", suggestionProduitController.AccepterSuggestion);
+router.delete("/deletesuggestion",AuthorizationUser, suggestionProduitController.deletesuggestion);
 module.exports = router;

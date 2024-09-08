@@ -6,38 +6,63 @@ const {
   AuthorizationAdmin,
 } = require("../middleware/auth/auth");
 const router = express.Router();
-router.post("/add", adminController.add);
+router.post("/add", AuthorizationAdmin, adminController.add);
 router.get("/allusersrole", adminController.findAllusersrole);
-router.get("/allcategories", adminController.findAllcategories);
+router.get("/allcategories",adminController.findAllcategories);
+router.get("/allcategoriespagination",adminController.findAllcategoriespagination);
+router.get("/findonecategory/:id", adminController.findOnecategory);
 router.get("/allproduits", adminController.findAllproduits);
+router.get("/findAllproduitsnumber", adminController.findAllproduitsnumber);
+
 router.delete(
   "/deletecategory",
   AuthorizationUser,
-  AuthorizationAdmin,
   adminController.deletecategory
 );
 
 router.post(
   "/addcategory",
   AuthorizationUser,
-  AuthorizationAdmin,
   upload.array("image", 1),
   adminController.addcategory
 );
 
+router.put(
+  "/editcategory/:id",
+  AuthorizationUser,
+  adminController.editCategory
+);
+
+router.put(
+  "/updatecategoryimages/:id",
+  upload.array("image", 1),
+  adminController.updatecategoryimages
+);
+
+router.put(
+  "/changevisibiliter/:id",
+  adminController.changeVisibilite
+);
 router.delete(
   "/deletesuggestion",
   AuthorizationUser,
-  AuthorizationAdmin,
   adminController.deletesuggestion
 );
 
 router.get(
   "/getallavisuser/nombre_total_etoiles/:id",
-  adminController.findAllavis
+  adminController.findAllavis 
 );
+router.get("/findnbravisproduit/:id", adminController.findNbreAvisProduit);
+router.get("/findAllFournisseur", adminController.findAllFournisseur);
+router.get("/findAll", adminController.findAll);
+router.get("/findtotalavisproduit/:id", adminController.findTotalAvisProduit);
+router.get("/findavismoyeproduit/:id", adminController.findMoyeAvisProduit);
+router.get("/findavisproduit/nombre_avis/:id", adminController.findavisproduit);
 router.get("/getavgavisuser/moyenne_avis/:id", adminController.findavgavis);
 router.get("/top10product", adminController.gettop10prod);
+router.get("/findtopproduct", adminController.findTopProducts);
+router.get("/gettoprevprod", adminController.getToprevProd);
 router.get(
   "/nometablissement",
   adminController.findusernameetabllis
@@ -49,15 +74,38 @@ router.get(
 
 router.get(
   "/produitrech",
-
   adminController.findproduitbyname
 );
 
 router.get(
-  "/founisseurrech",
+  "/echangerechlab",
+  adminController.findAllEchangeLibrarie
+);
 
+router.get(
+  "/echangerechclient",
+  adminController.findAllEchangeClient
+);
+
+router.get(
+  "/getallusers",
+  adminController.findAlluser
+);
+
+router.get(
+  "/founisseurrech",
   adminController.findfournissbyname
 );
 
-router.get("/allavis", adminController.getAllAvis);
+router.get("/allavis", adminController.getAllAvis); 
+
+router.get("/findAllCommandes", adminController.findAllCommandes);
+router.get("/findCommandes", adminController.findCommandes);
+router.get("/findAllLivraison", adminController.findAllLivraison);
+router.get("/findLivraison", adminController.findLivraison);
+router.get("/findallusersadmin", adminController.findAllUsersAdmin);
+router.get("/findallfournisseuradmin", adminController.findAllFournisseurAdmin);
+router.get("/findallLaibrairieadmin", adminController.findAllLaibrairieAdmin);
+router.get("/findallpartenaireadmin", adminController.findAllpartenaireAdmin);
+router.get("/findlastCommande", adminController.findLastCommande);
 module.exports = router;

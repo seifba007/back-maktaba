@@ -2,23 +2,25 @@ const userController = require("../Controllers/user.controller");
 const express = require("express");
 const router = express.Router();
 const upload = require("../middleware/upload");
-const { AuthorizationAdmin } = require("../middleware/auth/auth");
+const { AuthorizationUser } = require("../middleware/auth/auth");
+
 router.post("/register", userController.register);
 router.get("/verif/:email", userController.emailVerification);
-router.post("/login", userController.login);
+router.post("/login",userController.login);
+//router.get("/verify",userController.verifytoken);
 router.post("/refresh", userController.refresh);
 router.post("/sendForgotPassword", userController.sendMailforgotPassword);
 router.post("/forgotpassword/:id", userController.forgotpassword);
 router.post("/contact", userController.Contact);
 router.post("/loginsocial", userController.authWithSocialMedia);
-router.put("/updatePassword/:id", userController.updatePassword);
+router.put("/updatePassword/:id", AuthorizationUser,userController.updatePassword);
 router.put(
   "/updateIdentite/:id",
   upload.array("image", 1),
   userController.updateIdentite
 );
 router.put("/addPoint/:id", userController.addPoint);
-router.put("/bloque/:id", AuthorizationAdmin, userController.bloque);
+router.put("/bloque/:id", AuthorizationUser, userController.bloque);
 router.get("/findAll", userController.findAlluser);
-router.delete("/delete/:id", AuthorizationAdmin, userController.delete);
+router.delete("/delete/:id", AuthorizationUser, userController.delete);
 module.exports = router;

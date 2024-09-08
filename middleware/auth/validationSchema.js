@@ -3,14 +3,6 @@ const Joi = require("joi");
 const loginValidation = (data) => {
   const schema = Joi.object({
     email: Joi.string().required().email(),
-    password: Joi.string().required(),
-  });
-  return schema.validate(data);
-};
-const registerValidation = (data) => {
-  const schema = Joi.object({
-    email: Joi.string().required().email(),
-    fullname: Joi.string().required().max(100),
     password: Joi.string()
       .min(6)
       .required()
@@ -18,6 +10,22 @@ const registerValidation = (data) => {
   });
   return schema.validate(data);
 };
+const registerValidation = (data) => {
+  const schema = Joi.object({
+    telephone: Joi.string()
+      .pattern(/^\+?[1-9]\d{1,14}$/)  // Adjust regex based on phone number format you expect
+      .required(),  // You can remove .required() if telephone is not mandatory
+    email: Joi.string().required().email(),
+    fullname: Joi.string().required().max(100),
+    password: Joi.string()
+      .min(6)
+      .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$"))
+      .required(),  // Added .required() to ensure password is mandatory
+  });
+
+  return schema.validate(data);
+};
+
 
 const addadminValidation = (data) => {
   const schema = Joi.object({
@@ -27,6 +35,9 @@ const addadminValidation = (data) => {
       .min(6)
       .required()
       .pattern(new RegExp("^[a-zA-Z0-9]{3,30}$")),
+    email_verifie: Joi.string(),
+    etatCompte: Joi.string(),
+    role: Joi.string(),
   });
   return schema.validate(data);
 };
@@ -42,7 +53,15 @@ const addcategoryValidation = (data) => {
   const schema = Joi.object({
     name: Joi.string().min(2).required(),
     Description: Joi.string().min(6).required(),
-    subcategories: Joi.string(),
+    subcategories: Joi.array(),
+  });
+  return schema.validate(data);
+};
+const addcategory = (data) => {
+  const schema = Joi.object({
+    name: Joi.string().min(2).required(),
+    Description: Joi.string().min(6).required(),
+    subcategories: Joi.array(),
   });
   return schema.validate(data);
 };
@@ -57,6 +76,7 @@ const filtercommandeValidation = (data) => {
     qteMax: Joi.number().integer(),
     etat: Joi.string(),
     titre: Joi.string(),
+    description: Joi.string(),
   });
   return schema.validate(data);
 };
@@ -67,9 +87,6 @@ const addAdresseValidation = (data) => {
     Gouvernorat: Joi.string(),
     Ville: Joi.string(),
     Code_postal: Joi.number().integer(),
-    clientId: Joi.number().integer(),
-    partenaireId: Joi.number().integer(),
-    fournisseurId: Joi.number().integer(),
   });
   return schema.validate(data);
 };
@@ -78,9 +95,6 @@ const addAvisProdValidation = (data) => {
   const schema = Joi.object({
     nbStart: Joi.number().integer(),
     commenter: Joi.string(),
-    clientId: Joi.number().integer(),
-    partenaireId: Joi.number().integer(),
-    produitlabrairieId: Joi.number().integer(),
   });
   return schema.validate(data);
 };
@@ -90,14 +104,6 @@ const becomePartnerValidation = (data) => {
     fullname: Joi.string().min(2).required(),
     email: Joi.string().required().email(),
     phone: Joi.number().integer(),
-    Role: Joi.string(),
-    name_work: Joi.string(),
-    file: Joi.string(),
-    links: Joi.string(),
-    detail: Joi.string(),
-    etat: Joi.string(),
-    pack: Joi.string(),
-    AdminId: Joi.number().integer(),
   });
   return schema.validate(data);
 };
@@ -107,10 +113,7 @@ const bonAchatValidation = (data) => {
     solde: Joi.number(),
     etat: Joi.string(),
     code: Joi.string(),
-    userId:Joi.number(),
-    partenaireId: Joi.number(),
-    fournisseurId: Joi.number(),
-    labrairieId:Joi.number(),
+    nbpoint: Joi.number(),
   });
   return schema.validate(data);
 };
@@ -121,21 +124,19 @@ const catalogeValidation = (data) => {
     description: Joi.string(),
     prix: Joi.number(),
     etat: Joi.string(),
-    AdminId: Joi.number(),
-    categorieId: Joi.number(),
-    SouscategorieId: Joi.number(),
+    admincatalogefk: Joi.number(),
+    categoriecatalogefk: Joi.number(),
+    souscatalogefk: Joi.number(),
   });
   return schema.validate(data);
 };
 
 const codepromoValidation = (data) => {
   const schema = Joi.object({
-    code: Joi.string(),
-    pourcentage: Joi.number().integer(),
+    code: Joi.string().min(8).max(8).required(),
   });
   return schema.validate(data);
 };
-
 const librairieValidation = (data) => {
   const schema = Joi.object({
     adresse: Joi.string(),
@@ -143,11 +144,11 @@ const librairieValidation = (data) => {
     nameLibrairie: Joi.string(),
     facebook: Joi.string(),
     instagram: Joi.string(),
-    imageStore: Joi.string(),
+    image: Joi.string(),
     emailLib: Joi.string(),
   });
+
   return schema.validate(data);
-  0;
 };
 const produitValidation = (data) => {
   const schema = Joi.object({
@@ -181,7 +182,7 @@ const subcategoryValidation = (data) => {
   const schema = Joi.object({
     name: Joi.string().min(2).required(),
     Description: Joi.string().min(6).required(),
-    categorieId: Joi.number().integer(),
+    catagsouscatafk: Joi.number().integer(),
   });
   return schema.validate(data);
 };
@@ -199,24 +200,17 @@ const suggestionProduitValidation = (data) => {
     Description: Joi.string(),
     image: Joi.string(),
     etat: Joi.string(),
+    categoriesuggestfk: Joi.number(),
+    soussuggestfk: Joi.number(),
   });
   return schema.validate(data);
 };
-
-const deletesuggestionValidation = (data) => {
-  const schema = Joi.object({
-    ids: Joi.array().items(Joi.number().integer()).unique(),
-  });
-  return schema.validate(data);
-};
-
 module.exports = {
   registerValidation,
   loginValidation,
   addadminValidation,
   deletecategoryValidation,
   addcategoryValidation,
-  deletesuggestionValidation,
   filtercommandeValidation,
   addAdresseValidation,
   addAvisProdValidation,

@@ -2,7 +2,7 @@ const express = require("express");
 const avisProduitlibraireController = require("../Controllers/avisProduitlibraire.controller");
 const router = express.Router();
 const { AuthorizationUser } = require("../middleware/auth/auth");
-router.post("/add", AuthorizationUser, avisProduitlibraireController.add);
+router.post("/add",  avisProduitlibraireController.add);
 router.put(
   "/update/:id",
   AuthorizationUser,
@@ -14,19 +14,20 @@ router.delete(
   avisProduitlibraireController.delete
 );
 router.get(
-  "/findAllbyclient/:clientId",
+  "/findAllbyclient/:clientavisprodfk",
   avisProduitlibraireController.getAllAvisByClient
 );
 router.get(
-  "/getAllAvisByproduit/:produitlabrairieId",
+  "/getAllAvisByproduit/:prodavisproduitsfk",
   avisProduitlibraireController.getAllAvisByproduit
 );
 router.get(
   "/avislib/:id",
   avisProduitlibraireController.getAllavisBylibriarie
 );
+
 router.get(
-  "/findAllbyPartnier/:partenaireId",
+  "/findAllbyPartnier/:partavisprodfk",
   avisProduitlibraireController.getAllAvisByPartnier
 );
 

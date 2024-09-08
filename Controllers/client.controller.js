@@ -18,13 +18,9 @@ const clientController = {
           include: [
             {
               model: Model.client,
-              attributes: ["id"],
               include: [
                 {
                   model: Model.adresses,
-                  attributes: {
-                    exclude: ["clientId", "createdAt", "updatedAt"],
-                  },
                 },
               ],
             },
@@ -42,7 +38,9 @@ const clientController = {
               message: "client introuvable",
             });
           }
-        });
+        }).catch(err=>{
+          console.log(err)
+        })
     } catch (err) {
       return res.status(400).json({
         success: false,
